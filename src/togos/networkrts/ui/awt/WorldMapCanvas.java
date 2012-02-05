@@ -7,11 +7,16 @@ import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 
+import togos.networkrts.simulation.InfoPacket;
+import togos.networkrts.simulation.Part;
+import togos.networkrts.simulation.SimulationObject;
+import togos.networkrts.simulation.Simulator;
+import togos.networkrts.simulation.event.RemoveObject;
+import togos.networkrts.world.PositionFunction;
+import togos.networkrts.world.StaticPositionFunction;
 import togos.networkrts.world.VisibleWorldState;
 import togos.networkrts.world.WorldObject;
 
@@ -19,71 +24,97 @@ public class WorldMapCanvas extends Canvas
 {
 	private static final long serialVersionUID = 1L;
 	
-	VisibleWorldState visibleState;
 	long cwx = 0, cwy = 0;
 	double zoom = 1.0;
 	
+	Simulator sim = new Simulator();
+	
 	public WorldMapCanvas() {
-		final Collection objects = new ArrayList();
-		
-		WorldObject o = new WorldObject();
-		o.x = 128;
-		o.y = 128;
-		o.z = 0;
+		SimulationObject o = new SimulationObject();
+		o.pos = new StaticPositionFunction( 128, 128, 0 );
 		o.rad = 6;
 		o.color = Color.GREEN;
-		objects.add( o );
+		sim.addObject( curTime(), o );
 		
-		o = new WorldObject();
-		o.x = -128;
-		o.y = -128;
-		o.z = 0;
+		o = new SimulationObject();
+		o.pos = new StaticPositionFunction( -128, -128, 0 );
 		o.rad = 6;
 		o.color = Color.WHITE;
-		objects.add( o );
-		
-		visibleState = new VisibleWorldState() {
-			public Collection getVisibleWorldObjects() {
-				return objects;
+		o.rootPart = new Part() {
+			public void worldViewed( String hostObjectId, long ts, VisibleWorldState vws, Collection eventQueue ) {}
+			public void packetReceived( String hostObjectId, long ts, InfoPacket packet, Collection eventQueue ) {}
+			public void hostCreated( String hostObjectId, long ts, Collection eventQueue ) {
+				eventQueue.add( new RemoveObject( ts+1000, hostObjectId ) );
+				
 			}
 			
-			public Collection getVisibleAreas() {
-				return Collections.EMPTY_LIST;
+			public int getMass() {
+				return 100;
+			}
+			
+			public boolean damaged( String hostObjectId, long ts, int amount, Collection eventQueue ) {
+				return false;
 			}
 		};
+		sim.addObject( curTime(), o );
 	}
 	
-	public void paint( WorldObject o, double x, double y, double scale, Graphics g ) {
+	protected long curTime() {
+		return System.currentTimeMillis();
+	}
+	
+	public void paint( WorldObject o, long ts, Graphics g, double x, double y, double scale ) {
 		g.setColor( o.color );
 		g.fillRect( (int)x, (int)y, (int)(o.rad*2*scale), (int)(o.rad*2*scale) );
 	}
 	
-	public void paint( double cwx, double cwy, double scale, Graphics g ) {
+	public void paint( double cwx, double cwy, Graphics g, double scale ) {
 		int csx = getWidth()/2;
 		int csy = getHeight()/2;
-		for( Iterator i=visibleState.getVisibleWorldObjects().iterator(); i.hasNext(); ) {
+		long ts = curTime();
+		for( Iterator i=sim.getAllObjects().iterator(); i.hasNext(); ) {
 			WorldObject o = (WorldObject)i.next();
-			paint( o, (o.x - cwx)*scale + csx, (o.y - cwy)*scale + csy, scale, g );
+			PositionFunction pf = o.pos;
+			paint( o, curTime(), g, (pf.getX(ts) - cwx)*scale + csx, (pf.getY(ts) - cwy)*scale + csy, scale );
 		}
 	}
 	
 	public void paint( Graphics g ) {
-		paint( cwx, cwx, zoom, g );
+		paint( cwx, cwx, g, zoom );
 	}
 	
 	
 	public static void main( String[] args ) {
 		Frame f = new Frame("NetworkRTS");
 		
-		WorldMapCanvas c = new WorldMapCanvas();
+		final WorldMapCanvas c = new WorldMapCanvas();
 		c.setPreferredSize(new Dimension(640,480));
 		c.setBackground(Color.BLACK);
+		
+		final Thread t = new Thread() {
+			public void run() {
+				long t = System.currentTimeMillis(); 
+				try {
+					while( !Thread.interrupted() ) {
+						long destTime = t+100;
+						c.sim.runUntil(destTime);
+						c.repaint();
+						long sleepTime = destTime - System.currentTimeMillis();
+						if( sleepTime > 0 ) Thread.sleep( sleepTime );
+						t = destTime;
+					}
+				} catch( InterruptedException e ) {
+				}
+			};
+		};
+		t.start();
 		
 		f.add(c);
 		f.pack();
 		f.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
 				e.getWindow().dispose();
+				t.interrupt();
 			}
 		});
 		f.setVisible(true);
