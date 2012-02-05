@@ -9,19 +9,23 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+
+import togos.networkrts.world.VisibleWorldState;
+import togos.networkrts.world.WorldObject;
 
 public class WorldMapCanvas extends Canvas
 {
-	Collection objects = new ArrayList();
+	private static final long serialVersionUID = 1L;
 	
-	class WorldObject {
-		long x, y, z;
-		int rad;
-		Color color;
-	}
-
+	VisibleWorldState visibleState;
+	long cwx = 0, cwy = 0;
+	double zoom = 1.0;
+	
 	public WorldMapCanvas() {
+		final Collection objects = new ArrayList();
+		
 		WorldObject o = new WorldObject();
 		o.x = 128;
 		o.y = 128;
@@ -38,6 +42,15 @@ public class WorldMapCanvas extends Canvas
 		o.color = Color.WHITE;
 		objects.add( o );
 		
+		visibleState = new VisibleWorldState() {
+			public Collection getVisibleWorldObjects() {
+				return objects;
+			}
+			
+			public Collection getVisibleAreas() {
+				return Collections.EMPTY_LIST;
+			}
+		};
 	}
 	
 	public void paint( WorldObject o, double x, double y, double scale, Graphics g ) {
@@ -48,14 +61,14 @@ public class WorldMapCanvas extends Canvas
 	public void paint( double cwx, double cwy, double scale, Graphics g ) {
 		int csx = getWidth()/2;
 		int csy = getHeight()/2;
-		for( Iterator i=objects.iterator(); i.hasNext(); ) {
+		for( Iterator i=visibleState.getVisibleWorldObjects().iterator(); i.hasNext(); ) {
 			WorldObject o = (WorldObject)i.next();
 			paint( o, (o.x - cwx)*scale + csx, (o.y - cwy)*scale + csy, scale, g );
 		}
 	}
 	
 	public void paint( Graphics g ) {
-		paint( 0, 0, 2.0, g );
+		paint( cwx, cwx, zoom, g );
 	}
 	
 	
