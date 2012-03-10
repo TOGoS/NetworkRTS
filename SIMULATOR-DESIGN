@@ -1,0 +1,104 @@
+Thoughts on designing reusable components for world simulators.
+
+Worlds
+ - a 'physical world' in which agents live
+ - agents bodies are part of the world
+ - agent minds are simulated separately (it's sort of dualistic)
+
+  Graph World
+   - does not model geographic location
+   - provides point-to-point connections between simulated objects
+
+  Spatial World
+   - simulated objects have coordinates within the world
+   - some objects can move themselves by walking or thrusting
+  
+  Object state
+   - Some object properties, such as color and position, can be defined
+     in terms of functions of time.  This way the state can be updated less
+     often when current values can be found by applying a function set in
+     the past.  This also allows animation to be smoother in case the renderer
+     redraws faster than it gets updates from the simulator.
+  
+  Events:
+    Region content change
+     - Some region of space (possibly defined relative to the position of some object)
+       had objects inside it change their position (or position function)
+    
+    Object state change
+    
+    Wave
+     - Data signals or destructive shockwaves that travel outward
+       from a point and become weaker with distance
+      Attributes:
+       - Origination time
+       - Speed
+       - Data content (if any)
+       - Destructive power (if any)
+       - Destruction type (shock / heat / etc)
+      Guided wave
+       - Can model transmission along a wire or other line
+        Attributes (in addition to general wave ones):
+         - line and source endpoint
+      Point-source wave
+        Additional attributes:
+         - Origination point, velocity
+         - Edge and inner color (for use by renderers)
+         - Strength at d = 1
+         - Strength at which it can be ignored by the simulator
+
+Simulator
+ - May night to be tightly coupled with worlds?  Not sure.
+ - Schedules events or somethings
+ 
+Agents
+ - Mind of an object
+ - Only interaction with simulator is through an 'shell' interface which allows an agent to:
+   - [attempt to] control its own 'body'
+   - send network messages
+   - set timers
+ - Cannot control own health/destruction unless shell provides a self-destruct method
+ - Simulator calls event handlers on agent
+ - An 'object' may contain multiple agents (e.g. to represent different components), but
+   each agent still gets its own (conceptual) shell
+
+  Simulated
+   - Reactive; all action is done in event handlers
+   - Shell is provided per-event and will NOT be used after event handler returns
+  External
+   - Could be a player or another program
+   - May do computations in parallel with the simulation or interact with external objects
+   - Shell provided must be able to accept action requests at any time, from any thread
+
+Reusability
+ - Should define standard interfaces for agent event handling and actions
+   - Simulator may provide extended interface, which agent can check for at run-time
+
+  Common agent shell use cases:
+    Movement
+     - Move in some direction
+     - Accellerate in some direction
+     - Set engine power
+    Weapons (should allow multiple weapons; think of TA battleships)
+     - Aim turret
+     - Fire weapon
+    Networking
+     - Send packet on interface
+    Get host state
+     (more realistically but more costly to the simulator, this could be
+     accomplished by sending events when these things change)
+     - Health
+     - Armor strength
+     - Fuel or battery level / capacity
+    Get world state
+     (also probably more efficient than push-based system)
+     - What do the eyes see?
+
+User interface
+ - Can be implemented as an agent in a simulated object
+
+Simulated events vs state
+ - For ultra consistent realism, simulator does all sound, light calculations
+ - More realistically a hybrid approach would be used, where the user interface
+   models some world state internally and does its own sound/video calculations
+   using e.g. OpenGL, OpenAL
