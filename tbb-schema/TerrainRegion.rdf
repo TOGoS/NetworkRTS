@@ -1,0 +1,16 @@
+<Schema xmlns="http://ns.nuke24.net/TBB/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+	<format>
+		  0: TBB header (24 bytes)
+		 24: terrain type palette hash (20 bytes)
+		 44: subregion palette hash (20 bytes)
+		 64: terrain type indexes, one per cell (64 bytes)
+		128: subregion indexes, one per cell (64 bytes)
+		192: (EOF)
+	</format>
+	<prototype>
+		<TerrainRegion xmlns="http://ns.nuke24.net/NetworkRTS/">
+			<tileCount>64</tileCount>
+			<subregionCount>64</subregionCount>
+		</TerrainRegion>
+	</prototype>
+</Schema>
