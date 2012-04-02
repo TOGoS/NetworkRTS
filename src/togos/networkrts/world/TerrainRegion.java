@@ -6,13 +6,18 @@ import togos.networkrts.resource.SerializationUtil;
 
 public class TerrainRegion
 {
+	public static final TerrainRegion NULL_REGION = new TerrainRegion(
+		Handle.NULL_HANDLE, Handle.NULL_HANDLE,
+		new byte[64], new byte[64]
+	);
+	
 	static byte[] TERRAINREGION_SCHEMA_HASH = Base32.decode("LQJSVLBZPU6RBBT77BNUEOVI5ITLKEUB");
 
-	final Handle terrainTypePaletteHandle;
-	final Handle subregionPaletteHandle;
+	public final Handle terrainTypePaletteHandle;
+	public final Handle subregionPaletteHandle;
 	
-	final byte[] terrainTypeIndexes;
-	final byte[] subregionIndexes;
+	public final byte[] terrainTypeIndexes;
+	public final byte[] subregionIndexes;
 	
 	public TerrainRegion(
 		Handle terrainTypePaletteHandle, Handle subregionPaletteHandle,

@@ -18,14 +18,14 @@ public class VectorCanvas extends Canvas
 	private static final long serialVersionUID = 1L;
 	
 	long cwx = 0, cwy = 0;
-	double zoom = 10.0/1024, rotation = 1.0;
+	double zoom = 1.0, rotation = 0.0;
 	
 	Simulator sim = new Simulator();
 	
 	public VectorCanvas() {
 	}
 	
-	AWTPainter painter = new TestAWTPainter();
+	AWTPainter painter = new TriTerrainRegionAWTRenderer();
 	
 	volatile BufferedImage buffer;
 	
