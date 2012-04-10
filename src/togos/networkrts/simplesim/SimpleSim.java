@@ -228,14 +228,44 @@ public class SimpleSim
 				return new CommandSet( cmds, this );
 			}
 		};
-		final Block wanderer = new Block( "wanderer", wanderator, Color.YELLOW, Collections.EMPTY_LIST );
+		final Block wanderer1 = new Block( "wanderer", wanderator, Color.YELLOW, Collections.EMPTY_LIST );
+		final Block wanderer2 = new Block( "wanderer", wanderator, Color.ORANGE, Collections.EMPTY_LIST );
+		final Block wanderer3 = new Block( "wanderer", wanderator, Color.RED, Collections.EMPTY_LIST );
 		
-		Map map = new Map(4,4,new Block[]{
-			Block.STONE, Block.STONE, Block.EMPTY, Block.STONE,
-			Block.STONE, Block.EMPTY, Block.EMPTY, Block.STONE,
-			Block.EMPTY, Block.EMPTY, Block.STONE, Block.EMPTY,
-			Block.STONE, Block.STONE,    wanderer, Block.EMPTY,
-		});
+		byte[] mapmap = new byte[] {
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+			1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1,
+			1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1,
+			1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1,
+			1, 1, 0, 1, 0, 0, 6, 0, 1, 1, 0, 0, 0, 0, 1, 1,
+			1, 1, 0, 1, 0, 0, 7, 0, 1, 0, 0, 0, 1, 0, 1, 1,
+			1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1,
+			1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1,
+			1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0,
+			0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0,
+			1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		};
+		
+		Block[] blockPal = new Block[] {
+			Block.EMPTY,
+			Block.STONE,
+			wanderer1,
+			wanderer1,
+			wanderer2,
+			wanderer2,
+			wanderer3,
+			wanderer3,
+		};
+		
+		Block[] mapBlocks = new Block[256];
+		for( int i=0; i<mapmap.length; ++i ) mapBlocks[i] = blockPal[mapmap[i]];
+		
+		Map map = new Map(16,16,mapBlocks);
 		
 		PhysicsRunner pr = new PhysicsRunner();
 		
