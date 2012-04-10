@@ -21,6 +21,7 @@ import togos.service.ServiceManager;
 public class SimpleSim
 {
 	static class Event {
+		public static final int END_LIST = -1;
 		public static final int TICK = 0;
 		public static final int ATTEMPT_MOVE = 1;
 		
@@ -83,16 +84,38 @@ public class SimpleSim
 	}
 	
 	static class Map {
+		public static final Map EMPTY = new Map(0, 0, new Block[]{ Block.EMPTY });
+		
 		public final int width, height; // Must be powers of 2!!!
 		public final Block[] blocks;
 		
-		public Map( int width, int height, Block[] blocks ) {
+		public Map( Map old, Block[] blocks ) {
+			this.width = old.width;
+			this.height = old.height;
+			this.blocks = blocks;
+		}
+		
+		public Map( int widthPower, int heightPower, Block[] blocks ) {
+			if( widthPower < 0 || widthPower > 10 ) {
+				throw new RuntimeException("Map#widthPower is out of range (0..10): "+widthPower);
+			}
+			if( heightPower < 0 || heightPower > 10 ) {
+				throw new RuntimeException("Map#heightPower is out of range (0..10): "+heightPower);
+			}
+			this.width  = (1 <<  widthPower);
+			this.height = (1 << heightPower);
 			if( width * height != blocks.length ) {
 				throw new RuntimeException("blocks array should have length = width ("+width+") * height ("+height+"), but is "+blocks.length);
 			}
-			this.width = width;
-			this.height = height;
 			this.blocks = blocks;
+		}
+	}
+	
+	static class WorldState {
+		public final Map map;
+		
+		public WorldState( Map m ) {
+			this.map = m;
 		}
 	}
 	
@@ -103,6 +126,16 @@ public class SimpleSim
 			while( !Thread.interrupted() ) {
 				runOneIteration();
 			}
+		}
+	}
+	
+	static class EventHandler extends InterruptableLoopingService {
+		public BlockingQueue inputEventQueue;
+		public BlockingQueue outputCommandQueue;
+
+		protected void runOneIteration() throws InterruptedException {
+			// TODO Auto-generated method stub
+			
 		}
 	}
 	
@@ -171,7 +204,7 @@ public class SimpleSim
 				}
 			}
 			
-			outputWorldStateQueue.put( new Map(s.width, s.height, newBlocks) );
+			outputWorldStateQueue.put( new Map(s, newBlocks) );
 		}
 	}
 	
@@ -180,7 +213,7 @@ public class SimpleSim
 	}
 	
 	static class MapCanvas extends Canvas implements WorldUpdatable {
-		Map state = new Map(0, 0, new Block[0]);
+		Map state = Map.EMPTY;
 		
 		public synchronized void setWorldState( Map s ) {
 			if( s == state ) return;
@@ -265,7 +298,7 @@ public class SimpleSim
 		Block[] mapBlocks = new Block[256];
 		for( int i=0; i<mapmap.length; ++i ) mapBlocks[i] = blockPal[mapmap[i]];
 		
-		Map map = new Map(16,16,mapBlocks);
+		Map map = new Map(4,4,mapBlocks);
 		
 		PhysicsRunner pr = new PhysicsRunner();
 		
