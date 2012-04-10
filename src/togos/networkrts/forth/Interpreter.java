@@ -37,14 +37,14 @@ public class Interpreter
 		switch( opcode ) {
 		case( OP_DUPFROML ):
 			int n = s.program[s.programPosition+1];
-			s.data.add( s.data.get(n < 0 ? s.data.size()+n : n));
+			s.stack.add( s.stack.get(n < 0 ? s.stack.size()+n : n));
 			s.programPosition += 2;
 		case( OP_PUSH_INT8 ):
-			s.data.add( new Byte(s.program[s.programPosition+1]) );
+			s.stack.add( new Byte(s.program[s.programPosition+1]) );
 			s.programPosition += 2;
 			break;
 		case( OP_PUSH_INT32 ):
-			s.data.add( new Integer(decodeInt32(s.program,s.programPosition+1)));
+			s.stack.add( new Integer(decodeInt32(s.program,s.programPosition+1)));
 			s.programPosition += 5;
 			break;
 		case( OP_PUSH_STRING ):

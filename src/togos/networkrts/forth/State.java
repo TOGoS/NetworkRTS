@@ -14,5 +14,5 @@ public class State
 	byte[] program;
 	int programPosition;
 	ReturnPosition returnPosition;
-	List data = new ArrayList();
+	List stack = new ArrayList();
 }
