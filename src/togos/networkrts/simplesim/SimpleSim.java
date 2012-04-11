@@ -28,7 +28,7 @@ public class SimpleSim
 {
 	static class Event {
 		// These ones are not really events or commands, but markers
-		public static final int NEW_ENTITY_MAP = -2;
+		public static final int NEW_BEHAVIOR_MAP = -2;
 		public static final int END_LIST = -1;
 		
 		public static final int TICK = 0;
@@ -63,15 +63,6 @@ public class SimpleSim
 		}
 	}
 	
-	static class ObjectCommandSet extends CommandSet {
-		final String objectId;
-		
-		public ObjectCommandSet( String objId, List cmds, Behavior newBehavior ) {
-			super( cmds, newBehavior );
-			this.objectId = objId;
-		}
-	}
-	
 	interface Behavior {
 		public static final Behavior NONE = new Behavior() {
 			public CommandSet onEvent(Event e) {
@@ -84,13 +75,11 @@ public class SimpleSim
 	
 	static class Entity {
 		public final int x, y;
-		public final Behavior behavior;
 		public final Map attrs;
 		
-		public Entity( int x, int y, Behavior behavior, Map attrs ) {
+		public Entity( int x, int y, Map attrs ) {
 			this.x = x;
 			this.y = y;
-			this.behavior = behavior;
 			this.attrs = attrs;
 		}
 	}
@@ -144,14 +133,16 @@ public class SimpleSim
 	}
 	
 	static class WorldState {
-		public static final WorldState EMPTY = new WorldState( TileGrid.EMPTY, Collections.EMPTY_MAP );
+		public static final WorldState EMPTY = new WorldState( TileGrid.EMPTY, Collections.EMPTY_MAP, Collections.EMPTY_MAP );
 		
 		public final TileGrid tileGrid;
 		public final Map entities;
+		public final Map behaviors;
 		
-		public WorldState( TileGrid m, Map entities ) {
+		public WorldState( TileGrid m, Map entities, Map behaviors ) {
 			this.tileGrid = m;
 			this.entities = entities;
+			this.behaviors = behaviors;
 		}
 	}
 	
@@ -188,7 +179,7 @@ public class SimpleSim
 			Entity e = (Entity)entities.get(id);
 			if( e == null ) return;
 			
-			e = new Entity( nx, ny, e.behavior, e.attrs );
+			e = new Entity( nx, ny, e.attrs );
 			entities.put( id, e );
 		}
 		
@@ -212,14 +203,17 @@ public class SimpleSim
 			}
 			
 			Map newEntities = new HashMap(s.entities);
+			Map newBehaviors = new HashMap(s.behaviors);
+			// Note that the tileGrid's data and the newEntity map are still mutable...
+			WorldState newWorldState = new WorldState(new TileGrid(grid, newBlocks), newEntities, newBehaviors);
 			
 			for( int y=grid.height-1; y>=0; --y ) {
 				for( int x=grid.width-1; x>=0; --x ) {
 					final Block b = grid.blocks[x+y*grid.width];
 					CommandSet cs;
-					Entity ent = (Entity)newEntities.get(b.entityId);
-					if( ent != null && ent.behavior != Behavior.NONE ) {
-						if( (cs = ent.behavior.onEvent(TICK)) != CommandSet.EMPTY ) {
+					Behavior beh = (Behavior)newBehaviors.get(b.entityId);
+					if( beh != null && beh != Behavior.NONE ) {
+						if( (cs = beh.onEvent(TICK)) != CommandSet.EMPTY ) {
 							int movementDir = -1;
 							for( Iterator ci=cs.commands.iterator(); ci.hasNext(); ) {
 								Event e = (Event)ci.next();
@@ -254,7 +248,7 @@ public class SimpleSim
 				}
 			}
 			
-			outputWorldStateQueue.put( new WorldState(new TileGrid(grid, newBlocks), newEntities) );
+			outputWorldStateQueue.put( newWorldState );
 		}
 	}
 	
@@ -301,9 +295,10 @@ public class SimpleSim
 		}
 	}
 	
-	protected static void addEntity( WorldState s, String entityId, Entity e, Color c ) {
+	protected static void addEntity( WorldState s, String entityId, Entity e, Behavior beh, Color c ) {
 		s.tileGrid.put( e.x, e.y, new Block(entityId,c) );
 		s.entities.put( entityId, e );
+		s.behaviors.put( entityId, beh );
 	}
 	
 	public static void main( String[] args ) throws InterruptedException {
@@ -343,15 +338,15 @@ public class SimpleSim
 		
 		Block[] mapBlocks = new Block[256];
 		TileGrid tileGrid = new TileGrid(4,4,mapBlocks);
-		Map entities = new HashMap();
-		WorldState ws = new WorldState( tileGrid, entities );
+		WorldState ws = new WorldState( tileGrid, new HashMap(), new HashMap() );
 		for( int i=0; i<mapmap.length; ++i ) {
 			mapBlocks[i] = blockPal[mapmap[i]];
 		}
 		
 		Random r = new Random();
 		for( int i=0; i<10; ++i ) {
-			addEntity( ws, "wanderer"+i, new Entity(r.nextInt(16), r.nextInt(16), wanderator, Collections.EMPTY_MAP), new Color( 0xFF000000 | ((r.nextInt(0x80)+0x80) << 16) | ((r.nextInt(0x80)+0x80) << 8), true) );
+			addEntity( ws, "wanderer"+i, new Entity(r.nextInt(16), r.nextInt(16), Collections.EMPTY_MAP), wanderator,
+					new Color( 0xFF000000 | ((r.nextInt(0x80)+0x80) << 16) | ((r.nextInt(0x80)+0x80) << 8), true) );
 		}
 		
 		PhysicsRunner pr = new PhysicsRunner();
