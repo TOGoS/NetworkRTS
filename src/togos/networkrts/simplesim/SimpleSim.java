@@ -29,9 +29,9 @@ public class SimpleSim
 {
 	static class Entity {
 		public final int x, y;
-		public final Map attrs;
+		public final Map<String,?> attrs;
 		
-		public Entity( int x, int y, Map attrs ) {
+		public Entity( int x, int y, Map<String,?> attrs ) {
 			this.x = x;
 			this.y = y;
 			this.attrs = attrs;
@@ -71,7 +71,7 @@ public class SimpleSim
 		}
 		
 		public TileGrid( TileGrid grid ) {
-			this( grid, (Block[])Arrays.copyOf(grid.blocks, grid.blocks.length));
+			this( grid, Arrays.copyOf(grid.blocks, grid.blocks.length));
 		}
 		
 		public TileGrid( int widthPower, int heightPower, Block[] blocks ) {
@@ -91,14 +91,18 @@ public class SimpleSim
 	}
 	
 	static class WorldState {
-		public static final WorldState EMPTY = new WorldState( TileGrid.EMPTY, Collections.EMPTY_MAP, Collections.EMPTY_MAP, Collections.EMPTY_MAP );
+		public static final WorldState EMPTY = new WorldState( TileGrid.EMPTY,
+			Collections.<String,Entity> emptyMap(),
+			Collections.<String,Behavior> emptyMap(),
+			Collections.<String,List<Command>> emptyMap() );
 		
 		public final TileGrid tileGrid;
-		public final Map entities;
-		public final Map behaviors;
-		public final Map commandLists;
+		public final Map<String,Entity> entities;
+		public final Map<String,Behavior> behaviors;
+		public final Map<String,List<Command>> commandLists;
 		
-		public WorldState( TileGrid m, Map entities, Map behaviors, Map commandLists ) {
+		public WorldState( TileGrid m, Map<String,Entity> entities,
+				Map<String,Behavior> behaviors, Map<String,List<Command>> commandLists ) {
 			this.tileGrid = m;
 			this.entities = entities;
 			this.behaviors = behaviors;
@@ -146,13 +150,17 @@ public class SimpleSim
 	 * Returned by Behaviors in response to events
 	 */
 	static class BehaviorResult {
-		public static final BehaviorResult EMPTY = new BehaviorResult( Collections.EMPTY_LIST, null );
+		public static final BehaviorResult EMPTY = new BehaviorResult( Collections.<Command>emptyList(), null );
 		
-		final List commands;
-		/** May be null, in which case old behavior should remain. */
+		final List<Command> commands;
+		/**
+		 * May be null, in which case old behavior should remain.
+		 * (this way we can re-use BehaviorResult.EMTPY for a lot
+		 * of things).
+		 * */
 		final Behavior newBehavior;
 		
-		public BehaviorResult( List cmds, Behavior newb ) {
+		public BehaviorResult( List<Command> cmds, Behavior newb ) {
 			this.commands = cmds;
 			this.newBehavior = newb;
 		}
@@ -169,10 +177,10 @@ public class SimpleSim
 	}
 	
 	static class BehaviorResults {
-		public final Map commandLists;
-		public final Map newBehaviors;
+		public final Map<String,List<Command>> commandLists;
+		public final Map<String,Behavior> newBehaviors;
 		
-		public BehaviorResults( Map cs, Map nb ) {
+		public BehaviorResults( Map<String,List<Command>> cs, Map<String, Behavior> nb ) {
 			this.commandLists = cs;
 			this.newBehaviors = nb;
 		}
@@ -189,44 +197,47 @@ public class SimpleSim
 	}
 	
 	static class BehaviorRunner extends InterruptableLoopingService {
-		public BlockingQueue inputEventQueue;
-		public BlockingQueue outputResultsQueue;
+		public BlockingQueue<Event> inputEventQueue;
+		public BlockingQueue<BehaviorResults> outputResultsQueue;
 		
-		protected Map commandLists;
-		protected Map behaviors;
+		protected Map<String,List<Command>> commandLists;
+		protected Map<String,Behavior> behaviors;
 		
 		protected void onCommandSet( String entityId, BehaviorResult s ) {
 			if( s.commands.size() > 0 ) {
-				List ocs = (List)commandLists.get( entityId );
+				List<Command> ocs = commandLists.get( entityId );
 				if( ocs == null ) {
-					commandLists.put( entityId, new ArrayList(s.commands) );
+					commandLists.put( entityId, new ArrayList<Command>(s.commands) );
 				} else {
 					ocs.addAll( s.commands );
 				}
 			}
-			behaviors.put( entityId, s.newBehavior );
+			if( s.newBehavior != null ) {
+				behaviors.put( entityId, s.newBehavior );
+			}
 		}
 		
+		@SuppressWarnings("unchecked")
 		protected void runOneIteration() throws InterruptedException {
-			Event evt = (Event)inputEventQueue.take();
+			Event evt = inputEventQueue.take();
 			if( evt.targetId == null ) {
 				switch( evt.verb ) {
 				case( Event.NEW_BEHAVIOR_MAP ):
-					commandLists = new HashMap();
-					behaviors = new HashMap( (Map)evt.payload );
+					commandLists = new HashMap<String,List<Command>>();
+					behaviors = new HashMap<String,Behavior>( (Map<String,Behavior>)evt.payload );
 					break;
 				case( Event.END_LIST ):
 					outputResultsQueue.put( new BehaviorResults(commandLists, behaviors) );
 					break;
 				}
 			} else if( Event.TARGET_ALL.equals(evt.targetId) ) {
-				for( Iterator i=behaviors.entrySet().iterator(); i.hasNext(); ) {
-					Map.Entry e = (Map.Entry)i.next();
-					onCommandSet( (String)e.getKey(), ((Behavior)e.getValue()).onEvent(evt) );
+				for( Iterator<Map.Entry<String,Behavior>> i=behaviors.entrySet().iterator(); i.hasNext(); ) {
+					Map.Entry<String,Behavior> e = i.next();
+					onCommandSet( e.getKey(), e.getValue().onEvent(evt) );
 				}
 			} else {
 				Behavior b;
-				if( evt.targetId != null && (b = (Behavior)behaviors.get(evt.targetId)) != null ) {
+				if( evt.targetId != null && (b = behaviors.get(evt.targetId)) != null ) {
 					onCommandSet(evt.targetId, b.onEvent(evt));
 				}
 			}
@@ -234,18 +245,18 @@ public class SimpleSim
 	}
 	
 	static class PhysicsRunner extends InterruptableLoopingService {
-		public BlockingQueue inputWorldStateQueue;
-		public BlockingQueue toBehaviorRunner;
-		public BlockingQueue fromBehaviorRunner;
-		public BlockingQueue outputWorldStateQueue;
+		public BlockingQueue<WorldState> inputWorldStateQueue;
+		public BlockingQueue<Event> toBehaviorRunner;
+		public BlockingQueue<BehaviorResults> fromBehaviorRunner;
+		public BlockingQueue<WorldState> outputWorldStateQueue;
 		
 		long lastRunTime = -1;
 		long interval = 100;
 		
 		static final Event GLOBAL_TICK = new Event( Event.TARGET_ALL, Event.TICK, 0, null );
 		
-		protected final void updateEntityPosition( Map entities, String id, int nx, int ny ) {
-			Entity e = (Entity)entities.get(id);
+		protected final void updateEntityPosition( Map<String, Entity> entities, String id, int nx, int ny ) {
+			Entity e = entities.get(id);
 			if( e == null ) return;
 			
 			e = new Entity( nx, ny, e.attrs );
@@ -261,23 +272,23 @@ public class SimpleSim
 			
 			lastRunTime = System.currentTimeMillis();
 			
-			WorldState s = (WorldState)inputWorldStateQueue.take();
+			WorldState s = inputWorldStateQueue.take();
 			TileGrid grid = s.tileGrid;
 			
 			toBehaviorRunner.put( new Event(null, Event.NEW_BEHAVIOR_MAP, 0, s.behaviors) );
 			toBehaviorRunner.put( GLOBAL_TICK );
 
 			// Create mutable copies of the old state's blocks and entities
-			Map newEntities = new HashMap(s.entities);
+			Map<String, Entity> newEntities = new HashMap<String, Entity>(s.entities);
 			TileGrid newTileGrid = new TileGrid(grid);
 			
-			for( Iterator i=s.commandLists.entrySet().iterator(); i.hasNext(); ) {
-				Map.Entry e = (Map.Entry)i.next();
-				String entityId = (String)e.getKey();
-				List commands = (List)e.getValue();
+			for( Iterator<Map.Entry<String,List<Command>>> i=s.commandLists.entrySet().iterator(); i.hasNext(); ) {
+				Map.Entry<String,List<Command>> e = i.next();
+				String entityId = e.getKey();
+				List<Command> commands = e.getValue();
 				int movementDir = -1;
-				for( Iterator j=commands.iterator(); j.hasNext(); ) {
-					Command cmd = (Command)j.next();
+				for( Iterator<Command> j=commands.iterator(); j.hasNext(); ) {
+					Command cmd = j.next();
 					switch( cmd.verb ) {
 					case( Command.ATTEMPT_MOVE ):
 						movementDir = cmd.arg;
@@ -285,7 +296,7 @@ public class SimpleSim
 					}
 				}
 				
-				Entity ent = (Entity)newEntities.get(entityId);
+				Entity ent = newEntities.get(entityId);
 				Block entityBlock = newTileGrid.get(ent.x, ent.y);
 				
 				int dx, dy;
@@ -309,7 +320,7 @@ public class SimpleSim
 			}
 			
 			toBehaviorRunner.put( new Event(null, Event.END_LIST, 0, null) );
-			BehaviorResults bRes = (BehaviorResults)fromBehaviorRunner.take();
+			BehaviorResults bRes = fromBehaviorRunner.take();
 			WorldState newWorldState = new WorldState(newTileGrid, newEntities, bRes.newBehaviors, bRes.commandLists);
 			
 			outputWorldStateQueue.put( newWorldState );
@@ -321,6 +332,8 @@ public class SimpleSim
 	}
 	
 	static class MapCanvas extends Canvas implements WorldUpdatable {
+		private static final long serialVersionUID = 1L;
+		
 		WorldState state = WorldState.EMPTY;
 		
 		public synchronized void setWorldState( WorldState s ) {
@@ -346,13 +359,13 @@ public class SimpleSim
 	}
 	
 	static class MapUpdater extends InterruptableSingleThreadedService {
-		public BlockingQueue inputWorldStateQueue;
-		public BlockingQueue outputWorldStateQueue;
+		public BlockingQueue<WorldState> inputWorldStateQueue;
+		public BlockingQueue<WorldState> outputWorldStateQueue;
 		public WorldUpdatable updateListener;
 		
 		public void _run() throws InterruptedException {
 			while( !Thread.interrupted() ) {
-				WorldState s = (WorldState)inputWorldStateQueue.take();
+				WorldState s = inputWorldStateQueue.take();
 				outputWorldStateQueue.put(s);
 				updateListener.setWorldState(s);
 			}
@@ -370,9 +383,14 @@ public class SimpleSim
 		
 		final Behavior wanderator = new Behavior() {
 			public BehaviorResult onEvent(Event e) {
-				List cmds = new ArrayList();
-				cmds.add( new Command(Command.ATTEMPT_MOVE, new Random().nextInt(8), null ));
-				return new BehaviorResult( cmds, this );
+				switch( e.verb ) {
+				case( Event.TICK ):
+					List<Command> cmds = new ArrayList<Command>();
+					cmds.add( new Command(Command.ATTEMPT_MOVE, new Random().nextInt(8), null ));
+					return new BehaviorResult( cmds, this );
+				default:
+					return BehaviorResult.EMPTY;
+				}
 			}
 		};
 		
@@ -402,24 +420,24 @@ public class SimpleSim
 		
 		Block[] mapBlocks = new Block[256];
 		TileGrid tileGrid = new TileGrid(4,4,mapBlocks);
-		WorldState ws = new WorldState( tileGrid, new HashMap(), new HashMap(), new HashMap() );
+		WorldState ws = new WorldState( tileGrid, new HashMap<String,Entity>(), new HashMap<String,Behavior>(), new HashMap<String,List<Command>>() );
 		for( int i=0; i<mapmap.length; ++i ) {
 			mapBlocks[i] = blockPal[mapmap[i]];
 		}
 		
 		Random r = new Random();
 		for( int i=0; i<10; ++i ) {
-			addEntity( ws, "wanderer"+i, new Entity(r.nextInt(16), r.nextInt(16), Collections.EMPTY_MAP), wanderator,
+			addEntity( ws, "wanderer"+i, new Entity(r.nextInt(16), r.nextInt(16), Collections.<String,Object>emptyMap()), wanderator,
 					new Color( 0xFF000000 | ((r.nextInt(0x80)+0x80) << 16) | ((r.nextInt(0x80)+0x80) << 8), true) );
 		}
 		
 		PhysicsRunner pr = new PhysicsRunner();
 		BehaviorRunner br = new BehaviorRunner();
-		pr.toBehaviorRunner = br.inputEventQueue = new LinkedBlockingQueue();
-		pr.fromBehaviorRunner = br.outputResultsQueue = new LinkedBlockingQueue();
+		pr.toBehaviorRunner = br.inputEventQueue = new LinkedBlockingQueue<Event>();
+		pr.fromBehaviorRunner = br.outputResultsQueue = new LinkedBlockingQueue<BehaviorResults>();
 		MapUpdater mu = new MapUpdater();
-		mu.inputWorldStateQueue = pr.outputWorldStateQueue = new LinkedBlockingQueue();
-		mu.outputWorldStateQueue = pr.inputWorldStateQueue = new LinkedBlockingQueue();
+		mu.inputWorldStateQueue = pr.outputWorldStateQueue = new LinkedBlockingQueue<WorldState>();
+		mu.outputWorldStateQueue = pr.inputWorldStateQueue = new LinkedBlockingQueue<WorldState>();
 		pr.inputWorldStateQueue.put(ws);
 		
 		final Frame f = new Frame("SimpleSim");
