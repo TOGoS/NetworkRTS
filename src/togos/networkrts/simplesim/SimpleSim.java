@@ -144,6 +144,8 @@ public class SimpleSim
 	}
 	
 	static class WorldState {
+		public static final WorldState EMPTY = new WorldState( TileGrid.EMPTY, Collections.EMPTY_MAP );
+		
 		public final TileGrid tileGrid;
 		public final Map entities;
 		
@@ -257,20 +259,20 @@ public class SimpleSim
 	}
 	
 	interface WorldUpdatable {
-		public void setWorldState( TileGrid s );
+		public void setWorldState( WorldState s );
 	}
 	
 	static class MapCanvas extends Canvas implements WorldUpdatable {
-		TileGrid state = TileGrid.EMPTY;
+		WorldState state = WorldState.EMPTY;
 		
-		public synchronized void setWorldState( TileGrid s ) {
+		public synchronized void setWorldState( WorldState s ) {
 			if( s == state ) return;
 			state = s;
 			repaint();
 		}
 		
 		public void paint( Graphics g ) {
-			final TileGrid s = state;
+			final TileGrid s = state.tileGrid;
 			
 			for( int y=s.height-1; y>=0; --y ) {
 				for( int x=s.width-1; x>=0; --x ) {
@@ -294,7 +296,7 @@ public class SimpleSim
 			while( !Thread.interrupted() ) {
 				WorldState s = (WorldState)inputWorldStateQueue.take();
 				outputWorldStateQueue.put(s);
-				updateListener.setWorldState(s.tileGrid);
+				updateListener.setWorldState(s);
 			}
 		}
 	}
@@ -349,7 +351,7 @@ public class SimpleSim
 		
 		Random r = new Random();
 		for( int i=0; i<10; ++i ) {
-			addEntity( ws, "wanderer"+i, new Entity(r.nextInt(16), r.nextInt(16), wanderator, Collections.EMPTY_MAP), new Color( r.nextInt(0xFFFFFF), false) );
+			addEntity( ws, "wanderer"+i, new Entity(r.nextInt(16), r.nextInt(16), wanderator, Collections.EMPTY_MAP), new Color( 0xFF000000 | ((r.nextInt(0x80)+0x80) << 16) | ((r.nextInt(0x80)+0x80) << 8), true) );
 		}
 		
 		PhysicsRunner pr = new PhysicsRunner();
@@ -363,7 +365,7 @@ public class SimpleSim
 		final MapCanvas c = new MapCanvas();
 		mu.updateListener = c;
 		c.setPreferredSize( new Dimension(512,384) );
-		c.setWorldState( tileGrid );
+		c.setWorldState( ws );
 		f.add( c );
 		f.pack();
 		f.addWindowListener( new WindowAdapter() {
