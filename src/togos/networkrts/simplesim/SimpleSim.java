@@ -8,6 +8,7 @@ import java.awt.Graphics;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -26,53 +27,6 @@ import togos.service.ServiceManager;
  */
 public class SimpleSim
 {
-	static class Event {
-		// These ones are not really events or commands, but markers
-		public static final int NEW_BEHAVIOR_MAP = -2;
-		public static final int END_LIST = -1;
-		
-		public static final int TICK = 0;
-		public static final int ATTEMPT_MOVE = 1;
-		
-		final String targetId;
-		final int verb;
-		final int arg;
-		final Object payload;
-		
-		public Event( String targetId, int verb, int arg, Object payload ) {
-			this.targetId = targetId;
-			this.verb = verb;
-			this.arg = arg;
-			this.payload = payload;
-		}
-	}
-	
-	/**
-	 * Returned by Behaviors in response to events
-	 */
-	static class CommandSet {
-		public static final CommandSet EMPTY = new CommandSet( Collections.EMPTY_LIST, null );
-		
-		final List commands;
-		/** May be null, in which case old behavior should remain. */
-		final Behavior newBehavior;
-		
-		public CommandSet( List cmds, Behavior newb ) {
-			this.commands = cmds;
-			this.newBehavior = newb;
-		}
-	}
-	
-	interface Behavior {
-		public static final Behavior NONE = new Behavior() {
-			public CommandSet onEvent(Event e) {
-				return CommandSet.EMPTY;
-			}
-		};
-		
-		CommandSet onEvent( Event e );
-	}
-	
 	static class Entity {
 		public final int x, y;
 		public final Map attrs;
@@ -116,6 +70,10 @@ public class SimpleSim
 			this.blocks = blocks;
 		}
 		
+		public TileGrid( TileGrid grid ) {
+			this( grid, (Block[])Arrays.copyOf(grid.blocks, grid.blocks.length));
+		}
+		
 		public TileGrid( int widthPower, int heightPower, Block[] blocks ) {
 			if( widthPower < 0 || widthPower > 10 ) {
 				throw new RuntimeException("Map#widthPower is out of range (0..10): "+widthPower);
@@ -133,16 +91,90 @@ public class SimpleSim
 	}
 	
 	static class WorldState {
-		public static final WorldState EMPTY = new WorldState( TileGrid.EMPTY, Collections.EMPTY_MAP, Collections.EMPTY_MAP );
+		public static final WorldState EMPTY = new WorldState( TileGrid.EMPTY, Collections.EMPTY_MAP, Collections.EMPTY_MAP, Collections.EMPTY_MAP );
 		
 		public final TileGrid tileGrid;
 		public final Map entities;
 		public final Map behaviors;
+		public final Map commandLists;
 		
-		public WorldState( TileGrid m, Map entities, Map behaviors ) {
+		public WorldState( TileGrid m, Map entities, Map behaviors, Map commandLists ) {
 			this.tileGrid = m;
 			this.entities = entities;
 			this.behaviors = behaviors;
+			this.commandLists = commandLists;
+		}
+	}
+	
+	static class Event {
+		public static final String TARGET_ALL = "(all)";
+		
+		// These ones are not really events or commands, but markers
+		public static final int NEW_BEHAVIOR_MAP = -2;
+		public static final int END_LIST = -1;
+		
+		public static final int TICK = 0;
+		
+		final String targetId;
+		final int verb;
+		final int arg;
+		final Object payload;
+		
+		public Event( String targetId, int verb, int arg, Object payload ) {
+			this.targetId = targetId;
+			this.verb = verb;
+			this.arg = arg;
+			this.payload = payload;
+		}
+	}
+	
+	static class Command {
+		public static final int ATTEMPT_MOVE = 1;
+		
+		final int verb;
+		final int arg;
+		final Object payload;
+		
+		public Command( int verb, int arg, Object payload ) {
+			this.verb = verb;
+			this.arg = arg;
+			this.payload = payload;
+		}
+	}
+	
+	/**
+	 * Returned by Behaviors in response to events
+	 */
+	static class BehaviorResult {
+		public static final BehaviorResult EMPTY = new BehaviorResult( Collections.EMPTY_LIST, null );
+		
+		final List commands;
+		/** May be null, in which case old behavior should remain. */
+		final Behavior newBehavior;
+		
+		public BehaviorResult( List cmds, Behavior newb ) {
+			this.commands = cmds;
+			this.newBehavior = newb;
+		}
+	}
+	
+	interface Behavior {
+		public static final Behavior NONE = new Behavior() {
+			public BehaviorResult onEvent(Event e) {
+				return BehaviorResult.EMPTY;
+			}
+		};
+		
+		BehaviorResult onEvent( Event e );
+	}
+	
+	static class BehaviorResults {
+		public final Map commandLists;
+		public final Map newBehaviors;
+		
+		public BehaviorResults( Map cs, Map nb ) {
+			this.commandLists = cs;
+			this.newBehaviors = nb;
 		}
 	}
 	
@@ -156,24 +188,61 @@ public class SimpleSim
 		}
 	}
 	
-	static class EventHandler extends InterruptableLoopingService {
+	static class BehaviorRunner extends InterruptableLoopingService {
 		public BlockingQueue inputEventQueue;
-		public BlockingQueue outputCommandQueue;
+		public BlockingQueue outputResultsQueue;
+		
+		protected Map commandLists;
+		protected Map behaviors;
+		
+		protected void onCommandSet( String entityId, BehaviorResult s ) {
+			if( s.commands.size() > 0 ) {
+				List ocs = (List)commandLists.get( entityId );
+				if( ocs == null ) {
+					commandLists.put( entityId, new ArrayList(s.commands) );
+				} else {
+					ocs.addAll( s.commands );
+				}
+			}
+			behaviors.put( entityId, s.newBehavior );
+		}
 		
 		protected void runOneIteration() throws InterruptedException {
 			Event evt = (Event)inputEventQueue.take();
+			if( evt.targetId == null ) {
+				switch( evt.verb ) {
+				case( Event.NEW_BEHAVIOR_MAP ):
+					commandLists = new HashMap();
+					behaviors = new HashMap( (Map)evt.payload );
+					break;
+				case( Event.END_LIST ):
+					outputResultsQueue.put( new BehaviorResults(commandLists, behaviors) );
+					break;
+				}
+			} else if( Event.TARGET_ALL.equals(evt.targetId) ) {
+				for( Iterator i=behaviors.entrySet().iterator(); i.hasNext(); ) {
+					Map.Entry e = (Map.Entry)i.next();
+					onCommandSet( (String)e.getKey(), ((Behavior)e.getValue()).onEvent(evt) );
+				}
+			} else {
+				Behavior b;
+				if( evt.targetId != null && (b = (Behavior)behaviors.get(evt.targetId)) != null ) {
+					onCommandSet(evt.targetId, b.onEvent(evt));
+				}
+			}
 		}
 	}
 	
 	static class PhysicsRunner extends InterruptableLoopingService {
 		public BlockingQueue inputWorldStateQueue;
-		public BlockingQueue eventQueue;
+		public BlockingQueue toBehaviorRunner;
+		public BlockingQueue fromBehaviorRunner;
 		public BlockingQueue outputWorldStateQueue;
 		
 		long lastRunTime = -1;
 		long interval = 100;
 		
-		static final Event TICK = new Event( null, Event.TICK, 0, null );
+		static final Event GLOBAL_TICK = new Event( Event.TARGET_ALL, Event.TICK, 0, null );
 		
 		protected final void updateEntityPosition( Map entities, String id, int nx, int ny ) {
 			Entity e = (Entity)entities.get(id);
@@ -195,58 +264,53 @@ public class SimpleSim
 			WorldState s = (WorldState)inputWorldStateQueue.take();
 			TileGrid grid = s.tileGrid;
 			
-			Block[] newBlocks = new Block[grid.width*grid.height];
-			for( int y=grid.height-1; y>=0; --y ) {
-				for( int x=grid.width-1; x>=0; --x ) {
-					newBlocks[x+y*grid.width] = grid.blocks[x+y*grid.width]; 
-				}
-			}
-			
+			toBehaviorRunner.put( new Event(null, Event.NEW_BEHAVIOR_MAP, 0, s.behaviors) );
+			toBehaviorRunner.put( GLOBAL_TICK );
+
+			// Create mutable copies of the old state's blocks and entities
 			Map newEntities = new HashMap(s.entities);
-			Map newBehaviors = new HashMap(s.behaviors);
-			// Note that the tileGrid's data and the newEntity map are still mutable...
-			WorldState newWorldState = new WorldState(new TileGrid(grid, newBlocks), newEntities, newBehaviors);
+			TileGrid newTileGrid = new TileGrid(grid);
 			
-			for( int y=grid.height-1; y>=0; --y ) {
-				for( int x=grid.width-1; x>=0; --x ) {
-					final Block b = grid.blocks[x+y*grid.width];
-					CommandSet cs;
-					Behavior beh = (Behavior)newBehaviors.get(b.entityId);
-					if( beh != null && beh != Behavior.NONE ) {
-						if( (cs = beh.onEvent(TICK)) != CommandSet.EMPTY ) {
-							int movementDir = -1;
-							for( Iterator ci=cs.commands.iterator(); ci.hasNext(); ) {
-								Event e = (Event)ci.next();
-								if( e.verb == Event.ATTEMPT_MOVE ) {
-									movementDir = e.arg;
-								}
-							}
-							
-							Block newBlock = new Block( b.entityId, b.color );
-							newBlocks[x+y*grid.width] = newBlock; // but see movement handling, below
-							
-							int dx, dy;
-							switch( movementDir ) {
-							case( 0 ): dx =  1; dy =  0; break;
-							case( 2 ): dx =  0; dy =  1; break;
-							case( 4 ): dx = -1; dy =  0; break;
-							case( 6 ): dx =  0; dy = -1; break;
-							default:   dx =  0; dy =  0; break;
-							}
-							
-							if( dx != 0 || dy != 0 ) {
-								int nx = (x+dx) & (grid.width-1);
-								int ny = (y+dy) & (grid.height-1);
-								if( newBlocks[nx+ny*grid.width] == Block.EMPTY ) {
-									newBlocks[nx+ny*grid.width] = newBlock;
-									newBlocks[x+y*grid.width] = Block.EMPTY;
-									updateEntityPosition(newEntities, b.entityId, nx, ny);
-								}
-							}
-						}
+			for( Iterator i=s.commandLists.entrySet().iterator(); i.hasNext(); ) {
+				Map.Entry e = (Map.Entry)i.next();
+				String entityId = (String)e.getKey();
+				List commands = (List)e.getValue();
+				int movementDir = -1;
+				for( Iterator j=commands.iterator(); j.hasNext(); ) {
+					Command cmd = (Command)j.next();
+					switch( cmd.verb ) {
+					case( Command.ATTEMPT_MOVE ):
+						movementDir = cmd.arg;
+						break;
+					}
+				}
+				
+				Entity ent = (Entity)newEntities.get(entityId);
+				Block entityBlock = newTileGrid.get(ent.x, ent.y);
+				
+				int dx, dy;
+				switch( movementDir ) {
+				case( 0 ): dx =  1; dy =  0; break;
+				case( 2 ): dx =  0; dy =  1; break;
+				case( 4 ): dx = -1; dy =  0; break;
+				case( 6 ): dx =  0; dy = -1; break;
+				default:   dx =  0; dy =  0; break;
+				}
+				
+				if( dx != 0 || dy != 0 ) {
+					int nx = (ent.x+dx) & (grid.width-1);
+					int ny = (ent.y+dy) & (grid.height-1);
+					if( newTileGrid.get(nx, ny) == Block.EMPTY ) {
+						newTileGrid.put(nx, ny, entityBlock);
+						newTileGrid.put(ent.x, ent.y, Block.EMPTY);
+						updateEntityPosition(newEntities, entityBlock.entityId, nx, ny);
 					}
 				}
 			}
+			
+			toBehaviorRunner.put( new Event(null, Event.END_LIST, 0, null) );
+			BehaviorResults bRes = (BehaviorResults)fromBehaviorRunner.take();
+			WorldState newWorldState = new WorldState(newTileGrid, newEntities, bRes.newBehaviors, bRes.commandLists);
 			
 			outputWorldStateQueue.put( newWorldState );
 		}
@@ -305,10 +369,10 @@ public class SimpleSim
 		final ServiceManager sman = new ServiceManager();
 		
 		final Behavior wanderator = new Behavior() {
-			public CommandSet onEvent(Event e) {
+			public BehaviorResult onEvent(Event e) {
 				List cmds = new ArrayList();
-				cmds.add( new Event(e.targetId, Event.ATTEMPT_MOVE, new Random().nextInt(8), null ));
-				return new CommandSet( cmds, this );
+				cmds.add( new Command(Command.ATTEMPT_MOVE, new Random().nextInt(8), null ));
+				return new BehaviorResult( cmds, this );
 			}
 		};
 		
@@ -338,7 +402,7 @@ public class SimpleSim
 		
 		Block[] mapBlocks = new Block[256];
 		TileGrid tileGrid = new TileGrid(4,4,mapBlocks);
-		WorldState ws = new WorldState( tileGrid, new HashMap(), new HashMap() );
+		WorldState ws = new WorldState( tileGrid, new HashMap(), new HashMap(), new HashMap() );
 		for( int i=0; i<mapmap.length; ++i ) {
 			mapBlocks[i] = blockPal[mapmap[i]];
 		}
@@ -350,7 +414,9 @@ public class SimpleSim
 		}
 		
 		PhysicsRunner pr = new PhysicsRunner();
-		
+		BehaviorRunner br = new BehaviorRunner();
+		pr.toBehaviorRunner = br.inputEventQueue = new LinkedBlockingQueue();
+		pr.fromBehaviorRunner = br.outputResultsQueue = new LinkedBlockingQueue();
 		MapUpdater mu = new MapUpdater();
 		mu.inputWorldStateQueue = pr.outputWorldStateQueue = new LinkedBlockingQueue();
 		mu.outputWorldStateQueue = pr.inputWorldStateQueue = new LinkedBlockingQueue();
@@ -371,6 +437,7 @@ public class SimpleSim
 		});
 		
 		sman.add(pr);
+		sman.add(br);
 		sman.add(mu);
 		sman.start();
 		
