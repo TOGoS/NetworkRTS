@@ -9,8 +9,10 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -18,22 +20,36 @@ import java.util.concurrent.LinkedBlockingQueue;
 import togos.service.InterruptableSingleThreadedService;
 import togos.service.ServiceManager;
 
+/**
+ * Proof-of-concept simulator that simulates a simple tile-based world
+ * represented by immutable objects with behavior. 
+ */
 public class SimpleSim
 {
 	static class Event {
+		// These ones are not really events or commands, but markers
+		public static final int NEW_ENTITY_MAP = -2;
 		public static final int END_LIST = -1;
+		
 		public static final int TICK = 0;
 		public static final int ATTEMPT_MOVE = 1;
 		
+		final String targetId;
 		final int verb;
 		final int arg;
+		final Object payload;
 		
-		public Event( int verb, int arg ) {
+		public Event( String targetId, int verb, int arg, Object payload ) {
+			this.targetId = targetId;
 			this.verb = verb;
 			this.arg = arg;
+			this.payload = payload;
 		}
 	}
 	
+	/**
+	 * Returned by Behaviors in response to events
+	 */
 	static class CommandSet {
 		public static final CommandSet EMPTY = new CommandSet( Collections.EMPTY_LIST, null );
 		
@@ -66,36 +82,52 @@ public class SimpleSim
 		CommandSet onEvent( Event e );
 	}
 	
-	static class Block {
-		public static final Block EMPTY = new Block( "empty", Behavior.NONE, Color.BLACK, Collections.EMPTY_LIST );
-		public static final Block STONE = new Block( "stone", Behavior.NONE, Color.DARK_GRAY, Collections.EMPTY_LIST );
-		
-		public final String id;
+	static class Entity {
+		public final int x, y;
 		public final Behavior behavior;
-		public final Color color;
-		public final List commands;
+		public final Map attrs;
 		
-		public Block( String id, Behavior b, Color c, List commands ) {
-			this.id = id;
-			this.behavior = b;
-			this.color = c;
-			this.commands = commands;
+		public Entity( int x, int y, Behavior behavior, Map attrs ) {
+			this.x = x;
+			this.y = y;
+			this.behavior = behavior;
+			this.attrs = attrs;
 		}
 	}
 	
-	static class Map {
-		public static final Map EMPTY = new Map(0, 0, new Block[]{ Block.EMPTY });
+	static class Block {
+		public static final Block EMPTY = new Block( null, Color.BLACK );
+		public static final Block STONE = new Block( null, Color.DARK_GRAY );
+		
+		public final String entityId;
+		public final Color color;
+		
+		public Block( String entityId, Color c ) {
+			this.entityId = entityId;
+			this.color = c;
+		}
+	}
+	
+	static class TileGrid {
+		public static final TileGrid EMPTY = new TileGrid(0, 0, new Block[]{ Block.EMPTY });
 		
 		public final int width, height; // Must be powers of 2!!!
 		public final Block[] blocks;
 		
-		public Map( Map old, Block[] blocks ) {
+		public Block get( int x, int y ) {
+			return blocks[x+y*width];
+		}
+		public void put( int x, int y, Block b ) {
+			blocks[x+y*width] = b;
+		}
+		
+		public TileGrid( TileGrid old, Block[] blocks ) {
 			this.width = old.width;
 			this.height = old.height;
 			this.blocks = blocks;
 		}
 		
-		public Map( int widthPower, int heightPower, Block[] blocks ) {
+		public TileGrid( int widthPower, int heightPower, Block[] blocks ) {
 			if( widthPower < 0 || widthPower > 10 ) {
 				throw new RuntimeException("Map#widthPower is out of range (0..10): "+widthPower);
 			}
@@ -112,10 +144,12 @@ public class SimpleSim
 	}
 	
 	static class WorldState {
-		public final Map map;
+		public final TileGrid tileGrid;
+		public final Map entities;
 		
-		public WorldState( Map m ) {
-			this.map = m;
+		public WorldState( TileGrid m, Map entities ) {
+			this.tileGrid = m;
+			this.entities = entities;
 		}
 	}
 	
@@ -132,21 +166,29 @@ public class SimpleSim
 	static class EventHandler extends InterruptableLoopingService {
 		public BlockingQueue inputEventQueue;
 		public BlockingQueue outputCommandQueue;
-
+		
 		protected void runOneIteration() throws InterruptedException {
-			// TODO Auto-generated method stub
-			
+			Event evt = (Event)inputEventQueue.take();
 		}
 	}
 	
 	static class PhysicsRunner extends InterruptableLoopingService {
 		public BlockingQueue inputWorldStateQueue;
+		public BlockingQueue eventQueue;
 		public BlockingQueue outputWorldStateQueue;
 		
 		long lastRunTime = -1;
 		long interval = 100;
 		
-		static final Event TICK = new Event( Event.TICK, 0 );
+		static final Event TICK = new Event( null, Event.TICK, 0, null );
+		
+		protected final void updateEntityPosition( Map entities, String id, int nx, int ny ) {
+			Entity e = (Entity)entities.get(id);
+			if( e == null ) return;
+			
+			e = new Entity( nx, ny, e.behavior, e.attrs );
+			entities.put( id, e );
+		}
 		
 		protected void runOneIteration() throws InterruptedException {
 			long curTime = System.currentTimeMillis();
@@ -156,73 +198,79 @@ public class SimpleSim
 			}
 			
 			lastRunTime = System.currentTimeMillis();
-				
-			Map s = (Map)inputWorldStateQueue.take();
 			
-			Block[] newBlocks = new Block[s.width*s.height];
-			for( int y=s.height-1; y>=0; --y ) {
-				for( int x=s.width-1; x>=0; --x ) {
-					newBlocks[x+y*s.width] = s.blocks[x+y*s.width]; 
+			WorldState s = (WorldState)inputWorldStateQueue.take();
+			TileGrid grid = s.tileGrid;
+			
+			Block[] newBlocks = new Block[grid.width*grid.height];
+			for( int y=grid.height-1; y>=0; --y ) {
+				for( int x=grid.width-1; x>=0; --x ) {
+					newBlocks[x+y*grid.width] = grid.blocks[x+y*grid.width]; 
 				}
 			}
 			
-			for( int y=s.height-1; y>=0; --y ) {
-				for( int x=s.width-1; x>=0; --x ) {
-					Block b = s.blocks[x+y*s.width];
+			Map newEntities = new HashMap(s.entities);
+			
+			for( int y=grid.height-1; y>=0; --y ) {
+				for( int x=grid.width-1; x>=0; --x ) {
+					final Block b = grid.blocks[x+y*grid.width];
 					CommandSet cs;
-					if( b.behavior != Behavior.NONE && (cs = b.behavior.onEvent(TICK)) != CommandSet.EMPTY ) {
-						int movementDir = -1;
-						for( Iterator ci=cs.commands.iterator(); ci.hasNext(); ) {
-							Event e = (Event)ci.next();
-							if( e.verb == Event.ATTEMPT_MOVE ) {
-								movementDir = e.arg;
+					Entity ent = (Entity)newEntities.get(b.entityId);
+					if( ent != null && ent.behavior != Behavior.NONE ) {
+						if( (cs = ent.behavior.onEvent(TICK)) != CommandSet.EMPTY ) {
+							int movementDir = -1;
+							for( Iterator ci=cs.commands.iterator(); ci.hasNext(); ) {
+								Event e = (Event)ci.next();
+								if( e.verb == Event.ATTEMPT_MOVE ) {
+									movementDir = e.arg;
+								}
 							}
-						}
-						
-						Behavior newBehavior = cs.newBehavior == null ? b.behavior : cs.newBehavior;
-						Block newBlock = new Block( b.id, newBehavior, b.color, Collections.EMPTY_LIST );
-						newBlocks[x+y*s.width] = newBlock; // but see movement handling, below
-						
-						int dx, dy;
-						switch( movementDir ) {
-						case( 0 ): dx =  1; dy =  0; break;
-						case( 2 ): dx =  0; dy =  1; break;
-						case( 4 ): dx = -1; dy =  0; break;
-						case( 6 ): dx =  0; dy = -1; break;
-						default:   dx =  0; dy =  0; break;
-						}
-						
-						if( dx != 0 || dy != 0 ) {
-							int nx = (x+dx) & (s.width-1);
-							int ny = (y+dy) & (s.height-1);
-							if( newBlocks[nx+ny*s.width] == Block.EMPTY ) {
-								newBlocks[nx+ny*s.width] = newBlock;
-								newBlocks[x+y*s.width] = Block.EMPTY;
+							
+							Block newBlock = new Block( b.entityId, b.color );
+							newBlocks[x+y*grid.width] = newBlock; // but see movement handling, below
+							
+							int dx, dy;
+							switch( movementDir ) {
+							case( 0 ): dx =  1; dy =  0; break;
+							case( 2 ): dx =  0; dy =  1; break;
+							case( 4 ): dx = -1; dy =  0; break;
+							case( 6 ): dx =  0; dy = -1; break;
+							default:   dx =  0; dy =  0; break;
+							}
+							
+							if( dx != 0 || dy != 0 ) {
+								int nx = (x+dx) & (grid.width-1);
+								int ny = (y+dy) & (grid.height-1);
+								if( newBlocks[nx+ny*grid.width] == Block.EMPTY ) {
+									newBlocks[nx+ny*grid.width] = newBlock;
+									newBlocks[x+y*grid.width] = Block.EMPTY;
+									updateEntityPosition(newEntities, b.entityId, nx, ny);
+								}
 							}
 						}
 					}
 				}
 			}
 			
-			outputWorldStateQueue.put( new Map(s, newBlocks) );
+			outputWorldStateQueue.put( new WorldState(new TileGrid(grid, newBlocks), newEntities) );
 		}
 	}
 	
 	interface WorldUpdatable {
-		public void setWorldState( Map s );
+		public void setWorldState( TileGrid s );
 	}
 	
 	static class MapCanvas extends Canvas implements WorldUpdatable {
-		Map state = Map.EMPTY;
+		TileGrid state = TileGrid.EMPTY;
 		
-		public synchronized void setWorldState( Map s ) {
+		public synchronized void setWorldState( TileGrid s ) {
 			if( s == state ) return;
 			state = s;
 			repaint();
 		}
 		
 		public void paint( Graphics g ) {
-			final Map s = state;
+			final TileGrid s = state;
 			
 			for( int y=s.height-1; y>=0; --y ) {
 				for( int x=s.width-1; x>=0; --x ) {
@@ -244,11 +292,16 @@ public class SimpleSim
 		
 		public void _run() throws InterruptedException {
 			while( !Thread.interrupted() ) {
-				Map m = (Map)inputWorldStateQueue.take();
-				outputWorldStateQueue.put(m);
-				updateListener.setWorldState(m);
+				WorldState s = (WorldState)inputWorldStateQueue.take();
+				outputWorldStateQueue.put(s);
+				updateListener.setWorldState(s.tileGrid);
 			}
 		}
+	}
+	
+	protected static void addEntity( WorldState s, String entityId, Entity e, Color c ) {
+		s.tileGrid.put( e.x, e.y, new Block(entityId,c) );
+		s.entities.put( entityId, e );
 	}
 	
 	public static void main( String[] args ) throws InterruptedException {
@@ -257,29 +310,26 @@ public class SimpleSim
 		final Behavior wanderator = new Behavior() {
 			public CommandSet onEvent(Event e) {
 				List cmds = new ArrayList();
-				cmds.add( new Event(Event.ATTEMPT_MOVE, new Random().nextInt(8) ));
+				cmds.add( new Event(e.targetId, Event.ATTEMPT_MOVE, new Random().nextInt(8), null ));
 				return new CommandSet( cmds, this );
 			}
 		};
-		final Block wanderer1 = new Block( "wanderer", wanderator, Color.YELLOW, Collections.EMPTY_LIST );
-		final Block wanderer2 = new Block( "wanderer", wanderator, Color.ORANGE, Collections.EMPTY_LIST );
-		final Block wanderer3 = new Block( "wanderer", wanderator, Color.RED, Collections.EMPTY_LIST );
 		
 		byte[] mapmap = new byte[] {
 			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 			1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
-			1, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 			1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1,
 			1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1,
 			1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1,
-			1, 1, 0, 1, 0, 0, 6, 0, 1, 1, 0, 0, 0, 0, 1, 1,
-			1, 1, 0, 1, 0, 0, 7, 0, 1, 0, 0, 0, 1, 0, 1, 1,
+			1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1,
+			1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1,
 			1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1,
 			1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1,
 			1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
 			0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0,
 			0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0,
-			1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 			1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1,
 			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 		};
@@ -287,31 +337,33 @@ public class SimpleSim
 		Block[] blockPal = new Block[] {
 			Block.EMPTY,
 			Block.STONE,
-			wanderer1,
-			wanderer1,
-			wanderer2,
-			wanderer2,
-			wanderer3,
-			wanderer3,
 		};
 		
 		Block[] mapBlocks = new Block[256];
-		for( int i=0; i<mapmap.length; ++i ) mapBlocks[i] = blockPal[mapmap[i]];
+		TileGrid tileGrid = new TileGrid(4,4,mapBlocks);
+		Map entities = new HashMap();
+		WorldState ws = new WorldState( tileGrid, entities );
+		for( int i=0; i<mapmap.length; ++i ) {
+			mapBlocks[i] = blockPal[mapmap[i]];
+		}
 		
-		Map map = new Map(4,4,mapBlocks);
+		Random r = new Random();
+		for( int i=0; i<10; ++i ) {
+			addEntity( ws, "wanderer"+i, new Entity(r.nextInt(16), r.nextInt(16), wanderator, Collections.EMPTY_MAP), new Color( r.nextInt(0xFFFFFF), false) );
+		}
 		
 		PhysicsRunner pr = new PhysicsRunner();
 		
 		MapUpdater mu = new MapUpdater();
 		mu.inputWorldStateQueue = pr.outputWorldStateQueue = new LinkedBlockingQueue();
 		mu.outputWorldStateQueue = pr.inputWorldStateQueue = new LinkedBlockingQueue();
-		pr.inputWorldStateQueue.put(map);
+		pr.inputWorldStateQueue.put(ws);
 		
 		final Frame f = new Frame("SimpleSim");
 		final MapCanvas c = new MapCanvas();
 		mu.updateListener = c;
 		c.setPreferredSize( new Dimension(512,384) );
-		c.setWorldState( map );
+		c.setWorldState( tileGrid );
 		f.add( c );
 		f.pack();
 		f.addWindowListener( new WindowAdapter() {
