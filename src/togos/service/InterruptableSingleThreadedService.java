@@ -6,6 +6,10 @@ public abstract class InterruptableSingleThreadedService implements Runnable, Se
 	
 	protected abstract void _run() throws InterruptedException;
 	
+	protected String getServiceThreadName() {
+		return getClass().getName();
+	}
+	
 	public final void run() {
 		try {
 			_run();
@@ -21,7 +25,7 @@ public abstract class InterruptableSingleThreadedService implements Runnable, Se
 	public synchronized void start() {
 		if( thread != null ) return;
 		
-		thread = new Thread(this);
+		thread = new Thread(this, getServiceThreadName());
 		thread.start();
 	}
 	
