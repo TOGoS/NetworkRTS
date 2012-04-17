@@ -29,10 +29,11 @@ public class GridWorld64Viewer extends Applet
 		);
 		*/
 		Random r = new Random();
-		for( int i=0; i<100; ++i ) {
-			setWorld( world.withBlock( new Circle(0.2 + r.nextDouble() * 0.5, 0.2 + r.nextDouble() * 0.6, r.nextDouble()*0.1), 0.01,
-				r.nextBoolean() ? WATER : GRASS ) );
+		Shape[] shapes = new Shape[1000];
+		for( int i=0; i<1000; ++i ) {
+			shapes[i] = new Circle(0.2 + r.nextDouble() * 0.5, 0.2 + r.nextDouble() * 0.6, r.nextDouble()*0.1);
 		}
+		setWorld( world.withBlock( new UnionShape(shapes), 0.001, r.nextBoolean() ? WATER : GRASS ) );
 	}
 	
 	public void paintAt( GridNode64 n, Graphics g, int x, int y, int zoomPower ) {
