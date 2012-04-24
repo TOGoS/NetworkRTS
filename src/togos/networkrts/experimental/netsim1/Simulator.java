@@ -173,7 +173,7 @@ public class Simulator
 			toInterfaceId = l.if1;
 		}
 		
-		teq.add( new SimulatorEvent(delayTick(l.delay)) {
+		teq.add( new SimulatorEvent(tickAfterDelay(l.delay)) {
 			public void run() {
 				deliverPacket(toHostId, toInterfaceId, packet);
 			}
@@ -187,11 +187,18 @@ public class Simulator
 		return procTime;
 	}
 	
+	// Arbitrary tick interval
 	long tickInterval = 10;
 	
-	public long delayTick( long delay ) {
+	/** Return the simulation time of the next 'tick' after the given delay */
+	public long tickAfterDelay( long delay ) {
 		long destTime = procTime + delay;
-		return destTime - destTime % tickInterval;
+		if( destTime % tickInterval > 0 ) {
+			// Round up to next tick
+			return destTime + tickInterval - (destTime % tickInterval);
+		} else {
+			return destTime;
+		}
 	}
 	
 	public void run() {
