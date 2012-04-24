@@ -1,6 +1,6 @@
 package togos.networkrts.resource;
 
-import togos.networkrts.world.Handle;
+import togos.networkrts.experimental.sim1.world.Handle;
 
 public class ResourceLoader
 {
