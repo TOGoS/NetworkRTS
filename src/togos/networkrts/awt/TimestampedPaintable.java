@@ -8,7 +8,7 @@ import java.awt.Graphics2D;
  * with buffering, but may use the Graphics2D's clip to
  * eliminate unnecessary drawing calls.
  */
-public interface AWTPaintable
+public interface TimestampedPaintable
 {
-	public void paint( Graphics2D g2d, long timestamp );
+	public void paint( long timestamp, Graphics2D g2d );
 }

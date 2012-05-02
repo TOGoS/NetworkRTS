@@ -11,6 +11,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 
+import togos.networkrts.awt.TimestampedPaintable;
 import togos.networkrts.experimental.sim1.simulation.Simulator;
 
 public class VectorCanvas extends Canvas
@@ -25,7 +26,7 @@ public class VectorCanvas extends Canvas
 	public VectorCanvas() {
 	}
 	
-	AWTPainter painter = new TriTerrainRegionAWTRenderer();
+	TimestampedPaintable paintable = new TriTerrainRegionAWTRenderer();
 	
 	volatile BufferedImage buffer;
 	
@@ -74,7 +75,7 @@ public class VectorCanvas extends Canvas
 		g2d.scale( zoom, zoom );
 		g2d.rotate( rotation );
 		
-		painter.paint( g2d, System.currentTimeMillis() );
+		paintable.paint( System.currentTimeMillis(), g2d );
 	}
 	
 	public void paint( Graphics g ) {

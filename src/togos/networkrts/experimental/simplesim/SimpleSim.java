@@ -1,12 +1,8 @@
 package togos.networkrts.experimental.simplesim;
 
-import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Frame;
-import java.awt.Graphics;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,8 +14,9 @@ import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import togos.networkrts.awt.Apallit;
+import togos.networkrts.awt.DoubleBufferedCanvas;
 import togos.service.InterruptableSingleThreadedService;
-import togos.service.ServiceManager;
 
 /**
  * Proof-of-concept simulator that simulates a simple tile-based world
@@ -331,30 +328,31 @@ public class SimpleSim
 		public void setWorldState( WorldState s );
 	}
 	
-	static class MapCanvas extends Canvas implements WorldUpdatable {
+	static class MapCanvas extends DoubleBufferedCanvas implements WorldUpdatable {
 		private static final long serialVersionUID = 1L;
 		
 		WorldState state = WorldState.EMPTY;
 		
+		int tileWidth = 16, tileHeight = 16;
+		
 		public synchronized void setWorldState( WorldState s ) {
 			if( s == state ) return;
 			state = s;
+			setPreferredSize( new Dimension(s.tileGrid.width * tileWidth, s.tileGrid.height * tileHeight) );
 			repaint();
 		}
 		
-		public void paint( Graphics g ) {
+		public void _paint( Graphics2D g ) {
+			paintBackground( g );
+			
 			final TileGrid s = state.tileGrid;
 			
 			for( int y=s.height-1; y>=0; --y ) {
 				for( int x=s.width-1; x>=0; --x ) {
 					g.setColor( s.blocks[x+y*s.width].color );
-					g.fillRect(x * 16, y * 16, 16, 16);
+					g.fillRect(x * tileWidth, y * tileHeight, tileWidth, tileHeight);
 				}
 			}
-		}
-		
-		public void update( Graphics g ) {
-			paint(g);
 		}
 	}
 	
@@ -379,8 +377,6 @@ public class SimpleSim
 	}
 	
 	public static void main( String[] args ) throws InterruptedException {
-		final ServiceManager sman = new ServiceManager();
-		
 		final Behavior wanderator = new Behavior() {
 			public BehaviorResult onEvent(Event e) {
 				switch( e.verb ) {
@@ -440,25 +436,16 @@ public class SimpleSim
 		mu.outputWorldStateQueue = pr.inputWorldStateQueue = new LinkedBlockingQueue<WorldState>();
 		pr.inputWorldStateQueue.put(ws);
 		
-		final Frame f = new Frame("SimpleSim");
 		final MapCanvas c = new MapCanvas();
 		mu.updateListener = c;
-		c.setPreferredSize( new Dimension(512,384) );
+		c.setBackground( Color.GRAY );
+		//c.setPreferredSize( new Dimension(512,384) );
 		c.setWorldState( ws );
-		f.add( c );
-		f.pack();
-		f.addWindowListener( new WindowAdapter() {
-			public void windowClosing(WindowEvent e) {
-				sman.halt();
-				f.dispose();
-			}
-		});
-		
-		sman.add(pr);
-		sman.add(br);
-		sman.add(mu);
-		sman.start();
-		
-		f.setVisible( true );
+
+		Apallit app = new Apallit( "SimpleSim", c );
+		app.addService(pr);
+		app.addService(br);
+		app.addService(mu);
+		app.runWindowed();
 	}
 }

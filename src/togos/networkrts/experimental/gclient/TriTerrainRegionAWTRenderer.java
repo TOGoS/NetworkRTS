@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 
+import togos.networkrts.awt.TimestampedPaintable;
 import togos.networkrts.experimental.sim1.world.Handle;
 import togos.networkrts.experimental.sim1.world.TerrainRegion;
 import togos.networkrts.experimental.sim1.world.TerrainType;
@@ -11,7 +12,7 @@ import togos.networkrts.resource.ResourceLoader;
 
 /** This is a single-threaded class due to it uses
  * instance variables to hold some arrays and stuff. */
-public class TriTerrainRegionAWTRenderer implements AWTPainter
+public class TriTerrainRegionAWTRenderer implements TimestampedPaintable
 {
 	Handle[] emptyHandleArray = new Handle[0];
 	
@@ -154,7 +155,7 @@ public class TriTerrainRegionAWTRenderer implements AWTPainter
 	
 	long origTimestamp = 0;
 	
-	public void paint( Graphics2D g2d, long timestamp ) {
+	public void paint( long timestamp, Graphics2D g2d ) {
 		if( region == null ) return;
 		
 		if( origTimestamp == 0 ) origTimestamp = timestamp;
