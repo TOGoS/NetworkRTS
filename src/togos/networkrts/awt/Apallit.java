@@ -3,6 +3,7 @@ package togos.networkrts.awt;
 import java.applet.Applet;
 import java.awt.Component;
 import java.awt.Frame;
+import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -24,9 +25,23 @@ public class Apallit extends Applet
 		this("Some Apallit");
 	}
 	
+	/**
+	 * Creates this apallit with a single space-filling component. 
+	 */
 	public Apallit( String title, Component c ) {
 		this( title );
+		fillWith( c );
+	}
+	
+	/**
+	 * Adds the given child component in such a way that it will
+	 * fill the entire applet no matter how it is resized.
+	 */
+	public void fillWith( Component c ) {
+		removeAll();
 		add( c );
+		// The default layout manager for applets seems to be something else.
+		setLayout(new GridLayout());
 	}
 	
 	public void addService( Service s ) {
