@@ -16,8 +16,16 @@ public class Apallit extends Applet
 	String title;
 	ServiceManager sman = new ServiceManager();
 	
-	public Apallit( String title, Component c ) {
+	public Apallit( String title ) {
 		this.title = title;
+	}
+	
+	public Apallit() {
+		this("Some Apallit");
+	}
+	
+	public Apallit( String title, Component c ) {
+		this( title );
 		add( c );
 	}
 	
