@@ -10,5 +10,11 @@ import java.awt.Graphics2D;
  */
 public interface TimestampedPaintable
 {
-	public void paint( long timestamp, Graphics2D g2d );
+	/**
+	 * @param timestamp draw the component as it appears at this time
+	 * @param width total width of component
+	 * @param height total height of component 
+	 * @param g2d
+	 */
+	public void paint( long timestamp, int width, int height, Graphics2D g2d );
 }

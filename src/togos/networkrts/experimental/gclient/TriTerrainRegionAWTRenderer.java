@@ -155,7 +155,7 @@ public class TriTerrainRegionAWTRenderer implements TimestampedPaintable
 	
 	long origTimestamp = 0;
 	
-	public void paint( long timestamp, Graphics2D g2d ) {
+	public void paint( long timestamp, int width, int height, Graphics2D g2d ) {
 		if( region == null ) return;
 		
 		if( origTimestamp == 0 ) origTimestamp = timestamp;

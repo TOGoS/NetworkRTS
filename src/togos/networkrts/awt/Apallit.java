@@ -2,11 +2,14 @@ package togos.networkrts.awt;
 
 import java.applet.Applet;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Frame;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
+import togos.service.InterruptableSingleThreadedService;
 import togos.service.Service;
 import togos.service.ServiceManager;
 
@@ -18,7 +21,7 @@ public class Apallit extends Applet
 	ServiceManager sman = new ServiceManager();
 	
 	public Apallit( String title ) {
-		this.title = title;
+		setTitle( title );
 	}
 	
 	public Apallit() {
@@ -33,6 +36,10 @@ public class Apallit extends Applet
 		fillWith( c );
 	}
 	
+	public void setTitle( String title ) {
+		this.title = title;
+	}
+	
 	/**
 	 * Adds the given child component in such a way that it will
 	 * fill the entire applet no matter how it is resized.
@@ -44,6 +51,35 @@ public class Apallit extends Applet
 		setLayout(new GridLayout());
 	}
 	
+	public void fillWith( final TimestampedPaintable paintable,
+			int preferredWidth, int preferredHeight, final long repaintInterval
+	) {
+		final DoubleBufferedCanvas dbc = new DoubleBufferedCanvas() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			protected void _paint(Graphics2D g) {
+				paintable.paint(System.currentTimeMillis(), getWidth(), getHeight(), g);
+			}
+		};
+		
+		dbc.setPreferredSize( new Dimension(preferredWidth,preferredHeight) );
+		
+		if( repaintInterval != -1 ) {
+			addService( new InterruptableSingleThreadedService() {
+				@Override
+				protected void _run() throws InterruptedException {
+					while( !Thread.interrupted() ) {
+						Thread.sleep( repaintInterval );
+						dbc.repaint();
+					}
+				}
+			});
+		}
+		
+		fillWith(dbc);
+	}
+		
 	public void addService( Service s ) {
 		sman.add( s );
 	}

@@ -75,7 +75,7 @@ public class VectorCanvas extends Canvas
 		g2d.scale( zoom, zoom );
 		g2d.rotate( rotation );
 		
-		paintable.paint( System.currentTimeMillis(), g2d );
+		paintable.paint( System.currentTimeMillis(), getWidth(), getHeight(), g2d );
 	}
 	
 	public void paint( Graphics g ) {
