@@ -50,9 +50,9 @@ Worlds
 Simulator
  - May night to be tightly coupled with worlds?  Not sure.
  - Schedules events or somethings
- 
-Agents
- - Mind of an object
+
+Agent
+ - 'Mind' of an object, a.k.a. 'behavior' object
  - Only interaction with simulator is through an 'shell' interface which allows an agent to:
    - [attempt to] control its own 'body'
    - send network messages
@@ -69,6 +69,12 @@ Agents
    - Could be a player or another program
    - May do computations in parallel with the simulation or interact with external objects
    - Shell provided must be able to accept action requests at any time, from any thread
+
+Entity
+ - An object in the world with an 'identity'
+ - Simulator must keep identity <-> object link up-to-date as object state changes 
+ - Only really needed for 'magical' objects that can be manipulated from
+   outside the simulation, e.g. by the user or back-doors.
 
 Reusability
  - Should define standard interfaces for agent event handling and actions
@@ -102,3 +108,10 @@ Simulated events vs state
  - More realistically a hybrid approach would be used, where the user interface
    models some world state internally and does its own sound/video calculations
    using e.g. OpenGL, OpenAL
+
+Entity tracking
+ - In a simulation with immutable entities, if outside processes do not need direct
+   access to entity internals, entities do not need identifiers.
+ - You can still simulate without global ticks by keeping 'next event timestamp'
+   on nodes of the tree containing entities.
+ - But this means entities must be *entirely* self contained, with no magic back doors!
