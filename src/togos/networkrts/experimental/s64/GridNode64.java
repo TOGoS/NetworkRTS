@@ -23,7 +23,7 @@ class GridNode64
 		return false;
 	}
 
-	public GridNode64 withBlock(double nodeSize, double nodeX, double nodeY, Shape s, double minDetailSize, Block b) {
+	public GridNode64 fillArea(double nodeSize, double nodeX, double nodeY, Shape s, double minDetailSize, GridNode64 n) {
 		int inclusiveness = s.includes(nodeX, nodeY, nodeSize, nodeSize);
 		
 		if( nodeSize <= minDetailSize ) {
@@ -32,7 +32,7 @@ class GridNode64
 		
 		switch( inclusiveness ) {
 		case( Shape.INCLUDES_NONE ): return this;
-		case( Shape.INCLUDES_ALL ): return b.getRecursiveNode();
+		case( Shape.INCLUDES_ALL ): return n;
 		}
 		
 		Block[][] newStacks = new Block[64][];
@@ -44,15 +44,15 @@ class GridNode64
 				double snY = nodeY + subNodeSize*sy;
 				switch( s.includes(snX, snY, subNodeSize, subNodeSize) ) {
 				case( Shape.INCLUDES_NONE ):
-					newStacks[i] = blockStacks[i];
 					newSubNodes[i] = subNodes[i];
+					newStacks[i] = blockStacks[i];
 					continue;
 				case( Shape.INCLUDES_ALL ):
-					newStacks[i] = b.getStack();
-					newSubNodes[i] = b.getRecursiveNode();
+					newSubNodes[i] = n;
+					newStacks[i] = n.blockStacks[36];
 					continue;
 				case( Shape.INCLUDES_SOME ):
-					newSubNodes[i] = subNodes[i].withBlock(subNodeSize, snX, snY, s, minDetailSize, b);
+					newSubNodes[i] = subNodes[i].fillArea(subNodeSize, snX, snY, s, minDetailSize, n);
 					newStacks[i] = newSubNodes[i].blockStacks[36];
 					continue;
 				}

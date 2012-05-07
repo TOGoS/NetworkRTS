@@ -15,7 +15,7 @@ class GridWorld64
 		this.topNodeSize = topNodeSize;
 	}
 	
-	public GridWorld64 withBlock( Shape s, double minDetailSize, Block b ) {
-		return new GridWorld64( topNode.withBlock(topNodeSize, 0, 0, s, minDetailSize, b ), width, height, topNodeSize );
+	public GridWorld64 fillArea( Shape s, double minDetailSize, GridNode64 n ) {
+		return new GridWorld64( topNode.fillArea(topNodeSize, 0, 0, s, minDetailSize, n ), width, height, topNodeSize );
 	}
 }

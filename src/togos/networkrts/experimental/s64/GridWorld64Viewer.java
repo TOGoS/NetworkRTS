@@ -28,7 +28,6 @@ public class GridWorld64Viewer extends Apallit
 		//Circle c = new Circle( 0.5, 0.5, 0.25 );
 		//setWorld( world.withBlock(c, 1 / 1024.0, WATER ));
 		
-		
 		Random r = new Random();
 		Shape[] shapes = new Shape[20];
 		for( int j=0; j<20; ++j ) {
@@ -37,7 +36,7 @@ public class GridWorld64Viewer extends Apallit
 				shapes[i] = c;
 				//setWorld( world.withBlock(c, 0.001, r.nextBoolean() ? WATER : GRASS));
 			}
-			setWorld( world.withBlock( new UnionShape(shapes), 0.001, r.nextBoolean() ? WATER : GRASS ) );
+			setWorld( world.fillArea( new UnionShape(shapes), 0.001, r.nextBoolean() ? WATER.getRecursiveNode() : GRASS.getRecursiveNode() ) );
 		}
 	}
 	
