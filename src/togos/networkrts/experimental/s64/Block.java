@@ -1,12 +1,13 @@
 package togos.networkrts.experimental.s64;
 
-import java.awt.Color;
-
 import togos.blob.ByteChunk;
 import togos.networkrts.experimental.simpleclient.BackgroundType;
+import togos.networkrts.tfunc.ColorFunction;
 
 public class Block implements BackgroundType
 {
+	public static final Block[] EMPTY_STACK = new Block[0];
+	
 	private static final long serialVersionUID = 1L;
 	
 	public static final int FLAG_WALKABLE   = 0x01;
@@ -16,22 +17,22 @@ public class Block implements BackgroundType
 	
 	public final ByteChunk entityId;
 	public final int flags;
-	public final Color color;
+	public final ColorFunction color;
 	
-	public Block( ByteChunk entityId, int flags, Color color ) {
+	public Block( ByteChunk entityId, int flags, ColorFunction color ) {
 		this.entityId = entityId;
 		this.flags = flags;
 		this.color = color;
 	}
 	
-	public Color getColor() {  return color;  }
+	public ColorFunction getColorFunction() {  return color;  }
 	
 	// Could move these things outside block and look them up by hash:
 	
 	protected GridNode64 recursiveNode;
 	public synchronized GridNode64 getRecursiveNode() {
 		if( recursiveNode == null ) {
-			recursiveNode = GridNode64.createRecursiveNode( getStack() );
+			recursiveNode = new HomogeneousGridNode64( getStack() );
 		}
 		return recursiveNode;
 	}

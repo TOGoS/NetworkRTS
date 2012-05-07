@@ -34,26 +34,26 @@ public class Circle implements Shape
 		if( y+h <= cy - rad ) return Shape.INCLUDES_NONE;
 		if( y   >= cy + rad ) return Shape.INCLUDES_NONE;
 		
-		boolean includesNoCorners = true;
+		boolean includesSomeCorners = false;
 		boolean includesAllCorners = true;
 		
 		if( includesCorner(x  ,y  ) ) {
-			includesNoCorners  = false;
+			includesSomeCorners  = true;
 		} else {
 			includesAllCorners = false;
 		}
 		if( includesCorner(x+w,y  ) ) {
-			includesNoCorners  = false;
+			includesSomeCorners  = true;
 		} else {
 			includesAllCorners = false;
 		}
 		if( includesCorner(x  ,y+h) ) {
-			includesNoCorners  = false;
+			includesSomeCorners  = true;
 		} else {
 			includesAllCorners = false;
 		}
 		if( includesCorner(x+w,y+h) ) {
-			includesNoCorners  = false;
+			includesSomeCorners  = true;
 		} else {
 			includesAllCorners = false;
 		}
@@ -61,7 +61,7 @@ public class Circle implements Shape
 		// All corners in => entire area in
 		if( includesAllCorners ) return Shape.INCLUDES_ALL;
 		// Some corners in => some of area in
-		if( !includesNoCorners ) return Shape.INCLUDES_SOME;
+		if( includesSomeCorners ) return Shape.INCLUDES_SOME;
 		
 		// If the circle includes no corners but the corners are in different quadrants,
 		// then parts the area must overlap the circle.

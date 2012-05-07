@@ -51,7 +51,7 @@ public class VisionClient extends Applet
 			if( maxX > screenWidth + 32 ) maxX = screenWidth + 32;
 			if( maxY > screenHeight + 32 ) maxY = screenHeight + 32;
 			
-			g.setColor( area.type.getColor() );
+			g.setColor( area.type.getColorFunction().getAwtColor(System.currentTimeMillis()) );
 			g.fillRect( (int)minX, (int)minY, (int)(maxX-minX), (int)(maxY-minY) );
 		}
 	}
