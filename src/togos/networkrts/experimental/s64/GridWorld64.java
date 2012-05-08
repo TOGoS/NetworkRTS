@@ -1,5 +1,7 @@
 package togos.networkrts.experimental.s64;
 
+import togos.networkrts.experimental.s64.fill.GridNode64Filler;
+
 class GridWorld64
 {
 	public static final GridWorld64 EMPTY = new GridWorld64( new HomogeneousGridNode64(Block.EMPTY_STACK), 1, 1, 1 );
@@ -15,7 +17,7 @@ class GridWorld64
 		this.topNodeSize = topNodeSize;
 	}
 	
-	public GridWorld64 fillArea( Shape s, double minDetailSize, GridNode64 n ) {
+	public GridWorld64 fillArea( Shape s, double minDetailSize, GridNode64Filler n ) {
 		return new GridWorld64( topNode.fillArea(topNodeSize, 0, 0, s, minDetailSize, n ), width, height, topNodeSize );
 	}
 }

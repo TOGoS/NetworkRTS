@@ -52,7 +52,7 @@ public class Apallit extends Applet
 	}
 	
 	public void fillWith( final TimestampedPaintable paintable,
-			int preferredWidth, int preferredHeight, final long repaintInterval
+		int preferredWidth, int preferredHeight, final long repaintInterval
 	) {
 		final DoubleBufferedCanvas dbc = new DoubleBufferedCanvas() {
 			private static final long serialVersionUID = 1L;
