@@ -1,10 +1,8 @@
 package togos.networkrts.experimental.entree;
 
-import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Rectangle;
+import java.awt.Graphics2D;
 import java.awt.ScrollPane;
 import java.util.Random;
 
@@ -14,7 +12,7 @@ public class EntityPlaneDemo extends Apallit
 {
 	private static final long serialVersionUID = 1;
 
-	static class SimpleEntity implements PlaneEntity {
+	static class SimpleEntity implements AWTDrawableEntity, PlaneEntity {
 		public final String id;
 		public final String planeId;
 		public final double x, y, radius;
@@ -37,42 +35,11 @@ public class EntityPlaneDemo extends Apallit
 		public double getX() {  return x;  }
 		public double getY() {  return y;  }
 		public Color getColor() {  return color;  }
-	}
-	
-	class EntityPlaneCanvas extends Canvas
-	{
-		private static final long serialVersionUID = 1L;
 		
-		public EntityPlane plane = new QuadTreeEntityPlane(65536, 65536, EntityQuadTreeNode.EMPTY, 65536);
-		
-		public void paintLayer( int layer, final Graphics g ) {
-			Rectangle gClip = g.getClipBounds();
-			ClipRectangle wClip = new ClipRectangle( gClip.getMinX(), gClip.getMinY(), gClip.getWidth(), gClip.getHeight() );
-			plane.eachEntity( wClip, layer << 1, (~layer << 1) & (0x7 << 1), new Iterated<SimpleEntity>() {
-				public void item( SimpleEntity e ) {
-					g.setColor( e.getColor() );
-					
-					g.fillOval(
-						(int)(e.getX() - e.getMaxRadius()),
-						(int)(e.getY() - e.getMaxRadius()),
-						(int)(e.getMaxRadius() * 2),
-						(int)(e.getMaxRadius() * 2)
-					);
-				}
-			} );		
+		public void draw(Graphics2D g2d, double x, double y, double scale) {
+			g2d.setColor( color );
+			g2d.fillOval( (int)(x - radius), (int)(y - radius), (int)(radius*2), (int)(radius*2) );
 		}
-		
-		@Override
-		public void paint( final Graphics g ) {
-			paintLayer( 0, g );
-			paintLayer( 1, g );
-			paintLayer( 2, g );
-			paintLayer( 3, g );
-			paintLayer( 4, g );
-			paintLayer( 5, g );
-			paintLayer( 6, g );
-			paintLayer( 7, g );
-		}		
 	}
 	
 	public EntityPlaneDemo() {
@@ -91,11 +58,12 @@ public class EntityPlaneDemo extends Apallit
 			Color.WHITE
 		};
 		
-		for( int i=0; i<65536*8; ++i ) {
+		EntityPlane<SimpleEntity> plane = new QuadTreeEntityPlane( 65536, 65536, EntityQuadTreeNode.EMPTY, 65536 );
+		for( int i=0; i<65536; ++i ) {
 			Random r = new Random();
 			int layer = r.nextInt(8);
 			
-			c.plane = c.plane.update( new EntityPlaneUpdate(
+			plane = plane.update( new EntityPlaneUpdate(
 				EntityPlaneUpdate.EMPTY_ENTITY_LIST,
 				new SimpleEntity[] {
 					new SimpleEntity(
@@ -108,6 +76,8 @@ public class EntityPlaneDemo extends Apallit
 				}
 			) );
 		}
+		
+		c.setState( plane, 16384d, 16384d, 2.0 );
 		c.setBackground(Color.BLACK);
 		c.setSize(32768, 32768);
 		
