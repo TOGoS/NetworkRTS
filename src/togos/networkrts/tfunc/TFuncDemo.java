@@ -112,17 +112,20 @@ public class TFuncDemo extends Apallit
 	public void init() {
 		setTitle("SGame");
 		ArrayList<FloatyThing> things = new ArrayList<FloatyThing>();
-		things.add( new FloatyThing( new ARGBolorFunction() {
-			public int getColor(long ts) {
-				return color( 1.0, loop(ts,2000), loop(ts+500,2000), loop(ts+1000,2000) );
-			}
-		}, new PositionFunction() {
-			public void getPosition(long timestamp, double[] dest) {
-				dest[0] = 96 * loop( timestamp, 700 );
-				dest[1] = 96 * loop( timestamp, 1100 );
-				dest[2] = 96 * loop( timestamp, 1300 );
-			}
-		}, 20) );
+		for( int i=0; i<20; ++i ) {
+			final int _i = i;
+			things.add( new FloatyThing( new ARGBolorFunction() {
+				public int getColor(long ts) {
+					return color( 0.5, loop(ts,2000), loop(ts+500,1500), loop(ts+1000+100*_i,2500) );
+				}
+			}, new PositionFunction() {
+				public void getPosition(long timestamp, double[] dest) {
+					dest[0] = 128 * loop( timestamp/5 + 20 * _i, 700 );
+					dest[1] = 192 * loop( timestamp/5 + 20 * _i, 1100 );
+					dest[2] = 96 * loop( timestamp/5 + 20 * _i, 1300 );
+				}
+			}, 20) );
+		}
 		fillWith( new FloatyThingPaintable( things ), 640, 480, 10 );
 		
 		super.init();
