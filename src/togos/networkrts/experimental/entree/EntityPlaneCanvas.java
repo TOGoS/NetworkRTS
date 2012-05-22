@@ -1,11 +1,12 @@
 package togos.networkrts.experimental.entree;
 
-import java.awt.Canvas;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 
-class EntityPlaneCanvas extends Canvas
+import togos.networkrts.awt.DoubleBufferedCanvas;
+
+class EntityPlaneCanvas extends DoubleBufferedCanvas
 {
 	private static final long serialVersionUID = 1L;
 	
@@ -19,7 +20,7 @@ class EntityPlaneCanvas extends Canvas
 		this.scale = scale;
 	}
 	
-	public void paintLayer( int layer, final Graphics g ) {
+	public void paintLayer( int layer, final long timestamp, final Graphics g ) {
 		final int w = getWidth();
 		final int h = getHeight();
 		Rectangle gClip = g.getClipBounds();
@@ -36,21 +37,22 @@ class EntityPlaneCanvas extends Canvas
 				e.draw( (Graphics2D)g,
 					(e.getX() - centerX)*scale + w/2,
 					(e.getY() - centerY)*scale + h/2,
-					scale
+					scale, timestamp
 				);
 			}
 		} );
 	}
 	
 	@Override
-	public void paint( final Graphics g ) {
-		paintLayer( 0, g );
-		paintLayer( 1, g );
-		paintLayer( 2, g );
-		paintLayer( 3, g );
-		paintLayer( 4, g );
-		paintLayer( 5, g );
-		paintLayer( 6, g );
-		paintLayer( 7, g );
+	public void _paint( final Graphics g ) {
+		long timestamp = System.currentTimeMillis();
+		paintLayer( 0, timestamp, g );
+		paintLayer( 1, timestamp, g );
+		paintLayer( 2, timestamp, g );
+		paintLayer( 3, timestamp, g );
+		paintLayer( 4, timestamp, g );
+		paintLayer( 5, timestamp, g );
+		paintLayer( 6, timestamp, g );
+		paintLayer( 7, timestamp, g );
 	}		
 }

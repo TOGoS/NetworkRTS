@@ -4,6 +4,7 @@ import java.applet.Applet;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Frame;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
@@ -58,8 +59,8 @@ public class Apallit extends Applet
 			private static final long serialVersionUID = 1L;
 
 			@Override
-			protected void _paint(Graphics2D g) {
-				paintable.paint(System.currentTimeMillis(), getWidth(), getHeight(), g);
+			protected void _paint(Graphics g) {
+				paintable.paint(System.currentTimeMillis(), getWidth(), getHeight(), (Graphics2D)g);
 			}
 		};
 		

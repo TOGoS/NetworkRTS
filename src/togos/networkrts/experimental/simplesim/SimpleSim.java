@@ -2,7 +2,7 @@ package togos.networkrts.experimental.simplesim;
 
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Graphics2D;
+import java.awt.Graphics;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -342,7 +342,7 @@ public class SimpleSim
 			repaint();
 		}
 		
-		public void _paint( Graphics2D g ) {
+		public void _paint( Graphics g ) {
 			paintBackground( g );
 			
 			final TileGrid s = state.tileGrid;
