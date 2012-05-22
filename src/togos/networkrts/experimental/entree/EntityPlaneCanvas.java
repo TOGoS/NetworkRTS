@@ -20,6 +20,8 @@ class EntityPlaneCanvas extends DoubleBufferedCanvas
 		this.scale = scale;
 	}
 	
+	// Note: this relies on the layer treatment used by EntityPlaneDemo
+	
 	public void paintEntityLayer( final int layer, final long timestamp, final Graphics g ) {
 		final int w = getWidth();
 		final int h = getHeight();
@@ -31,13 +33,17 @@ class EntityPlaneCanvas extends DoubleBufferedCanvas
 			gClip.getHeight() / scale
 		);
 		plane.eachEntity( wClip, layer << 1, (~layer << 1) & (0x7 << 1), new Iterated() {
+			/** Position buffer */
+			double[] pbuf = new double[3];
+			
 			@Override
 			public void item( Object o ) {
 				AWTDrawableEntity e = (AWTDrawableEntity)o;
+				e.getPosition( timestamp, pbuf );
 				e.draw( (Graphics2D)g,
-					(e.getX() - centerX)*scale + w/2,
-					(e.getY() - centerY)*scale + h/2,
-					scale, timestamp, layer
+					(pbuf[0] - centerX)*scale + w/2,
+					(pbuf[1] - centerY)*scale + h/2,
+					scale, e.getRotation(timestamp), timestamp, layer
 				);
 			}
 		} );

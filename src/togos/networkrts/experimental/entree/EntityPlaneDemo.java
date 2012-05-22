@@ -10,6 +10,8 @@ import java.util.Random;
 import togos.networkrts.awt.Apallit;
 import togos.networkrts.tfunc.ColorFunction;
 import togos.networkrts.tfunc.ConstantColorFunction;
+import togos.networkrts.tfunc.ConstantPositionFunction;
+import togos.networkrts.tfunc.ConstantScalarFunction;
 import togos.networkrts.tfunc.PulsatingColorFunction;
 import togos.service.InterruptableSingleThreadedService;
 
@@ -17,30 +19,20 @@ public class EntityPlaneDemo extends Apallit
 {
 	private static final long serialVersionUID = 1;
 
-	static class SimpleEntity implements AWTDrawableEntity, PlaneEntity {
-		public final String id;
-		public final String planeId;
-		public final double x, y, radius;
-		public final int flags;
+	static class SimpleEntity extends AbstractPlaneEntity implements AWTDrawableEntity {
+		public final double radius;
 		public final ColorFunction color;
 		
 		public SimpleEntity( String id, String planeId, double x, double y, double radius, int flags, ColorFunction color ) {
-			this.id = id;
-			this.planeId = planeId;
-			this.x = x; this.y = y;
+			super( id, planeId, 0, new ConstantPositionFunction(x, y, 0), ConstantScalarFunction.ZERO, flags|PlaneEntity.FLAG_EXISTS );
 			this.radius = radius;
-			this.flags = flags | PlaneEntity.FLAG_EXISTS;
 			this.color = color;
 		}
 		
 		public int getFlags() {  return flags;  }
-		public Object getEntityId() {  return id;  }
 		public double getMaxRadius() {  return radius;  }
-		public Object getPlaneId() {  return planeId;  }
-		public double getX() {  return x;  }
-		public double getY() {  return y;  }
 		
-		public void draw(Graphics2D g2d, double x, double y, double scale, long timestamp, int layer) {
+		public void draw(Graphics2D g2d, double x, double y, double scale, double rotation, long timestamp, int layer) {
 			g2d.setColor( color.getAwtColor(timestamp) );
 			g2d.fillOval( (int)(x - radius), (int)(y - radius), (int)(radius*2), (int)(radius*2) );
 		}
@@ -104,7 +96,7 @@ public class EntityPlaneDemo extends Apallit
 					Point p = sp.getScrollPosition();
 					Dimension vps = sp.getViewportSize();
 					canvas.repaint( p.x, p.y, vps.width, vps.height );
-					Thread.sleep(100);
+					Thread.sleep(30);
 				}
 			}
 		} );
