@@ -21,7 +21,8 @@ public abstract class DoubleBufferedCanvas extends Canvas
 	
 	protected void paintBackground( Graphics g ) {
 		g.setColor( getBackground() );
-		g.fillRect( 0, 0, getWidth(), getHeight() );
+		Rectangle clip = g.getClipBounds();
+		g.fillRect( clip.x, clip.y, clip.width, clip.height );
 	}
 	
 	protected abstract void _paint( Graphics g );

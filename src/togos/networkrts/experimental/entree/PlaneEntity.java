@@ -10,7 +10,7 @@ public interface PlaneEntity
 	 * manipulate individual entities directly.  Entities for which this
 	 * capability is not needed may return themselves as their ID.
 	 */
-	public Object getId();
+	public Object getEntityId();
 	
 	// These 3 properties define the entity's position in the universe:
 	

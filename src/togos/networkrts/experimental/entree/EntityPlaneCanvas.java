@@ -20,7 +20,7 @@ class EntityPlaneCanvas extends DoubleBufferedCanvas
 		this.scale = scale;
 	}
 	
-	public void paintLayer( int layer, final long timestamp, final Graphics g ) {
+	public void paintEntityLayer( final int layer, final long timestamp, final Graphics g ) {
 		final int w = getWidth();
 		final int h = getHeight();
 		Rectangle gClip = g.getClipBounds();
@@ -37,7 +37,7 @@ class EntityPlaneCanvas extends DoubleBufferedCanvas
 				e.draw( (Graphics2D)g,
 					(e.getX() - centerX)*scale + w/2,
 					(e.getY() - centerY)*scale + h/2,
-					scale, timestamp
+					scale, timestamp, layer
 				);
 			}
 		} );
@@ -46,13 +46,14 @@ class EntityPlaneCanvas extends DoubleBufferedCanvas
 	@Override
 	public void _paint( final Graphics g ) {
 		long timestamp = System.currentTimeMillis();
-		paintLayer( 0, timestamp, g );
-		paintLayer( 1, timestamp, g );
-		paintLayer( 2, timestamp, g );
-		paintLayer( 3, timestamp, g );
-		paintLayer( 4, timestamp, g );
-		paintLayer( 5, timestamp, g );
-		paintLayer( 6, timestamp, g );
-		paintLayer( 7, timestamp, g );
+		paintBackground(g);
+		paintEntityLayer( 0, timestamp, g );
+		paintEntityLayer( 1, timestamp, g );
+		paintEntityLayer( 2, timestamp, g );
+		paintEntityLayer( 3, timestamp, g );
+		paintEntityLayer( 4, timestamp, g );
+		paintEntityLayer( 5, timestamp, g );
+		paintEntityLayer( 6, timestamp, g );
+		paintEntityLayer( 7, timestamp, g );
 	}		
 }

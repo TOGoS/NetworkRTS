@@ -68,9 +68,9 @@ public class EntityQuadTreeNode
 		
 		for( int r=0; r<u.removeCount; ++r ) {
 			if( fits(u.remove[r], myX, myY, mySize) ) {
-				final Object removeEntityId = u.remove[r].getId(); 
+				final Object removeEntityId = u.remove[r].getEntityId(); 
 				for( int e=0; e<entities.length; ++e ) {
-					if( removeEntityId.equals(entities[e].getId()) ) ++removedEntityCount;
+					if( removeEntityId.equals(entities[e].getEntityId()) ) ++removedEntityCount;
 				}
 				anyModifications = true;
 			}
@@ -106,8 +106,8 @@ public class EntityQuadTreeNode
 			for( int e=0; e<entities.length; ++e ) {
 				boolean removed = false;
 				for( int r=0; r<u.removeCount; ++r ) {
-					final Object removeEntityId = u.remove[r].getId(); 
-					if( removeEntityId.equals(entities[e].getId()) ) removed = true;
+					final Object removeEntityId = u.remove[r].getEntityId(); 
+					if( removeEntityId.equals(entities[e].getEntityId()) ) removed = true;
 				}
 				if( !removed ) {
 					newEntities[newEntityCount++] = entities[e];
@@ -130,5 +130,30 @@ public class EntityQuadTreeNode
 			n2.update(u, myX           , myY+halfMySize, halfMySize),
 			n3.update(u, myX+halfMySize, myY+halfMySize, halfMySize)
 		);
+	}
+	
+	public void eachEntity( ClipShape s, int requireFlags, int forbidFlags, double nodeX, double nodeY, double nodeSize, Iterated cb) {
+		if( (entityFlags & requireFlags) != requireFlags ) return;
+		// Can't filter out entire nodes by forbidden entity flags, since they are ORd together!
+		
+		double halfNodeSize = nodeSize / 2; // NODE PADDING
+		double twiceNodeSize = nodeSize * 2;
+		if( !s.intersectsRect(nodeX - halfNodeSize, nodeY - halfNodeSize, twiceNodeSize, twiceNodeSize ) ) {
+			// NODE PADDING ^
+			return;
+		}
+		
+		for( int i=entities.length-1; i>=0; --i ) {
+			PlaneEntity e = (PlaneEntity)entities[i];
+			final int flags = e.getFlags();
+			if( (flags & requireFlags) == requireFlags && (flags & forbidFlags) == 0 ) {
+				cb.item( e );
+			}
+		}
+		
+		n0.eachEntity( s, requireFlags, forbidFlags, nodeX             , nodeY             , halfNodeSize, cb );
+		n1.eachEntity( s, requireFlags, forbidFlags, nodeX+halfNodeSize, nodeY             , halfNodeSize, cb );
+		n2.eachEntity( s, requireFlags, forbidFlags, nodeX             , nodeY+halfNodeSize, halfNodeSize, cb );
+		n3.eachEntity( s, requireFlags, forbidFlags, nodeX+halfNodeSize, nodeY+halfNodeSize, halfNodeSize, cb );
 	}
 }

@@ -34,13 +34,13 @@ public class EntityPlaneDemo extends Apallit
 		}
 		
 		public int getFlags() {  return flags;  }
-		public Object getId() {  return id;  }
+		public Object getEntityId() {  return id;  }
 		public double getMaxRadius() {  return radius;  }
 		public Object getPlaneId() {  return planeId;  }
 		public double getX() {  return x;  }
 		public double getY() {  return y;  }
 		
-		public void draw(Graphics2D g2d, double x, double y, double scale, long timestamp) {
+		public void draw(Graphics2D g2d, double x, double y, double scale, long timestamp, int layer) {
 			g2d.setColor( color.getAwtColor(timestamp) );
 			g2d.fillOval( (int)(x - radius), (int)(y - radius), (int)(radius*2), (int)(radius*2) );
 		}
