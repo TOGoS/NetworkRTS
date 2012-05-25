@@ -1,8 +1,8 @@
 package togos.networkrts.util;
 
-public class TMath
+public final class TMath
 {
-	public static short[] PERIODIC_TABL = new short[256];
+	private static final short[] PERIODIC_TABL = new short[256];
 	static {
 		for( int i=0; i<256; ++i ) {
 			PERIODIC_TABL[i] = (short)(32767 * Math.sin( (double)i * Math.PI * 2 / 256 ));
