@@ -29,6 +29,6 @@ public final class TMath
 	 * where precision doesn't matter and is ~2 orders of magnitude faster.
 	 */
 	public static final float periodic24( int input ) {
-		return periodic24_32( input ) / (65536*32767);
+		return (float)periodic24_32( input ) / (65536*32767);
 	}
 }
