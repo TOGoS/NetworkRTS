@@ -72,7 +72,7 @@ public class EntityQuadTreeNode
 				for( int e=0; e<entities.length; ++e ) {
 					if( removeEntityId.equals(entities[e].getEntityId()) ) ++removedEntityCount;
 				}
-				anyModifications = true;
+				anyModifications = removedEntityCount > 0;
 			}
 		}
 		

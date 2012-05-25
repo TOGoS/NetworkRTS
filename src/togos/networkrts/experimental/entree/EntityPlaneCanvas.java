@@ -41,9 +41,9 @@ class EntityPlaneCanvas extends DoubleBufferedCanvas
 				AWTDrawableEntity e = (AWTDrawableEntity)o;
 				e.getPosition( timestamp, pbuf );
 				e.draw( (Graphics2D)g,
-					(pbuf[0] - centerX)*scale + w/2,
-					(pbuf[1] - centerY)*scale + h/2,
-					scale, e.getRotation(timestamp), timestamp, layer
+					(float)((pbuf[0] - centerX)*scale + w/2),
+					(float)((pbuf[1] - centerY)*scale + h/2),
+					(float)scale, (float)e.getRotation(timestamp), timestamp, layer
 				);
 			}
 		} );

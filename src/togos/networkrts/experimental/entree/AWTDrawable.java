@@ -14,5 +14,5 @@ public interface AWTDrawable
 	 * If this object has a position and rotation (implements WorldPositioned),
 	 * that position and rotation will already be taken into account by the caller.
 	 */
-	public void draw( Graphics2D g2d, double x, double y, double scale, double rotation, long timestamp, int renderLayer );
+	public void draw( Graphics2D g2d, float x, float y, float scale, float rotation, long timestamp, int renderLayer );
 }

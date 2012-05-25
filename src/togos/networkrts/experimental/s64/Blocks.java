@@ -10,9 +10,9 @@ import togos.networkrts.tfunc.PulsatingColorFunction;
 
 public class Blocks
 {
-	static Block GRASS = new Block(null, Block.FLAG_WALKABLE, new ConstantColorFunction(new Color( 0f, 0.5f, 0.1f )));
-	static Block WATER = new Block(null, Block.FLAG_BOATABLE, new ConstantColorFunction(Color.BLUE));
-	static GridNode64[] WATERS = new GridNode64[4];
+	public static Block GRASS = new Block(null, Block.FLAG_WALKABLE, new ConstantColorFunction(new Color( 0.02f, 0.6f, 0.05f )));
+	public static Block WATER = new Block(null, Block.FLAG_BOATABLE, new ConstantColorFunction(Color.BLUE));
+	public static GridNode64[] WATERS = new GridNode64[4];
 	static {
 		for( int i=0; i<4; ++i ) {
 			ColorFunction cf = new PulsatingColorFunction(

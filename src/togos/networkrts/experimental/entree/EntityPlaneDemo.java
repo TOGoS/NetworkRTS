@@ -32,7 +32,7 @@ public class EntityPlaneDemo extends Apallit
 		public int getFlags() {  return flags;  }
 		public double getMaxRadius() {  return radius;  }
 		
-		public void draw(Graphics2D g2d, double x, double y, double scale, double rotation, long timestamp, int layer) {
+		public void draw(Graphics2D g2d, float x, float y, float scale, float rotation, long timestamp, int layer) {
 			g2d.setColor( color.getAwtColor(timestamp) );
 			g2d.fillOval( (int)(x - radius), (int)(y - radius), (int)(radius*2), (int)(radius*2) );
 		}

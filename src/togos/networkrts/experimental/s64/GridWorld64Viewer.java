@@ -2,6 +2,7 @@ package togos.networkrts.experimental.s64;
 
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Rectangle;
 import java.util.Random;
 
 import togos.networkrts.awt.Apallit;
@@ -34,8 +35,16 @@ public class GridWorld64Viewer extends Apallit implements TimestampedPaintable
 		fillWith( this, 768, 512, 50 );
 	}
 	
-	public void paintAt( GridNode64 n, Graphics g, int x, int y, int size, long timestamp ) {
-		int subSize = size >> 3;
+	public static void paintAt( GridNode64 n, Graphics g, double x, double y, double size, long timestamp ) {
+		if( size > 256 ) {
+			Rectangle r = g.getClipBounds();
+			if( x + size <= r.x ) return;
+			if( y + size <= r.y ) return;
+			if( x >= r.x + r.width ) return;
+			if( y >= r.y + r.height ) return;
+		}
+		
+		double subSize = size / 8;
 		if( (size >= 64 && !n.isHomogeneous()) || size > 1024 ) {
 			for( int sy=0, i=0; sy<8; ++sy ) {
 				for( int sx=0; sx<8; ++sx, ++i ) {
@@ -43,19 +52,20 @@ public class GridWorld64Viewer extends Apallit implements TimestampedPaintable
 				}
 			}
 		} else if( n.isHomogeneous() || size <= 4 ) {
+			int drawSize = (int)Math.ceil( size );
 			Block[] stack = n.blockStacks[0];
 			for( int j=0; j<stack.length; ++j ) {
 				g.setColor( stack[j].getColorFunction().getAwtColor(timestamp) );
-				g.fillRect( x, y, size, size );
+				g.fillRect( (int)x, (int)y, drawSize, drawSize );
 			}
 		} else {
-			int drawSize = (int)Math.ceil( size / 8.0 );
+			int drawSize = (int)Math.ceil( subSize );
 			for( int sy=0, i=0; sy<8; ++sy ) {
 				for( int sx=0; sx<8; ++sx, ++i ) {
 					Block[] stack = n.blockStacks[i];
 					for( int j=0; j<stack.length; ++j ) {
 						g.setColor( stack[j].getColorFunction().getAwtColor(timestamp) );
-						g.fillRect( x + ((sx * size) >> 3), y + ((sy * size) >> 3), drawSize, drawSize);
+						g.fillRect( (int)(x + sx * subSize), (int)(y + sy * subSize), drawSize, drawSize);
 					}
 				}
 			}

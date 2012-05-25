@@ -31,4 +31,8 @@ public final class TMath
 	public static final float periodic24( int input ) {
 		return (float)periodic24_32( input ) / (65536*32767);
 	}
+	
+	public static final float periodic( long input, long period ) {
+		return periodic24( (int)((input << 24) / period) );
+	}
 }

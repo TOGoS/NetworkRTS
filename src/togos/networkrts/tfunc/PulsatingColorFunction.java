@@ -36,7 +36,7 @@ public class PulsatingColorFunction implements ColorFunction {
 	
 	public Color getAwtColor(final long ts) {
 		if( ts != prevTs || prevColor == null ) {
-			double v = TMath.periodic24( (int)(((ts + offset) << 24) / interval) );
+			double v = TMath.periodic( ts + offset, interval );
 			prevColor = new Color(
 				clamp(baseR + varR * v),
 				clamp(baseG + varG * v),
