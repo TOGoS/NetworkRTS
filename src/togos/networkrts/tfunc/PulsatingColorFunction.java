@@ -2,6 +2,8 @@ package togos.networkrts.tfunc;
 
 import java.awt.Color;
 
+import togos.networkrts.util.TMath;
+
 
 public class PulsatingColorFunction implements ColorFunction {
 	long prevTs;
@@ -32,10 +34,9 @@ public class PulsatingColorFunction implements ColorFunction {
 		return (float)(x < 0 ? 0 : x > 1.0 ? 1.0 : x);
 	}
 	
-	public Color getAwtColor(long ts) {
+	public Color getAwtColor(final long ts) {
 		if( ts != prevTs || prevColor == null ) {
-			ts = (ts + offset) % interval;
-			double v = Math.sin( ts * 2 * Math.PI / 4000 );
+			double v = TMath.periodic24( (int)(((ts + offset) << 24) / interval) );
 			prevColor = new Color(
 				clamp(baseR + varR * v),
 				clamp(baseG + varG * v),
