@@ -1,0 +1,6 @@
+NetSim1
+
+Goals:
+- Completely event-driven;
+  There may be some minimum granularity for triggering events, but if there's no 'action'
+  taking place the simulator should be able to completely stop.
