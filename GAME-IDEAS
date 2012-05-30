@@ -1,0 +1,29 @@
+Cave explorers
+ - Can build cave exploration buildings on top of cave entrances
+ - Remote controlled cave explorer
+
+Resource usage
+ - 'Computers' use lots of energy, networking equipment takes a small amount
+ - Physical objects (workers, ammunition) is treated as pullable resources
+ - Must create ammo factories next to guns
+ - Resources can be made available with some pressure, and only move from higher
+   to lower pressure buildings.  For storage units, pressure = % full
+ - Buildings can also require 'labor' - workers give labor in exchange for
+   pay and/or satisfaction (depending on type of labor and what worker likes
+   to do)
+ - To reduce simulation overhead, pull resources in larger chunks less often
+
+Simulated workers
+ - wander around, help build and operate machines
+ - have different moods and personalities
+
+Networking
+ - Can send messages directly to another unit (referencing that unit's ID)
+   as long as they are within a certain range
+ - Broadcast messages (to all units with a certain range) could be an
+   alternative method
+
+Grid-based?
+ - Buildings 'take up' a single quadtree node
+ - Quadtrees for area variables - air freshness, etc
+ - Workers are at a specific tile and occasionally move
