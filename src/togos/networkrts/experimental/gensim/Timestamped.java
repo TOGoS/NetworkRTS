@@ -1,4 +1,4 @@
-package togos.networkrts.experimental.netsim1;
+package togos.networkrts.experimental.gensim;
 
 public interface Timestamped
 {
