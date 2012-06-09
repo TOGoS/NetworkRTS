@@ -119,6 +119,12 @@ public class RouterWorld implements EventHandler
 	
 	public static final byte[] BROADCAST_MAC_ADDRESS = new byte[]{-1,-1,-1,-1,-1,-1};
 	
+	protected void sendWireless( long ts, Router source, byte[] destMac, Object payload ) throws Exception {
+		eventScheduler.give( new WirelessTransmissionEvent(source.x, source.y, ts, c, normalTransmissionIntensity,
+			new RouterWorld.Frame( source.macAddress, destMac, payload )
+		));
+	}
+	
 	@Override public void eventOccured( Timestamped evt ) throws Exception {
 		if( evt instanceof WirelessTransmissionEvent ) {
 			WirelessTransmissionEvent wtEvt = (WirelessTransmissionEvent)evt;
@@ -147,6 +153,8 @@ public class RouterWorld implements EventHandler
 			if( payload instanceof AddressAnnouncementPacket ) {
 				AddressAnnouncementPacket aap = (AddressAnnouncementPacket)payload;
 				if( dest.prefixLength > aap.prefixLength+8 ) {
+					// TODO: Then request an address!!
+					
 					byte[] newAddy = new byte[16];
 					int i;
 					for( i=0; i<aap.prefixLength/8; ++i ) {
@@ -156,11 +164,7 @@ public class RouterWorld implements EventHandler
 					for( ; i<16; ++i ) newAddy[i] = 1;
 					dest.ip6Address = newAddy;
 					dest.prefixLength = aap.prefixLength+8;
-					eventScheduler.give( new WirelessTransmissionEvent(frEvt.destination.x, frEvt.destination.y, frEvt.timestamp, c, normalTransmissionIntensity,
-						new RouterWorld.Frame( dest.macAddress, new byte[]{-1,-1,-1,-1,-1,-1},
-							new RouterWorld.AddressAnnouncementPacket( dest.ip6Address, dest.prefixLength )
-						)
-					));
+					sendWireless( frEvt.getTimestamp(), frEvt.destination, BROADCAST_MAC_ADDRESS, new RouterWorld.AddressAnnouncementPacket( dest.ip6Address, dest.prefixLength ) );
 				}
 			}
 		}
