@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
+import togos.blob.util.BlobUtil;
 import togos.networkrts.experimental.gensim.Timestamped;
 
 public class RouterWorld implements EventHandler
@@ -13,7 +14,8 @@ public class RouterWorld implements EventHandler
 		public double x, y;
 		public final byte[] macAddress;
 		public final Set<Router> wireLinks = new HashSet<Router>();
-		public byte[] ip6Address;
+		public byte[] ip6Address = new byte[16];
+		public int prefixLength = 128;
 		
 		public Router( long id, byte[] macAddress ) {
 			this.id = id;
@@ -59,7 +61,8 @@ public class RouterWorld implements EventHandler
 	
 	static class AddressAnnouncementPacket {
 		public final byte[] address;
-		public final long prefixLength;
+		/** Length of parent network addresses */
+		public final int prefixLength;
 		
 		public AddressAnnouncementPacket( byte[] address, int prefixLength ) {
 			this.address = address;
@@ -114,6 +117,8 @@ public class RouterWorld implements EventHandler
 		}
 	}
 	
+	public static final byte[] BROADCAST_MAC_ADDRESS = new byte[]{-1,-1,-1,-1,-1,-1};
+	
 	@Override public void eventOccured( Timestamped evt ) throws Exception {
 		if( evt instanceof WirelessTransmissionEvent ) {
 			WirelessTransmissionEvent wtEvt = (WirelessTransmissionEvent)evt;
@@ -132,7 +137,32 @@ public class RouterWorld implements EventHandler
 			}
 		} else if( evt instanceof FrameReceptionEvent ) {
 			FrameReceptionEvent frEvt = (FrameReceptionEvent)evt;
-			eventScheduler.give( new WirelessTransmissionEvent(frEvt.destination.x, frEvt.destination.y, frEvt.timestamp, c, normalTransmissionIntensity, frEvt.data));
+			Router dest = frEvt.destination;
+			Object payload = frEvt.data.payload;
+			if( !BlobUtil.equals(BROADCAST_MAC_ADDRESS,frEvt.data.destMacAddress) && !BlobUtil.equals(frEvt.destination.macAddress, frEvt.data.destMacAddress) ) {
+				System.err.println("Drop");
+				return;
+			}
+			
+			if( payload instanceof AddressAnnouncementPacket ) {
+				AddressAnnouncementPacket aap = (AddressAnnouncementPacket)payload;
+				if( dest.prefixLength > aap.prefixLength+8 ) {
+					byte[] newAddy = new byte[16];
+					int i;
+					for( i=0; i<aap.prefixLength/8; ++i ) {
+						newAddy[i] = aap.address[i]; 
+					}
+					newAddy[i++] = (byte)(1+rand.nextInt(253));
+					for( ; i<16; ++i ) newAddy[i] = 1;
+					dest.ip6Address = newAddy;
+					dest.prefixLength = aap.prefixLength+8;
+					eventScheduler.give( new WirelessTransmissionEvent(frEvt.destination.x, frEvt.destination.y, frEvt.timestamp, c, normalTransmissionIntensity,
+						new RouterWorld.Frame( dest.macAddress, new byte[]{-1,-1,-1,-1,-1,-1},
+							new RouterWorld.AddressAnnouncementPacket( dest.ip6Address, dest.prefixLength )
+						)
+					));
+				}
+			}
 		}
 	}
 }

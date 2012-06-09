@@ -81,6 +81,7 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 		}
 		
 		Color macColor = new Color( 0, 0.8f, 0.8f, 0.5f );
+		Color ip6Color = new Color( 0.6f, 0.8f, 0.8f, 0.5f );
 		g2d.setColor( Color.GREEN );
 		for( RouterWorld.Router r : world.routers ) {
 			worldToScreenCoords( r.x, r.y, width, height, c0 );
@@ -91,6 +92,10 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 			g2d.fillRect( sx, sy, (int)scale, (int)scale );
 			g2d.setColor( macColor );
 			g2d.drawString( AddressUtil.formatMacAddress(r.macAddress), sx, sy );
+			if( r.ip6Address[0] != 0 ) {
+				g2d.setColor( ip6Color );
+				g2d.drawString( AddressUtil.formatIp6Address(r.ip6Address,0), sx, sy+12 );
+			}
 		}
 		
 		List<LiveEvent> events;

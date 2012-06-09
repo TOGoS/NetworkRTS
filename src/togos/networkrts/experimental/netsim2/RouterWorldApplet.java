@@ -20,7 +20,7 @@ public class RouterWorldApplet extends Apallit
 		simulator.teq = new TimedEventQueue<Timestamped>();
 		rw.eventScheduler = simulator.teq;
 		simulator.teq.advanceTimeTo( System.currentTimeMillis() );
-		rw.initRouters(100);
+		rw.initRouters(150);
 		rwp.cx = 512;
 		rwp.cy = 512;
 		fillWith( rwp, 768, 512, 100 );
@@ -58,7 +58,7 @@ public class RouterWorldApplet extends Apallit
 		simulator.teq.give(
 			new RouterWorld.WirelessTransmissionEvent(
 				512, 512, simulator.teq.getCurrentTimestamp(), rw.c, rw.normalTransmissionIntensity,
-				new RouterWorld.Frame( new byte[]{0,0,0,0,0,0}, new byte[]{-1,-1,-1,-1,-1,-1},
+				new RouterWorld.Frame( new byte[]{0,0,0,0,0,0}, RouterWorld.BROADCAST_MAC_ADDRESS,
 					new RouterWorld.AddressAnnouncementPacket( new byte[]{ 0x20, 0x20, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 24 )
 				)
 			)
