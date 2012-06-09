@@ -1,6 +1,20 @@
 package togos.networkrts.inet;
 
-class AddressUtil {
+public class AddressUtil
+{
+	public static String formatMacAddress( byte[] addy, int offset, int count ) {
+		String rez = "";
+		for( int i=0; i<count; ++i ) {
+			if( i > 0 ) rez += ":";
+			rez += Integer.toHexString(addy[offset+i]&0xFF);
+		}
+		return rez;
+	}
+	
+	public static String formatMacAddress( byte[] addy ) {
+		return formatMacAddress( addy, 0, addy.length );
+	}
+	
 	public static String formatIp6Address( byte[] addy, int offset ) {
 		int[] parts = new int[8];
 		for( int i=0; i<8; ++i ) {

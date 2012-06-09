@@ -1,35 +1,23 @@
 package togos.networkrts.experimental.gensim;
 
+import togos.networkrts.experimental.netsim2.EventHandler;
+
 public class Simulator
 {
-	protected TimedEventQueue<Timestamped> teq = new TimedEventQueue<Timestamped>();
-	protected WorldUpdater worldUpdater;
+	public TimedEventQueue<Timestamped> teq = new TimedEventQueue<Timestamped>();
+	public EventHandler eventHandler;
 	/** Simulation time at which the currently evaluating event supposedly occurs */
 	protected long procTime; 
 	
 	public long simulationTime() {
 		return procTime;
 	}
-	
-	// Arbitrary tick interval
-	long tickInterval = 10;
-	
-	/** Return the simulation time of the next 'tick' after the given delay */
-	public long tickAfterDelay( long delay ) {
-		long destTime = procTime + delay;
-		if( destTime % tickInterval > 0 ) {
-			// Round up to next tick
-			return destTime + tickInterval - (destTime % tickInterval);
-		} else {
-			return destTime;
-		}
-	}
-	
-	public void run() {
+		
+	public void run() throws Exception {
 		while( !Thread.interrupted() ) {
 			Timestamped evt;
 			try {
-				evt = teq.take( );
+				evt = teq.take();
 				if( evt.getTimestamp() > procTime ) {
 					procTime = evt.getTimestamp();
 				}
@@ -37,7 +25,7 @@ public class Simulator
 				Thread.currentThread().interrupt();
 				return;
 			}
-			worldUpdater = worldUpdater.handleEvent( evt );
+			eventHandler.eventOccured( evt );
 		}
 	}
 }

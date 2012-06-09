@@ -3,7 +3,9 @@ package togos.networkrts.experimental.gensim;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
-public class TimedEventQueue<E extends Timestamped> implements Timekeeper
+import togos.networkrts.experimental.netsim2.Sink;
+
+public class TimedEventQueue<E extends Timestamped> implements Timekeeper, Sink<E>
 {
 	protected long currentTimestamp;
 	
@@ -21,17 +23,18 @@ public class TimedEventQueue<E extends Timestamped> implements Timekeeper
 	public synchronized E take() throws InterruptedException {
 		while( true ) {
 			E next = q.peek();
-			if( next != null ) {
-				long waitAtMost = next.getTimestamp() - currentTimestamp;
-				if( waitAtMost <= 0 ) return q.remove();
-				this.wait();
-			}
+			if( next != null && next.getTimestamp() < currentTimestamp ) return q.remove();
+			this.wait();
 		}
 	}
 	
 	public synchronized void add( E elem ) {
 		q.add( elem );
 		notifyAll();
+	}
+	
+	@Override public void give( E p ) {
+		add(p);
 	}
 	
 	public synchronized void advanceTimeTo( long timestamp ) {

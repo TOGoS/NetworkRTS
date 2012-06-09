@@ -154,6 +154,20 @@ public class Simulator extends togos.networkrts.experimental.gensim.Simulator
 		}
 	}
 	
+	// Arbitrary tick interval
+	long tickInterval = 10;
+	
+	/** Return the simulation time of the next 'tick' after the given delay */
+	public long tickAfterDelay( long delay ) {
+		long destTime = procTime + delay;
+		if( destTime % tickInterval > 0 ) {
+			// Round up to next tick
+			return destTime + tickInterval - (destTime % tickInterval);
+		} else {
+			return destTime;
+		}
+	}
+	
 	protected void sendPacket( String fromHostId, String fromInterfaceId, final ByteChunk packet ) {
 		Host h = hosts.get(fromHostId);
 		if( h == null ) return;
@@ -180,7 +194,7 @@ public class Simulator extends togos.networkrts.experimental.gensim.Simulator
 		});
 	}
 	
-	public static void main( String[] args ) {
+	public static void main( String[] args ) throws Exception {
 		final Simulator s = new Simulator();
 		
 		final String hostId = s.newHostId();
