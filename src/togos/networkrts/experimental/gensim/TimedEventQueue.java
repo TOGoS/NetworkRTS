@@ -9,7 +9,7 @@ public class TimedEventQueue<E extends Timestamped> implements Timekeeper
 	
 	protected final PriorityQueue<E> q = new PriorityQueue<E>( 128, new Comparator<E>() {
 		public int compare(E o1, E o2) {
-			return o1.getTimestamp() < o2.getTimestamp() ? -1 : o2.getTimestamp() > o1.getTimestamp() ? 1 : 0;
+			return o1.getTimestamp() < o2.getTimestamp() ? -1 : o1.getTimestamp() > o2.getTimestamp() ? 1 : 0;
 		}
 	});
 	
