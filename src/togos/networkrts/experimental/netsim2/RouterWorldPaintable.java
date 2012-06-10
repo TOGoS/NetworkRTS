@@ -94,7 +94,7 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 			g2d.drawString( AddressUtil.formatMacAddress(r.macAddress), sx, sy );
 			if( r.ip6Address[0] != 0 ) {
 				g2d.setColor( ip6Color );
-				g2d.drawString( AddressUtil.formatIp6Address(r.ip6Address,0), sx, sy+12 );
+				g2d.drawString( AddressUtil.formatIp6Address(r.ip6Address,0)+"/"+r.prefixLength, sx, sy+12 );
 			}
 		}
 		
@@ -112,7 +112,16 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 				double intensity = wtEvt.getIntensity(timestamp);
 				if( intensity < 1 ) continue;
 				
-				g2d.setColor( new Color( 1, 1, 1, (float)clamp(0, 1, intensity / 10) ) );
+				Color base = Color.WHITE;
+				if( wtEvt.data.payload instanceof RouterWorld.AddressGivementPacket ) {
+					base = Color.YELLOW;
+				} else if( wtEvt.data.payload instanceof RouterWorld.AddressRequestPacket ) {
+					base = Color.ORANGE;
+				} else if( wtEvt.data.payload instanceof RouterWorld.AddressAnnouncementPacket ) {
+					base = Color.GREEN;
+				}
+				
+				g2d.setColor( new Color( base.getRed()/255f, base.getGreen()/255f, base.getBlue()/255f, (float)clamp(0, 1, intensity / 10) ) );
 				g2d.setStroke( new BasicStroke(1) );
 				g2d.drawOval( (int)(c0[0]-rad*scale), (int)(c0[1]-rad*scale), (int)(rad*scale*2), (int)(rad*scale*2) );
 			}

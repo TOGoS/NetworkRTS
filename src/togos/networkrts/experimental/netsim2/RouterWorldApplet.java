@@ -7,6 +7,7 @@ import togos.networkrts.awt.Apallit;
 import togos.networkrts.experimental.gensim.Simulator;
 import togos.networkrts.experimental.gensim.TimedEventQueue;
 import togos.networkrts.experimental.gensim.Timestamped;
+import togos.networkrts.experimental.netsim2.RouterWorld.Router;
 import togos.service.InterruptableSingleThreadedService;
 
 public class RouterWorldApplet extends Apallit
@@ -19,15 +20,42 @@ public class RouterWorldApplet extends Apallit
 	public void init() {
 		setTitle("Router World");
 		super.init();
+		
+		addKeyListener(new KeyListener() {
+			@Override public void keyTyped( KeyEvent kevt ) {}
+			@Override public void keyReleased( KeyEvent kevt ) {}
+			@Override public void keyPressed( KeyEvent kevt ) {
+				switch( kevt.getKeyCode() ) {
+				case( KeyEvent.VK_PLUS ): case( KeyEvent.VK_EQUALS ):
+					rwp.scale *= 1.25;
+					break;
+				case( KeyEvent.VK_MINUS ): case( KeyEvent.VK_UNDERSCORE ):
+					rwp.scale /= 1.25;
+					break;
+				case( KeyEvent.VK_UP ):
+					rwp.cy -= getHeight() / 4 / rwp.scale;
+					break;
+				case( KeyEvent.VK_DOWN ):
+					rwp.cy += getHeight() / 4 / rwp.scale;
+					break;
+				case( KeyEvent.VK_LEFT ):
+					rwp.cx -= getWidth() / 4 / rwp.scale;
+					break;
+				case( KeyEvent.VK_RIGHT ):
+					rwp.cx += getWidth() / 4 / rwp.scale;
+					break;
+				}
+			}
+		});
+		
 		final Simulator simulator = new Simulator();
 		simulator.teq = new TimedEventQueue<Timestamped>();
 		rw.eventScheduler = simulator.teq;
 		simulator.teq.advanceTimeTo( System.currentTimeMillis() );
-		rw.initRouters(150);
+		rw.initRouters(256);
 		rwp.cx = 512;
 		rwp.cy = 512;
-		fillWith( rwp, 100 );
-		fixFocus();
+		fillWith( rwp, 33 );
 		addService( new InterruptableSingleThreadedService() {
 			@Override protected void _run() throws InterruptedException {
 				try {
@@ -59,44 +87,16 @@ public class RouterWorldApplet extends Apallit
 				rw.eventOccured( event );
 			}
 		};
-		simulator.teq.give(
-			new RouterWorld.WirelessTransmissionEvent(
-				512, 512, simulator.teq.getCurrentTimestamp(), rw.c, rw.normalTransmissionIntensity,
-				new RouterWorld.Frame( new byte[]{0,0,0,0,0,0}, RouterWorld.BROADCAST_MAC_ADDRESS,
-					new RouterWorld.AddressGivementPacket( new byte[]{ 0x20, 0x20, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 24 )
-				)
-			)
-		);
+		Router rootRouter = rw.routers.iterator().next();
+		try {
+			rw.giveAddress( rootRouter, simulator.teq.getCurrentTimestamp(), new byte[]{0x20,0x20,0,0,0,0,0,0,0x12,0x34,0,0,0,0,0,1}, 80 );
+		} catch( Exception e ) {
+			throw new RuntimeException(e);
+		}
+		validate(); // Do it again?
 	}
 	
 	public static void main( String[] args ) {
-		final RouterWorldApplet rwa = new RouterWorldApplet();
-		rwa.addKeyListener(new KeyListener() {
-			@Override public void keyTyped( KeyEvent kevt ) {}
-			@Override public void keyReleased( KeyEvent kevt ) {}
-			@Override public void keyPressed( KeyEvent kevt ) {
-				switch( kevt.getKeyCode() ) {
-				case( KeyEvent.VK_PLUS ): case( KeyEvent.VK_EQUALS ):
-					rwa.rwp.scale *= 1.25;
-					break;
-				case( KeyEvent.VK_MINUS ): case( KeyEvent.VK_UNDERSCORE ):
-					rwa.rwp.scale /= 1.25;
-					break;
-				case( KeyEvent.VK_UP ):
-					rwa.rwp.cy -= rwa.getHeight() / 4 / rwa.rwp.scale;
-					break;
-				case( KeyEvent.VK_DOWN ):
-					rwa.rwp.cy += rwa.getHeight() / 4 / rwa.rwp.scale;
-					break;
-				case( KeyEvent.VK_LEFT ):
-					rwa.rwp.cx -= rwa.getWidth() / 4 / rwa.rwp.scale;
-					break;
-				case( KeyEvent.VK_RIGHT ):
-					rwa.rwp.cx += rwa.getWidth() / 4 / rwa.rwp.scale;
-					break;
-				}
-			}
-		});
-		rwa.runWindowed();
+		new RouterWorldApplet().runWindowed();
 	}
 }

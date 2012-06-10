@@ -77,18 +77,11 @@ public class Apallit extends Applet
 		}
 		
 		fillWith(dbc);
+		dbc.setFocusable(false);
 	}
 	
 	public void setPreferredSize( int w, int h ) {
 		setPreferredSize( new Dimension(w,h) );
-	}
-	
-	public void fixFocus() {
-		setFocusable(true);
-		requestFocus();
-		for( Component c: this.getComponents() ) {
-			c.setFocusable(false);
-		}
 	}
 	
 	public void addService( Service s ) {
@@ -98,6 +91,8 @@ public class Apallit extends Applet
 	@Override
 	public void init() {
 		sman.start();
+		setFocusable(true);
+		requestFocus();
 	}
 	
 	@Override

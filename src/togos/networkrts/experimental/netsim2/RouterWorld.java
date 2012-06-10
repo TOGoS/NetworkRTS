@@ -27,7 +27,7 @@ public class RouterWorld implements EventHandler
 	public Sink<Timestamped> eventScheduler;
 	public final Set<Router> routers = new HashSet<Router>();
 	double normalTransmissionIntensity = 100; 
-	double c = 20;
+	double c = 100;
 	
 	Random rand = new Random();
 	
@@ -64,11 +64,12 @@ public class RouterWorld implements EventHandler
 		public final byte[] address;
 		/** Length of parent network addresses */
 		public final int prefixLength;
-		public final int childBits = 8;
+		public final int childBits;
 		
-		public AddressAnnouncementPacket( byte[] address, int prefixLength ) {
+		public AddressAnnouncementPacket( byte[] address, int prefixLength, int childBits ) {
 			this.address = address;
 			this.prefixLength = prefixLength;
+			this.childBits = childBits;
 		}
 	}
 	
@@ -134,9 +135,17 @@ public class RouterWorld implements EventHandler
 	public static final byte[] BROADCAST_MAC_ADDRESS = new byte[]{-1,-1,-1,-1,-1,-1};
 	
 	protected void sendWireless( long ts, Router source, byte[] destMac, Object payload ) throws Exception {
-		eventScheduler.give( new WirelessTransmissionEvent(source.x, source.y, ts, c, normalTransmissionIntensity,
+		eventScheduler.give( new WirelessTransmissionEvent( source.x, source.y, ts, c, normalTransmissionIntensity,
 			new RouterWorld.Frame( source.macAddress, destMac, payload )
 		));
+	}
+	
+	static byte setHigh( byte o, int n ) {
+		return (byte)((o & 0x0F) | ((n<<4)& 0xF0));
+	}
+	
+	static byte setLow( byte o, int n ) {
+		return (byte)((o & 0xF0) | (n & 0x0F));
 	}
 	
 	@Override public void eventOccured( Timestamped evt ) throws Exception {
@@ -166,31 +175,43 @@ public class RouterWorld implements EventHandler
 			
 			if( payload instanceof AddressAnnouncementPacket ) {
 				AddressAnnouncementPacket aap = (AddressAnnouncementPacket)payload;
-				if( dest.prefixLength > aap.prefixLength+aap.childBits ) {
+				if( dest.ip6Address[0] == 0 || dest.prefixLength > aap.prefixLength+aap.childBits ) {
 					// Request an address from the sender
 					sendWireless( frEvt.getTimestamp(), dest, frame.sourceMacAddress, new RouterWorld.AddressRequestPacket() );
 				}
 			} else if( payload instanceof AddressRequestPacket ) {
-				if( dest.prefixLength >= 128 ) return;
-				for( int i=2; i<dest.addressesAllocated.length; ++i ) {
+				int subnetBits = 4;
+				if( dest.prefixLength + subnetBits > 128 ) return;
+				int minNum, endNum=15;
+				if( dest.prefixLength + subnetBits == 128 ) {
+					minNum = 1;
+				} else {
+					minNum = 0;
+				}
+				for( int i=minNum; i<endNum; ++i ) {
 					if( dest.addressesAllocated[i] == null ) {
 						dest.addressesAllocated[i] = frame.sourceMacAddress;
 						byte[] addr = new byte[16];
-						for( int j=0; j<16; ++j ) {
-							addr[j] = dest.ip6Address[j];
-						}
-						addr[dest.prefixLength/8] = (byte)i;
-						sendWireless( frEvt.getTimestamp(), dest, frame.sourceMacAddress, new AddressGivementPacket(addr, dest.prefixLength+8) );
+						for( int j=0; j<16; ++j ) addr[j] = dest.ip6Address[j];
+						byte o = addr[dest.prefixLength/8];
+						addr[dest.prefixLength/8] = (dest.prefixLength % 8 == 0) ? setHigh(o,i) : setLow(o,i);
+						sendWireless( frEvt.getTimestamp(), dest, frame.sourceMacAddress, new AddressGivementPacket(addr, dest.prefixLength+4) );
 						break;
 					}
 				}
 			} else if( payload instanceof AddressGivementPacket ) {
 				AddressGivementPacket adp = (AddressGivementPacket)payload;
-				dest.ip6Address = adp.address;
-				dest.prefixLength = adp.prefixLength;
-				
-				sendWireless( frEvt.getTimestamp(), frEvt.destination, BROADCAST_MAC_ADDRESS, new RouterWorld.AddressAnnouncementPacket( dest.ip6Address, dest.prefixLength ) );
+				giveAddress( dest, frEvt.getTimestamp(), adp.address, adp.prefixLength );
 			}
+		}
+	}
+
+	public void giveAddress( Router r, long ts, byte[] address, int prefixLength ) throws Exception {
+		if( r.ip6Address[0] == 0 || prefixLength < r.prefixLength ) {
+			r.ip6Address = address;
+			r.prefixLength = prefixLength;
+			
+			sendWireless( ts, r, BROADCAST_MAC_ADDRESS, new RouterWorld.AddressAnnouncementPacket( r.ip6Address, r.prefixLength, 4 ) );
 		}
 	}
 }
