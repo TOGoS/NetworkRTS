@@ -15,8 +15,9 @@ public class RouterWorld implements EventHandler
 		public final byte[] macAddress;
 		public final Set<Router> wireLinks = new HashSet<Router>();
 		public byte[] ip6Address = new byte[16];
+		public int ip6PrefixLength = 128;
+		public int ip6ChildBits = 4;
 		public byte[][] addressesAllocated = new byte[16][];
-		public int prefixLength = 128;
 		
 		public Router( long id, byte[] macAddress ) {
 			this.id = id;
@@ -175,15 +176,14 @@ public class RouterWorld implements EventHandler
 			
 			if( payload instanceof AddressAnnouncementPacket ) {
 				AddressAnnouncementPacket aap = (AddressAnnouncementPacket)payload;
-				if( dest.ip6Address[0] == 0 || dest.prefixLength > aap.prefixLength+aap.childBits ) {
+				if( dest.ip6Address[0] == 0 || dest.ip6PrefixLength > aap.prefixLength+aap.childBits ) {
 					// Request an address from the sender
 					sendWireless( frEvt.getTimestamp(), dest, frame.sourceMacAddress, new RouterWorld.AddressRequestPacket() );
 				}
 			} else if( payload instanceof AddressRequestPacket ) {
-				int subnetBits = 4;
-				if( dest.prefixLength + subnetBits > 128 ) return;
+				if( dest.ip6PrefixLength + dest.ip6ChildBits > 128 ) return;
 				int minNum, endNum=15;
-				if( dest.prefixLength + subnetBits == 128 ) {
+				if( dest.ip6PrefixLength + dest.ip6ChildBits == 128 ) {
 					minNum = 1;
 				} else {
 					minNum = 0;
@@ -193,9 +193,9 @@ public class RouterWorld implements EventHandler
 						dest.addressesAllocated[i] = frame.sourceMacAddress;
 						byte[] addr = new byte[16];
 						for( int j=0; j<16; ++j ) addr[j] = dest.ip6Address[j];
-						byte o = addr[dest.prefixLength/8];
-						addr[dest.prefixLength/8] = (dest.prefixLength % 8 == 0) ? setHigh(o,i) : setLow(o,i);
-						sendWireless( frEvt.getTimestamp(), dest, frame.sourceMacAddress, new AddressGivementPacket(addr, dest.prefixLength+4) );
+						byte o = addr[dest.ip6PrefixLength/8];
+						addr[dest.ip6PrefixLength/8] = (dest.ip6PrefixLength % 8 == 0) ? setHigh(o,i) : setLow(o,i);
+						sendWireless( frEvt.getTimestamp(), dest, frame.sourceMacAddress, new AddressGivementPacket(addr, dest.ip6PrefixLength+dest.ip6ChildBits) );
 						break;
 					}
 				}
@@ -207,11 +207,11 @@ public class RouterWorld implements EventHandler
 	}
 
 	public void giveAddress( Router r, long ts, byte[] address, int prefixLength ) throws Exception {
-		if( r.ip6Address[0] == 0 || prefixLength < r.prefixLength ) {
+		if( r.ip6Address[0] == 0 || prefixLength < r.ip6PrefixLength ) {
 			r.ip6Address = address;
-			r.prefixLength = prefixLength;
+			r.ip6PrefixLength = prefixLength;
 			
-			sendWireless( ts, r, BROADCAST_MAC_ADDRESS, new RouterWorld.AddressAnnouncementPacket( r.ip6Address, r.prefixLength, 4 ) );
+			sendWireless( ts, r, BROADCAST_MAC_ADDRESS, new RouterWorld.AddressAnnouncementPacket( r.ip6Address, r.ip6PrefixLength, r.ip6ChildBits ) );
 		}
 	}
 }

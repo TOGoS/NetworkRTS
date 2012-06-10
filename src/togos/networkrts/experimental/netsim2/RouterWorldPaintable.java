@@ -94,7 +94,7 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 			g2d.drawString( AddressUtil.formatMacAddress(r.macAddress), sx, sy );
 			if( r.ip6Address[0] != 0 ) {
 				g2d.setColor( ip6Color );
-				g2d.drawString( AddressUtil.formatIp6Address(r.ip6Address,0)+"/"+r.prefixLength, sx, sy+12 );
+				g2d.drawString( AddressUtil.formatIp6Address(r.ip6Address,0)+"/"+r.ip6PrefixLength, sx, sy+12 );
 			}
 		}
 		
