@@ -126,7 +126,8 @@ public class TFuncDemo extends Apallit
 				}
 			}, 20) );
 		}
-		fillWith( new FloatyThingPaintable( things ), 640, 480, 10 );
+		fillWith( new FloatyThingPaintable( things ), 10 );
+		setPreferredSize( 640, 480 );
 		
 		super.init();
 	}

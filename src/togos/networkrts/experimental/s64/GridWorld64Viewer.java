@@ -32,7 +32,7 @@ public class GridWorld64Viewer extends Apallit implements TimestampedPaintable
 			setWorld( world.fillArea( new UnionShape(shapes), 0.001, r.nextBoolean() ? Blocks.WATER_FILLER : Blocks.GRASS.getFiller() ) );
 		}
 		
-		fillWith( this, 768, 512, 50 );
+		fillWith( this, 50 );
 	}
 	
 	public static void paintAt( GridNode64 n, Graphics g, double x, double y, double size, long timestamp ) {

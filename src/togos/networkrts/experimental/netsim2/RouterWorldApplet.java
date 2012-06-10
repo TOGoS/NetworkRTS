@@ -1,5 +1,8 @@
 package togos.networkrts.experimental.netsim2;
 
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+
 import togos.networkrts.awt.Apallit;
 import togos.networkrts.experimental.gensim.Simulator;
 import togos.networkrts.experimental.gensim.TimedEventQueue;
@@ -23,7 +26,8 @@ public class RouterWorldApplet extends Apallit
 		rw.initRouters(150);
 		rwp.cx = 512;
 		rwp.cy = 512;
-		fillWith( rwp, 768, 512, 100 );
+		fillWith( rwp, 100 );
+		fixFocus();
 		addService( new InterruptableSingleThreadedService() {
 			@Override protected void _run() throws InterruptedException {
 				try {
@@ -66,7 +70,33 @@ public class RouterWorldApplet extends Apallit
 	}
 	
 	public static void main( String[] args ) {
-		RouterWorldApplet rwa = new RouterWorldApplet();
+		final RouterWorldApplet rwa = new RouterWorldApplet();
+		rwa.addKeyListener(new KeyListener() {
+			@Override public void keyTyped( KeyEvent kevt ) {}
+			@Override public void keyReleased( KeyEvent kevt ) {}
+			@Override public void keyPressed( KeyEvent kevt ) {
+				switch( kevt.getKeyCode() ) {
+				case( KeyEvent.VK_PLUS ): case( KeyEvent.VK_EQUALS ):
+					rwa.rwp.scale *= 1.25;
+					break;
+				case( KeyEvent.VK_MINUS ): case( KeyEvent.VK_UNDERSCORE ):
+					rwa.rwp.scale /= 1.25;
+					break;
+				case( KeyEvent.VK_UP ):
+					rwa.rwp.cy -= rwa.getHeight() / 4 / rwa.rwp.scale;
+					break;
+				case( KeyEvent.VK_DOWN ):
+					rwa.rwp.cy += rwa.getHeight() / 4 / rwa.rwp.scale;
+					break;
+				case( KeyEvent.VK_LEFT ):
+					rwa.rwp.cx -= rwa.getWidth() / 4 / rwa.rwp.scale;
+					break;
+				case( KeyEvent.VK_RIGHT ):
+					rwa.rwp.cx += rwa.getWidth() / 4 / rwa.rwp.scale;
+					break;
+				}
+			}
+		});
 		rwa.runWindowed();
 	}
 }

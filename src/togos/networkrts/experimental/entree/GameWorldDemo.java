@@ -265,7 +265,7 @@ public class GameWorldDemo extends Apallit
 	
 	@Override
 	public void init() {
-		fillWith( drawer, 640, 480, 30 );
+		fillWith( drawer, 30 );
 		GridNode64 terrain = Blocks.GRASS.getHomogeneousNode();
 		for( int i=0; i<128; ++i ) {
 			Shape[] shapes = new Shape[4];
@@ -292,7 +292,6 @@ public class GameWorldDemo extends Apallit
 	}
 	
 	public static void main( String[] args ) {
-		GameWorldDemo ad = new GameWorldDemo();
-		ad.runWindowed();
+		new GameWorldDemo().runWindowed();
 	}
 }

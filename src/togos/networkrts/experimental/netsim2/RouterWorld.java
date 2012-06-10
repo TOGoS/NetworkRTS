@@ -161,7 +161,6 @@ public class RouterWorld implements EventHandler
 			Router dest = frEvt.destination;
 			Object payload = frame.payload;
 			if( !BlobUtil.equals(BROADCAST_MAC_ADDRESS,frame.destMacAddress) && !BlobUtil.equals(frEvt.destination.macAddress, frame.destMacAddress) ) {
-				System.err.println("Drop");
 				return;
 			}
 			

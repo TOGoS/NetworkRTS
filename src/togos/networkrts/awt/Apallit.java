@@ -23,6 +23,7 @@ public class Apallit extends Applet
 	
 	public Apallit( String title ) {
 		setTitle( title );
+		setPreferredSize( 640, 480 );
 	}
 	
 	public Apallit() {
@@ -50,11 +51,10 @@ public class Apallit extends Applet
 		add( c );
 		// The default layout manager for applets seems to be something else.
 		setLayout(new GridLayout());
+		validate();
 	}
 	
-	public void fillWith( final TimestampedPaintable paintable,
-		int preferredWidth, int preferredHeight, final long repaintInterval
-	) {
+	public void fillWith( final TimestampedPaintable paintable, final long repaintInterval ) {
 		final DoubleBufferedCanvas dbc = new DoubleBufferedCanvas() {
 			private static final long serialVersionUID = 1L;
 
@@ -63,8 +63,6 @@ public class Apallit extends Applet
 				paintable.paint(System.currentTimeMillis(), getWidth(), getHeight(), (Graphics2D)g);
 			}
 		};
-		
-		dbc.setPreferredSize( new Dimension(preferredWidth,preferredHeight) );
 		
 		if( repaintInterval != -1 ) {
 			addService( new InterruptableSingleThreadedService() {
@@ -80,7 +78,19 @@ public class Apallit extends Applet
 		
 		fillWith(dbc);
 	}
-		
+	
+	public void setPreferredSize( int w, int h ) {
+		setPreferredSize( new Dimension(w,h) );
+	}
+	
+	public void fixFocus() {
+		setFocusable(true);
+		requestFocus();
+		for( Component c: this.getComponents() ) {
+			c.setFocusable(false);
+		}
+	}
+	
 	public void addService( Service s ) {
 		sman.add( s );
 	}
@@ -97,7 +107,6 @@ public class Apallit extends Applet
 	
 	public void runWindowed() {
 		final Frame f = new Frame(title);
-		init();
 		f.add(this);
 		f.pack();
 		f.addWindowListener( new WindowAdapter() {
@@ -107,5 +116,6 @@ public class Apallit extends Applet
 			}
 		});
 		f.setVisible(true);
+		init();
 	}
 }
