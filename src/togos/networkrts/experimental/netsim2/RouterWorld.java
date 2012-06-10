@@ -15,6 +15,7 @@ public class RouterWorld implements EventHandler
 		public final byte[] macAddress;
 		public final Set<Router> wireLinks = new HashSet<Router>();
 		public byte[] ip6Address = new byte[16];
+		public byte[][] addressesAllocated = new byte[16][];
 		public int prefixLength = 128;
 		
 		public Router( long id, byte[] macAddress ) {
@@ -63,8 +64,21 @@ public class RouterWorld implements EventHandler
 		public final byte[] address;
 		/** Length of parent network addresses */
 		public final int prefixLength;
+		public final int childBits = 8;
 		
 		public AddressAnnouncementPacket( byte[] address, int prefixLength ) {
+			this.address = address;
+			this.prefixLength = prefixLength;
+		}
+	}
+	
+	static class AddressRequestPacket {}
+	
+	static class AddressGivementPacket {
+		public final byte[] address;
+		public final int prefixLength;
+		
+		public AddressGivementPacket( byte[] address, int prefixLength ) {
 			this.address = address;
 			this.prefixLength = prefixLength;
 		}
@@ -143,29 +157,40 @@ public class RouterWorld implements EventHandler
 			}
 		} else if( evt instanceof FrameReceptionEvent ) {
 			FrameReceptionEvent frEvt = (FrameReceptionEvent)evt;
+			Frame frame = frEvt.data;
 			Router dest = frEvt.destination;
-			Object payload = frEvt.data.payload;
-			if( !BlobUtil.equals(BROADCAST_MAC_ADDRESS,frEvt.data.destMacAddress) && !BlobUtil.equals(frEvt.destination.macAddress, frEvt.data.destMacAddress) ) {
+			Object payload = frame.payload;
+			if( !BlobUtil.equals(BROADCAST_MAC_ADDRESS,frame.destMacAddress) && !BlobUtil.equals(frEvt.destination.macAddress, frame.destMacAddress) ) {
 				System.err.println("Drop");
 				return;
 			}
 			
 			if( payload instanceof AddressAnnouncementPacket ) {
 				AddressAnnouncementPacket aap = (AddressAnnouncementPacket)payload;
-				if( dest.prefixLength > aap.prefixLength+8 ) {
-					// TODO: Then request an address!!
-					
-					byte[] newAddy = new byte[16];
-					int i;
-					for( i=0; i<aap.prefixLength/8; ++i ) {
-						newAddy[i] = aap.address[i]; 
-					}
-					newAddy[i++] = (byte)(1+rand.nextInt(253));
-					for( ; i<16; ++i ) newAddy[i] = 1;
-					dest.ip6Address = newAddy;
-					dest.prefixLength = aap.prefixLength+8;
-					sendWireless( frEvt.getTimestamp(), frEvt.destination, BROADCAST_MAC_ADDRESS, new RouterWorld.AddressAnnouncementPacket( dest.ip6Address, dest.prefixLength ) );
+				if( dest.prefixLength > aap.prefixLength+aap.childBits ) {
+					// Request an address from the sender
+					sendWireless( frEvt.getTimestamp(), dest, frame.sourceMacAddress, new RouterWorld.AddressRequestPacket() );
 				}
+			} else if( payload instanceof AddressRequestPacket ) {
+				if( dest.prefixLength >= 128 ) return;
+				for( int i=2; i<dest.addressesAllocated.length; ++i ) {
+					if( dest.addressesAllocated[i] == null ) {
+						dest.addressesAllocated[i] = frame.sourceMacAddress;
+						byte[] addr = new byte[16];
+						for( int j=0; j<16; ++j ) {
+							addr[j] = dest.ip6Address[j];
+						}
+						addr[dest.prefixLength/8] = (byte)i;
+						sendWireless( frEvt.getTimestamp(), dest, frame.sourceMacAddress, new AddressGivementPacket(addr, dest.prefixLength+8) );
+						break;
+					}
+				}
+			} else if( payload instanceof AddressGivementPacket ) {
+				AddressGivementPacket adp = (AddressGivementPacket)payload;
+				dest.ip6Address = adp.address;
+				dest.prefixLength = adp.prefixLength;
+				
+				sendWireless( frEvt.getTimestamp(), frEvt.destination, BROADCAST_MAC_ADDRESS, new RouterWorld.AddressAnnouncementPacket( dest.ip6Address, dest.prefixLength ) );
 			}
 		}
 	}

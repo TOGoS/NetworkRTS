@@ -59,7 +59,7 @@ public class RouterWorldApplet extends Apallit
 			new RouterWorld.WirelessTransmissionEvent(
 				512, 512, simulator.teq.getCurrentTimestamp(), rw.c, rw.normalTransmissionIntensity,
 				new RouterWorld.Frame( new byte[]{0,0,0,0,0,0}, RouterWorld.BROADCAST_MAC_ADDRESS,
-					new RouterWorld.AddressAnnouncementPacket( new byte[]{ 0x20, 0x20, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 24 )
+					new RouterWorld.AddressGivementPacket( new byte[]{ 0x20, 0x20, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 24 )
 				)
 			)
 		);
