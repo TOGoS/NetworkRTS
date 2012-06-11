@@ -52,7 +52,7 @@ public class RouterWorldApplet extends Apallit
 		simulator.teq = new TimedEventQueue<Timestamped>();
 		rw.eventScheduler = simulator.teq;
 		simulator.teq.advanceTimeTo( System.currentTimeMillis() );
-		rw.initRouters(256);
+		rw.initRouters(512);
 		rwp.cx = 512;
 		rwp.cy = 512;
 		fillWith( rwp, 33 );
