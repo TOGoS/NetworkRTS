@@ -184,9 +184,9 @@ public class RouterWorld implements EventHandler
 				if( dest.ip6PrefixLength + dest.ip6ChildBits > 128 ) return;
 				int minNum, endNum=15;
 				if( dest.ip6PrefixLength + dest.ip6ChildBits == 128 ) {
-					minNum = 1;
+					minNum = 2;
 				} else {
-					minNum = 0;
+					minNum = 1;
 				}
 				for( int i=minNum; i<endNum; ++i ) {
 					if( dest.addressesAllocated[i] == null ) {
