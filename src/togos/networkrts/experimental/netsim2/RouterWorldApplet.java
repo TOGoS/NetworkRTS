@@ -52,7 +52,7 @@ public class RouterWorldApplet extends Apallit
 		rw.init();
 		rwp.cx = 512;
 		rwp.cy = 512;
-		fillWith( rwp, 33 );
+		
 		addService( new InterruptableSingleThreadedService() {
 			@Override protected void _run() throws InterruptedException {
 				try {
@@ -78,6 +78,7 @@ public class RouterWorldApplet extends Apallit
 				}
 			}
 		});
+		
 		simulator.eventHandler = new EventHandler() {
 			@Override public void eventOccured(Timestamped event) throws Exception {
 				rwp.eventOccured( event );
@@ -85,7 +86,11 @@ public class RouterWorldApplet extends Apallit
 			}
 		};
 		
-		addKeyListener(new KeyListener() {
+		// Initialize UI
+		
+		fillWith( rwp, 33 );
+		
+		addKeyListenerEverywhere(new KeyListener() {
 			@Override public void keyTyped( KeyEvent kevt ) {}
 			@Override public void keyReleased( KeyEvent kevt ) {}
 			@Override public void keyPressed( KeyEvent kevt ) {
@@ -144,10 +149,9 @@ public class RouterWorldApplet extends Apallit
 						"White are routable packets (pings, pongs).", 
 						30, 60, TextArea.SCROLLBARS_BOTH
 					);
-					helpTextArea.setFocusable(false);
 					helpTextArea.setEditable(false);
 					final Frame helpFrame = new Frame("RouterWorldApplet help");
-					helpFrame.addKeyListener( new KeyAdapter() {
+					helpTextArea.addKeyListener( new KeyAdapter() {
 						public void keyPressed(KeyEvent e) {
 							if( e.getKeyCode() == KeyEvent.VK_ESCAPE ) {
 								helpFrame.dispose();
@@ -155,6 +159,7 @@ public class RouterWorldApplet extends Apallit
 						};
 					});
 					helpFrame.add(helpTextArea);
+					helpTextArea.requestFocus();
 					helpFrame.pack();
 					helpFrame.addWindowListener( new WindowAdapter() {
 						@Override public void windowClosing(WindowEvent e) {
@@ -162,12 +167,16 @@ public class RouterWorldApplet extends Apallit
 						}
 					});
 					helpFrame.setVisible(true);
-					helpFrame.requestFocus();
 				}
 			}
 		});
 		
 		rw.beginAddressAllocation( simulator.teq.getCurrentTimestamp() );
+	}
+	
+	public void start() {
+		setFocusable(true);
+		requestFocus();
 	}
 	
 	public static void main( String[] args ) {

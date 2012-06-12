@@ -7,6 +7,7 @@ import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -77,7 +78,6 @@ public class Apallit extends Applet
 		}
 		
 		fillWith(dbc);
-		dbc.setFocusable(false);
 	}
 	
 	public void setPreferredSize( int w, int h ) {
@@ -88,11 +88,20 @@ public class Apallit extends Applet
 		sman.add( s );
 	}
 	
+	/**
+	 * Call after adding components to put the given key listener
+	 * on the applet *and* on any current sub-components.
+	 */
+	public void addKeyListenerEverywhere( KeyListener l ) {
+		addKeyListener(l);
+		for( Component c : getComponents() ) {
+			c.addKeyListener(l);
+		}
+	}
+	
 	@Override
 	public void init() {
 		sman.start();
-		setFocusable(true);
-		requestFocus();
 	}
 	
 	@Override
