@@ -2,6 +2,7 @@ package togos.networkrts.experimental.netsim2;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.util.ArrayList;
@@ -21,6 +22,9 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 	
 	public TimedEventQueue newEventSink;
 	public List<LiveEvent> activeEvents = new ArrayList<LiveEvent>();
+	
+	public Font statsFont = new Font("Monospaced", Font.PLAIN, 12);
+	public String statusText;
 	
 	public RouterWorldPaintable() {}
 	
@@ -55,7 +59,7 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 	
 	@Override
 	public void paint( long timestamp, int width, int height, Graphics2D g2d ) {
-		g2d.setFont( g2d.getFont().deriveFont( 10f ) );
+		Font originalFont = g2d.getFont();
 		
 		Rectangle clip = g2d.getClipBounds();
 		g2d.setColor( Color.BLACK );
@@ -64,6 +68,8 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 		double[] c1 = new double[2];
 		
 		if( world == null ) return;
+		
+		g2d.setFont( originalFont.deriveFont( 10f ) );
 		
 		g2d.setStroke( new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1, new float[]{2,2}, 0 ));
 		g2d.setColor( Color.DARK_GRAY );
@@ -135,6 +141,18 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 				g2d.setStroke( new BasicStroke(1) );
 				g2d.drawOval( (int)(c0[0]-rad*scale), (int)(c0[1]-rad*scale), (int)(rad*scale*2), (int)(rad*scale*2) );
 			}
+		}
+		
+		if( this.statsFont != null ) g2d.setFont( statsFont );
+		g2d.setColor( Color.GREEN );
+		
+		g2d.drawString( "Hit F1 for help", 12, 24 );
+		g2d.drawString( "Pings sent:     "+world.pingsSent, 12, 24+18 );
+		g2d.drawString( "Pongs sent:     "+world.pongsSent, 12, 24+18*2 );
+		g2d.drawString( "Pongs received: "+world.pongsReceived, 12, 24+18*3);
+		
+		if( statusText != null ) {
+			g2d.drawString( statusText, 12, height-6 );
 		}
 	}
 }

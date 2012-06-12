@@ -1,7 +1,10 @@
 package togos.networkrts.experimental.netsim2;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
@@ -50,6 +53,7 @@ public class RouterWorld implements EventHandler
 		public int ip6PrefixLength = 128;
 		public int ip6ChildBits = 4;
 		public byte[][] addressesAllocated = new byte[16][];
+		public List<Neighbor> neighbors = new ArrayList<Neighbor>();
 		
 		public TransmitterType[] transmitters = BASIC_WIRELESS_TRANSMITTERS;
 		public int receiveChannels = CHANNEL_1;
@@ -70,8 +74,8 @@ public class RouterWorld implements EventHandler
 	
 	public Sink<Timestamped> eventScheduler;
 	public final Set<Router> routers = new HashSet<Router>();
-	double normalTransmissionIntensity = 100; 
 	double c = 100;
+	public int pingsSent, pongsSent, pongsReceived;
 	
 	Random rand = new Random();
 	
@@ -123,6 +127,55 @@ public class RouterWorld implements EventHandler
 			this.address = address;
 			this.prefixLength = prefixLength;
 			this.childBits = childBits;
+		}
+	}
+	
+	static class DestinationPacket implements Cloneable {
+		public final byte[] destAddress;
+		protected int ttl;
+		
+		public DestinationPacket( byte[] dest ) {
+			this.destAddress = dest;
+			this.ttl = 64;
+		}
+		
+		public int getTtl() {  return ttl;  }
+		
+		public DestinationPacket decrTtl() {
+			try {
+				DestinationPacket c = (DestinationPacket)clone();
+				--c.ttl;
+				return c;
+			} catch( CloneNotSupportedException e ) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
+	
+	static class SourceDestPacket extends DestinationPacket {
+		public final byte[] sourceAddress;
+		
+		public SourceDestPacket( byte[] s, byte[] d ) {
+			super(d);
+			this.sourceAddress = s;
+		}
+	}
+	
+	static class PingPacket extends SourceDestPacket {
+		public final byte[] data;
+		
+		public PingPacket( byte[] s, byte[] d, byte[] a ) {
+			super( s, d );
+			this.data = a;
+		}
+	}
+	
+	static class PongPacket extends SourceDestPacket {
+		public final byte[] data;
+		
+		public PongPacket( byte[] s, byte[] d, byte[] a ) {
+			super( s, d );
+			this.data = a;
 		}
 	}
 	
@@ -213,6 +266,57 @@ public class RouterWorld implements EventHandler
 		return (byte)((o & 0xF0) | (n & 0x0F));
 	}
 	
+	protected static int addressBit( byte[] addy, int bit ) {
+		return (addy[bit/8] >> (7-(bit%8))) & 1;
+	}
+	
+	static class Neighbor {
+		byte[] macAddress;
+		int prefixLength;
+		byte[] ip6address;
+		int channel;
+		
+		public Neighbor( byte[] macAddress, int channel, byte[] ip6Address, int prefixLength ) {
+			this.macAddress = macAddress;
+			this.channel = channel;
+			this.ip6address = ip6Address;
+			this.prefixLength = prefixLength;
+		}
+		
+		public boolean contains( byte[] address ) {
+			for( int i=0; i<prefixLength; ++i ) {
+				if( addressBit(address,i) != addressBit(ip6address,i) ) return false;
+			}
+			return true;
+		}
+	}
+	
+	protected void forward( Router source, long timestamp, DestinationPacket packet ) throws Exception {
+		// Forward it!
+		Neighbor nearest = null;
+		Neighbor shortest = null;
+		
+		int longestContainingPrefix = 0;
+		int shortestPrefix = 128;
+		for( Neighbor n : source.neighbors ) {
+			if( n.contains(packet.destAddress) && n.prefixLength > longestContainingPrefix ) {
+				nearest = n;
+				longestContainingPrefix = n.prefixLength;
+			}
+			if( n.prefixLength < shortestPrefix ) {
+				shortestPrefix = n.prefixLength;
+				shortest = n;
+			}
+		}
+		
+		Neighbor next = nearest != null ? nearest : shortest;
+		
+		if( next != null ) {
+			TransmitterType tt = source.transmitterForChannel(next.channel);
+			sendWireless( timestamp, source, tt, next.macAddress, packet );
+		}
+	}
+	
 	@Override public void eventOccured( Timestamped evt ) throws Exception {
 		if( evt instanceof WirelessTransmissionEvent ) {
 			WirelessTransmissionEvent wtEvt = (WirelessTransmissionEvent)evt;
@@ -235,19 +339,41 @@ public class RouterWorld implements EventHandler
 			Frame frame = frEvt.data;
 			Router dest = frEvt.destination;
 			Object payload = frame.payload;
-			TransmitterType tt = dest.transmitterForChannel(frEvt.channel);
 
 			if( !BlobUtil.equals(BROADCAST_MAC_ADDRESS,frame.destMacAddress) && !BlobUtil.equals(frEvt.destination.macAddress, frame.destMacAddress) ) {
 				return;
 			}
 			
-			if( payload instanceof AddressAnnouncementPacket ) {
+			if( payload instanceof DestinationPacket ) {
+				DestinationPacket destPack = (DestinationPacket)payload;
+				
+				if( BlobUtil.equals( destPack.destAddress, dest.ip6Address) ) {
+					if( payload instanceof PingPacket ) {
+						PingPacket ping = (PingPacket)payload;
+						forward( dest, frEvt.getTimestamp(), new PongPacket(ping.destAddress, ping.sourceAddress, ping.data) );
+						++pongsSent;
+					} else if( payload instanceof PongPacket ) {
+						++pongsReceived;
+					}
+				} else if( destPack.getTtl() > 0 ) {
+					forward( dest, frEvt.getTimestamp(), destPack.decrTtl() );
+				}
+			} else if( payload instanceof AddressAnnouncementPacket ) {
 				AddressAnnouncementPacket aap = (AddressAnnouncementPacket)payload;
 				if( dest.ip6Address[0] == 0 || dest.ip6PrefixLength > aap.prefixLength+aap.childBits ) {
 					// Request an address from the sender
+					TransmitterType tt = dest.transmitterForChannel(frEvt.channel);
 					sendWireless( frEvt.getTimestamp(), dest, tt, frame.sourceMacAddress, new RouterWorld.AddressRequestPacket() );
 				}
+				for( Iterator<Neighbor> ni = dest.neighbors.iterator(); ni.hasNext(); ) {
+					if( BlobUtil.equals( frame.sourceMacAddress, ni.next().macAddress ) ) {
+						ni.remove();
+					}
+				}
+				dest.neighbors.add( new Neighbor( frame.sourceMacAddress, frEvt.channel, aap.address, aap.prefixLength ) );
 			} else if( payload instanceof AddressRequestPacket ) {
+				TransmitterType tt = dest.transmitterForChannel(frEvt.channel);
+
 				if( dest.ip6PrefixLength + dest.ip6ChildBits > 128 ) return;
 				int minNum, endNum=15;
 				if( dest.ip6PrefixLength + dest.ip6ChildBits == 128 ) {
@@ -280,5 +406,12 @@ public class RouterWorld implements EventHandler
 			
 			sendWireless( ts, r, BROADCAST_MAC_ADDRESS, new RouterWorld.AddressAnnouncementPacket( r.ip6Address, r.ip6PrefixLength, r.ip6ChildBits ) );
 		}
+	}
+	
+	public void ping( Router source, long ts, byte[] destAddress ) throws Exception {
+		byte[] data = new byte[32];
+		rand.nextBytes(data);
+		forward(source, System.currentTimeMillis(), new RouterWorld.PingPacket( source.ip6Address, destAddress, data ));
+		++pingsSent;
 	}
 }
