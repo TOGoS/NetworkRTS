@@ -45,6 +45,7 @@ public class RouterWorld implements EventHandler
 	};
 	
 	class Router {
+		public boolean alive;
 		public final long id;
 		public double x, y;
 		public final byte[] macAddress;
@@ -102,7 +103,29 @@ public class RouterWorld implements EventHandler
 				r.type = 1;
 			}
 			routers.add(r);
+			r.alive = true;
 		}
+	}
+	
+	public void init() {
+		initRouters(512);
+	}
+	
+	public void beginAddressAllocation( long timestamp ) {
+		if( routers.size() == 0 ) return;
+		Router rootRouter = routers.iterator().next();
+		try {
+			giveAddress( rootRouter, timestamp, new byte[]{0x20,0x20,0,0,0,0,0,0,0x12,0x34,0,0,0,0,0,1}, 80 );
+		} catch( Exception e ) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	public void clear() {
+		for( Router r : routers ) {
+			r.alive = false;
+		}
+		routers.clear();
 	}
 	
 	static class Frame {
@@ -339,6 +362,10 @@ public class RouterWorld implements EventHandler
 			Frame frame = frEvt.data;
 			Router dest = frEvt.destination;
 			Object payload = frame.payload;
+			
+			if( !dest.alive ) {
+				return;
+			}
 
 			if( !BlobUtil.equals(BROADCAST_MAC_ADDRESS,frame.destMacAddress) && !BlobUtil.equals(frEvt.destination.macAddress, frame.destMacAddress) ) {
 				return;

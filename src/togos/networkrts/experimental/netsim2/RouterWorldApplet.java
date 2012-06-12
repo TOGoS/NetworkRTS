@@ -2,6 +2,7 @@ package togos.networkrts.experimental.netsim2;
 
 import java.awt.Frame;
 import java.awt.TextArea;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
@@ -44,62 +45,11 @@ public class RouterWorldApplet extends Apallit
 		setTitle("Router World");
 		super.init();
 		
-		addKeyListener(new KeyListener() {
-			@Override public void keyTyped( KeyEvent kevt ) {}
-			@Override public void keyReleased( KeyEvent kevt ) {}
-			@Override public void keyPressed( KeyEvent kevt ) {
-				switch( kevt.getKeyCode() ) {
-				case( KeyEvent.VK_PLUS ): case( KeyEvent.VK_EQUALS ):
-					rwp.scale *= 1.25;
-					break;
-				case( KeyEvent.VK_MINUS ): case( KeyEvent.VK_UNDERSCORE ):
-					rwp.scale /= 1.25;
-					break;
-				case( KeyEvent.VK_UP ):
-					rwp.cy -= getHeight() / 4 / rwp.scale;
-					break;
-				case( KeyEvent.VK_DOWN ):
-					rwp.cy += getHeight() / 4 / rwp.scale;
-					break;
-				case( KeyEvent.VK_LEFT ):
-					rwp.cx -= getWidth() / 4 / rwp.scale;
-					break;
-				case( KeyEvent.VK_RIGHT ):
-					rwp.cx += getWidth() / 4 / rwp.scale;
-					break;
-				case( KeyEvent.VK_P ):
-					try {
-						ping();
-					} catch( Exception e ) {
-						e.printStackTrace();
-					}
-					break;
-				case( KeyEvent.VK_F1 ):
-					TextArea helpTextArea = new TextArea(
-						"Welcome to TOGoS's wireless network simulator!\n" +
-						"\n" +
-						"Use arrow keys to move the camera and +/- to zoom.\n" +
-						"Press 'P' to have a random node ping another.\n",
-						10, 40, TextArea.SCROLLBARS_BOTH
-					);
-					final Frame helpFrame = new Frame("RouterWorldApplet help");
-					helpFrame.add(helpTextArea);
-					helpFrame.pack();
-					helpFrame.setVisible(true);
-					helpFrame.addWindowListener( new WindowAdapter() {
-						@Override public void windowClosing(WindowEvent e) {
-							helpFrame.dispose();
-						}
-					});
-				}
-			}
-		});
-		
 		final Simulator simulator = new Simulator();
 		simulator.teq = new TimedEventQueue<Timestamped>();
 		rw.eventScheduler = simulator.teq;
 		simulator.teq.advanceTimeTo( System.currentTimeMillis() );
-		rw.initRouters(512);
+		rw.init();
 		rwp.cx = 512;
 		rwp.cy = 512;
 		fillWith( rwp, 33 );
@@ -134,13 +84,90 @@ public class RouterWorldApplet extends Apallit
 				rw.eventOccured( event );
 			}
 		};
-		Router rootRouter = rw.routers.iterator().next();
-		try {
-			rw.giveAddress( rootRouter, simulator.teq.getCurrentTimestamp(), new byte[]{0x20,0x20,0,0,0,0,0,0,0x12,0x34,0,0,0,0,0,1}, 80 );
-		} catch( Exception e ) {
-			throw new RuntimeException(e);
-		}
-		validate(); // Do it again?
+		
+		addKeyListener(new KeyListener() {
+			@Override public void keyTyped( KeyEvent kevt ) {}
+			@Override public void keyReleased( KeyEvent kevt ) {}
+			@Override public void keyPressed( KeyEvent kevt ) {
+				switch( kevt.getKeyCode() ) {
+				case( KeyEvent.VK_PLUS ): case( KeyEvent.VK_EQUALS ):
+					rwp.scale *= 1.25;
+					break;
+				case( KeyEvent.VK_MINUS ): case( KeyEvent.VK_UNDERSCORE ):
+					rwp.scale /= 1.25;
+					break;
+				case( KeyEvent.VK_UP ):
+					rwp.cy -= getHeight() / 4 / rwp.scale;
+					break;
+				case( KeyEvent.VK_DOWN ):
+					rwp.cy += getHeight() / 4 / rwp.scale;
+					break;
+				case( KeyEvent.VK_LEFT ):
+					rwp.cx -= getWidth() / 4 / rwp.scale;
+					break;
+				case( KeyEvent.VK_RIGHT ):
+					rwp.cx += getWidth() / 4 / rwp.scale;
+					break;
+				case( KeyEvent.VK_P ):
+					try {
+						ping();
+					} catch( Exception e ) {
+						e.printStackTrace();
+					}
+					break;
+				case( KeyEvent.VK_R ):
+					rw.clear();
+					rw.init();
+					rw.beginAddressAllocation(simulator.teq.getCurrentTimestamp());
+					break;
+				case( KeyEvent.VK_F1 ):
+					TextArea helpTextArea = new TextArea(
+						"Welcome to TOGoS's wireless network simulator!\n" +
+						"\n" +
+						"Controls:\n" +
+						"Arrow keys move the camera.\n" +
+						"+/- zoom in and out.\n" +
+						"P pings a random node from another.\n" +
+						"R randomizes the world.\n" +
+						"\n" +
+						"About:\n" +
+						"Demonstrates a simple algorithm for allocating\n" +
+						"IPv6 addresses and routing packets in a random network.\n" +
+						"There are 3 types of wireless routers which can transmit\n" +
+						"over varying distances.  Gray, white, and red lines\n" +
+						"represent possible short, medium, and long-range links.\n" +
+						"\n" +
+						"Transmission colors:\n" +
+						"Green are address announcements.\n" +
+						"Orange are address requests.\n" +
+						"Yellow are address provisions.\n" +
+						"White are routable packets (pings, pongs).", 
+						30, 60, TextArea.SCROLLBARS_BOTH
+					);
+					helpTextArea.setFocusable(false);
+					helpTextArea.setEditable(false);
+					final Frame helpFrame = new Frame("RouterWorldApplet help");
+					helpFrame.addKeyListener( new KeyAdapter() {
+						public void keyPressed(KeyEvent e) {
+							if( e.getKeyCode() == KeyEvent.VK_ESCAPE ) {
+								helpFrame.dispose();
+							}
+						};
+					});
+					helpFrame.add(helpTextArea);
+					helpFrame.pack();
+					helpFrame.addWindowListener( new WindowAdapter() {
+						@Override public void windowClosing(WindowEvent e) {
+							helpFrame.dispose();
+						}
+					});
+					helpFrame.setVisible(true);
+					helpFrame.requestFocus();
+				}
+			}
+		});
+		
+		rw.beginAddressAllocation( simulator.teq.getCurrentTimestamp() );
 	}
 	
 	public static void main( String[] args ) {

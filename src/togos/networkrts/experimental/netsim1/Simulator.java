@@ -215,7 +215,7 @@ public class Simulator extends togos.networkrts.experimental.gensim.Simulator
 		s.connectLoopback(hostId, "lo-1000ms", 1000);
 		s.procTime = System.currentTimeMillis();
 		
-		s.teq.add(new SimulatorEvent(s.simulationTime()) {
+		s.teq.add(new SimulatorEvent(s.getSimulationTime()) {
 			public void run() {
 				s.deliverPacket( hostId, "lo-100ms", SimpleByteChunk.EMPTY );
 				s.deliverPacket( hostId, "lo-10ms", SimpleByteChunk.EMPTY );

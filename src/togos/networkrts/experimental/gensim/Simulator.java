@@ -9,7 +9,7 @@ public class Simulator
 	/** Simulation time at which the currently evaluating event supposedly occurs */
 	protected long procTime; 
 	
-	public long simulationTime() {
+	public long getSimulationTime() {
 		return procTime;
 	}
 		
