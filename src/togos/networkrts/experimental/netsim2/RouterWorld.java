@@ -75,7 +75,7 @@ public class RouterWorld implements EventHandler
 	
 	public Sink<Timestamped> eventScheduler;
 	public final Set<Router> routers = new HashSet<Router>();
-	double c = 100;
+	double c = 300;
 	public int pingsSent, pongsSent, pongsReceived;
 	
 	Random rand = new Random();
@@ -88,32 +88,162 @@ public class RouterWorld implements EventHandler
 	
 	long nextRouterId = 1;
 	
-	public void initRouters( int count ) {
+	protected void setRouterType( Router r, int type ) {
+		switch( type ) {
+		case( 3 ):
+			r.transmitters = LEVEL_3_WIRELESS_TRANSMITTERS;
+			r.receiveChannels = CHANNEL_1 | CHANNEL_2 | CHANNEL_3;
+			r.type = 3;
+			break;
+		case( 2 ):
+			r.transmitters = LEVEL_2_WIRELESS_TRANSMITTERS;
+			r.receiveChannels = CHANNEL_1 | CHANNEL_2;
+			r.type = 2;
+			break;
+		case( 1 ):
+			r.transmitters = BASIC_WIRELESS_TRANSMITTERS;
+			r.receiveChannels = CHANNEL_1;
+			r.type = 2;
+		}
+	}
+	
+	protected void addRouter( double x, double y, int type ) {
+		Router r = new Router( nextRouterId++, newMacAddress() );
+		r.x = x;
+		r.y = y;
+		setRouterType(r, type);
+		r.alive = true;
+		synchronized( routers ) { routers.add(r); }
+	}
+	
+	protected void initRandomRouters( int count ) {
 		for( ; count > 0; --count ) {
-			Router r = new Router( nextRouterId++, newMacAddress() );
-			r.x = rand.nextInt(2048);
-			r.y = rand.nextInt(2048);
+			int type;
 			if( rand.nextDouble() < 0.01 ) {
-				r.transmitters = LEVEL_3_WIRELESS_TRANSMITTERS;
-				r.receiveChannels = CHANNEL_1 | CHANNEL_2 | CHANNEL_3;
-				r.type = 2;
+				type = 3;
 			} else if( rand.nextDouble() < 0.05 ) {
-				r.transmitters = LEVEL_2_WIRELESS_TRANSMITTERS;
-				r.receiveChannels = CHANNEL_1 | CHANNEL_2;
-				r.type = 1;
+				type = 2;
+			} else {
+				type = 1;
 			}
-			routers.add(r);
-			r.alive = true;
+			addRouter( rand.nextInt(2048), rand.nextInt(2048), type );
+		}
+	}
+	
+	protected void addLevel1Tree( double cx, double cy ) {
+		int count = rand.nextInt(50);
+		for( int i=0; i<count; ++i ) {
+			addRouter( cx+rand.nextDouble()*400-200, cy+rand.nextDouble()*400-200, 1 );
+		}
+	}
+	
+	protected void addLevel2Cluster( double cx, double cy ) {
+		addRouter( cx, cy, 2 );
+		addLevel1Tree( cx, cy );
+	}
+	
+	protected void addLevel2Tree( double cx, double cy ) {
+		switch( rand.nextInt(4) ) {
+		case( 0 ):
+			// ring!
+			double rad = 250+rand.nextDouble()*500;
+			double cir = rad * 2 * Math.PI;
+			int count = (int)(cir / 500)+1;
+			double phase = rand.nextDouble();
+			for( int i=0; i<count; ++i ) {
+				double o = i*2*Math.PI/count + phase;
+				addLevel2Cluster( cx+rad*Math.cos(o), cy+rad*Math.sin(o) );
+			}
+			break;
+		case( 1 ):
+			// star!
+			addLevel2Cluster( cx, cy );
+			addLevel2Cluster( cx - 300, cy - 400 );
+			addLevel2Cluster( cx + 300, cy + 400 );
+			addLevel2Cluster( cx - 400, cy + 300 );
+			addLevel2Cluster( cx + 400, cy - 300 );
+			break;
+		case( 2 ):
+			// line!
+			double ang = rand.nextDouble()*Math.PI*2;
+			for( int i=rand.nextInt(7); i>=0; --i ) {
+				cx += 450*Math.cos(ang);
+				cy += 450*Math.sin(ang);
+				addLevel2Cluster( cx, cy );
+				ang += rand.nextGaussian();
+			}
+			break;
+		case( 3 ):
+			// random!
+			for( int i=rand.nextInt(7); i>=0; --i ) {
+				addLevel2Cluster( cx + rand.nextDouble()*1024-512, cy + rand.nextDouble()*1024-512 );
+			}
+		}
+	}
+	
+	protected void addLevel3Cluster( double cx, double cy ) {
+		addRouter( cx, cy, 3 );
+		addLevel2Tree( cx, cy );
+	}
+	
+	protected void initLevel3Tree( double cx, double cy ) {
+		switch( rand.nextInt(4) ) {
+		case( 0 ):
+			// ring!
+			double rad = 1024+rand.nextDouble()*2048;
+			double cir = rad * 2 * Math.PI;
+			int count = (int)(cir / 1500)+1;
+			for( int i=0; i<count; ++i ) {
+				addLevel3Cluster( cx+rad*Math.cos(i*2*Math.PI/count), cy+rad*Math.sin(i*2*Math.PI/count) );
+			}
+			break;
+		case( 1 ):
+			// star!
+			addLevel3Cluster( cx, cy );
+			addLevel3Cluster( cx - 1500, cy );
+			addLevel3Cluster( cx + 1500, cy );
+			addLevel3Cluster( cx, cy - 1500 );
+			addLevel3Cluster( cx, cy + 1500 );
+			break;
+		case( 2 ):
+			// line!
+			double ang = rand.nextDouble()*Math.PI*2;
+			for( int i=rand.nextInt(7); i>=0; --i ) {
+				cx += 1400*Math.cos(ang);
+				cy += 1400*Math.sin(ang);
+				addLevel3Cluster( cx, cy );
+				ang += rand.nextGaussian();
+			}
+			break;
+		case( 3 ):
+			// random!
+			for( int i=rand.nextInt(7); i>=0; --i ) {
+				addLevel2Cluster( cx + rand.nextDouble()*4096-2048, cy + rand.nextDouble()*4096-2048 );
+			}
 		}
 	}
 	
 	public void init() {
-		initRouters(512);
+		switch( rand.nextInt(2) ) {
+		case( 0 ):
+			initRandomRouters( 512 );
+			break;
+		case( 1 ):
+			initLevel3Tree( 0, 0 );
+			break;
+		}
+	}
+	
+	public Router randomRouter() {
+		synchronized( routers ) {
+			if( routers.size() == 0 ) return null;
+			return routers.iterator().next();
+		}
 	}
 	
 	public void beginAddressAllocation( long timestamp ) {
-		if( routers.size() == 0 ) return;
-		Router rootRouter = routers.iterator().next();
+		Router rootRouter = randomRouter();
+		if( rootRouter == null ) return;
 		try {
 			giveAddress( rootRouter, timestamp, new byte[]{0x20,0x20,0,0,0,0,0,0,0x12,0x34,0,0,0,0,0,1}, 80 );
 		} catch( Exception e ) {
@@ -122,10 +252,12 @@ public class RouterWorld implements EventHandler
 	}
 	
 	public void clear() {
-		for( Router r : routers ) {
-			r.alive = false;
+		synchronized( routers ) {
+			for( Router r : routers ) {
+				r.alive = false;
+			}
+			routers.clear();
 		}
-		routers.clear();
 	}
 	
 	static class Frame {

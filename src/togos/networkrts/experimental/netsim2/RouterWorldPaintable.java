@@ -83,7 +83,7 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 					for( TransmitterType tt1 : r1.transmitters ) {
 						if( (tt0.channels & tt1.channels) != 0 ) {
 							double maxDist = Math.min(tt0.power,tt1.power);
-							if( dist < maxDist ) {
+							if( dist <= maxDist ) {
 								worldToScreenCoords(  r.x,  r.y, width, height, c0 );
 								worldToScreenCoords( r1.x, r1.y, width, height, c1 );
 								g2d.setColor(tt0.color);
@@ -99,12 +99,12 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 		Color ip6Color = new Color( 0.6f, 0.8f, 0.8f, 0.5f );
 		g2d.setColor( Color.GREEN );
 		for( RouterWorld.Router r : world.routers ) {
-			int size = r.type == 0 ? 2 : 4;
+			int size = r.type == 1 ? 2 : 4;
 			worldToScreenCoords( r.x, r.y, width, height, c0 );
 			int sx = (int)c0[0];
 			int sy = (int)c0[1];
 			if( sx < clip.x || sy < clip.y || sx >= clip.x + clip.width || sy >= clip.y + clip.height ) continue;
-			g2d.setColor( r.type == 0 ? Color.GREEN : Color.WHITE );
+			g2d.setColor( r.type == 1 ? Color.GREEN : Color.WHITE );
 			g2d.fillRect( sx-(int)(scale*size/2), sy-(int)(scale*size/2), (int)scale*size, (int)scale*size );
 			g2d.setColor( macColor );
 			g2d.drawString( AddressUtil.formatMacAddress(r.macAddress), sx, sy );
