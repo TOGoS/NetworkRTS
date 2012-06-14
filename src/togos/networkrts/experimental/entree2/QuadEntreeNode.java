@@ -213,7 +213,7 @@ public final class QuadEntreeNode
 		return updateUnchecked(updates, catScratch, scratch, off, end, x, y, w, h, maxSubdivision);
 	}
 
-	public final void forEachObject(long requireFlags, long maxAutoUpdateTime, ClipShape s, Sink<WorldObject> callback, double x, double y, double w, double h)
+	public final <WorldObjectClass extends WorldObject> void forEachObject(long requireFlags, long maxAutoUpdateTime, ClipShape s, Sink<WorldObjectClass> callback, double x, double y, double w, double h)
 		throws Exception
 	{
 		if( this.objectCount == 0 ) return;
@@ -232,7 +232,7 @@ public final class QuadEntreeNode
 			if( (o.getFlags() & requireFlags) != requireFlags ) continue;
 			if( o.getAutoUpdateTime() > maxAutoUpdateTime ) continue;
 			
-			callback.give(o);
+			callback.give( (WorldObjectClass)o );
 		}
 	}
 }

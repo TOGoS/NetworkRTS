@@ -3,7 +3,7 @@ package togos.networkrts.experimental.entree2;
 import togos.networkrts.experimental.entree.ClipShape;
 import togos.networkrts.experimental.netsim2.Sink;
 
-public class QuadEntree implements Entree
+public class QuadEntree<WorldObjectClass extends WorldObject> implements Entree<WorldObjectClass>
 {
 	public final double x, y, w, h;
 	public final QuadEntreeNode root;
@@ -21,14 +21,14 @@ public class QuadEntree implements Entree
 	}
 	
 	@Override
-	public Entree update( WorldObjectUpdate[] updates, int off, int count ) {
+	public Entree update( WorldObjectUpdate<WorldObjectClass>[] updates, int off, int count ) {
 		boolean[] cats = new boolean[updates.length];
 		WorldObject[] scratch = new WorldObject[updates.length];
 		return update( root.update(updates, cats, scratch, off, off+count, x, y, w, h, maxSubdivision) );
 	}
 	
 	@Override
-	public void forEachObject(long flags, long autoUpdateTime, ClipShape s, Sink<WorldObject> callback)
+	public void forEachObject(long flags, long autoUpdateTime, ClipShape s, Sink<WorldObjectClass> callback)
 		throws Exception
 	{
 		root.forEachObject(flags, autoUpdateTime, s, callback, x, y, w, h);
