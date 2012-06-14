@@ -8,6 +8,17 @@ public final class QuadEntreeNode
 	public static final WorldObject[] EMPTY_OBJECT_LIST = new WorldObject[0];
 	public static final QuadEntreeNode EMPTY = new QuadEntreeNode();
 	
+	/**
+	 * Proportion of a node's width that an object's area can go beyond
+	 * the boundary of the node and still have that object 'fit' into the node. 
+	 */
+	public static final double SLOP = 0.25;
+	/**
+	 * Slop size-multiplier.  How much to multiply a node's width or height by
+	 * to get the width or height of its 'slop rectangle'
+	 */
+	public static final double SLOP_SM = 1 + 2*SLOP;
+	
 	/** Array of objects contained *directly* in this node, not including those in sub-nodes. */
 	public final WorldObject[] objects;
 	/** Count of all objects in this node and all sub-nodes. */
@@ -71,10 +82,10 @@ public final class QuadEntreeNode
 		final double maxx = x+w, maxy=y+h;
 		if( obj.x < x || obj.y < y || obj.x >= maxx || obj.y >= maxy ) return false;
 		
-		if( obj.x - rad < x-w/2 ) return false;
-		if( obj.y - rad < y-h/2 ) return false;
-		if( obj.x + rad > maxx+w/2 ) return false;
-		if( obj.y + rad > maxy+h/2 ) return false;
+		if( obj.x - rad < x-SLOP*w ) return false;
+		if( obj.y - rad < y-SLOP*h ) return false;
+		if( obj.x + rad > maxx+SLOP*w ) return false;
+		if( obj.y + rad > maxy+SLOP*h ) return false;
 		
 		return true;
 	}
@@ -222,7 +233,7 @@ public final class QuadEntreeNode
 		if( this.objectCount == 0 ) return;
 		if( (this.allFlags & requireFlags) != requireFlags ) return;
 		if( maxAutoUpdateTime < this.minAutoUpdateTime ) return;
-		if( s.rectIntersection(x, y, w, h) == RectIntersector.INCLUDES_NONE ) return;
+		if( s.rectIntersection(x-w*SLOP, y-h*SLOP, w*SLOP_SM, h*SLOP_SM) == RectIntersector.INCLUDES_NONE ) return;
 		
 		final double halfW = w/2, halfH = h/2;
 		final double halfX = x+halfW, halfY = y+halfH; 
