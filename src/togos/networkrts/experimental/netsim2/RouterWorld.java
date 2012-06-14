@@ -19,49 +19,46 @@ import togos.networkrts.experimental.shape.RectIntersector;
 
 public class RouterWorld implements EventHandler
 {
-	public static final int CHANNEL_1 = 0x01;
-	public static final int CHANNEL_2 = 0x02;
-	public static final int CHANNEL_3 = 0x04;
+	public static final int CHANNEL_1_FLAG = 0x01;
+	public static final int CHANNEL_2_FLAG = 0x02;
+	public static final int CHANNEL_3_FLAG = 0x04;
 	
 	static class TransmitterType {
-		public final int channels;
+		public final int channelFlag;
 		public final double power;
 		public final Color color;
 		
-		public TransmitterType( int channels, double power, Color c ) {
-			this.channels = channels;
+		public TransmitterType( int channelFlag, double power, Color c ) {
+			this.channelFlag = channelFlag;
 			this.power = power;
 			this.color = c;
 		}
 	}
 	
-	static TransmitterType[] BASIC_WIRELESS_TRANSMITTERS = new TransmitterType[] {
-		new TransmitterType( CHANNEL_1, 100, Color.DARK_GRAY )
+	static TransmitterType[] LEVEL_1_WIRELESS_TRANSMITTERS = new TransmitterType[] {
+		new TransmitterType( CHANNEL_1_FLAG, 100, Color.DARK_GRAY )
 	};
 	
 	static TransmitterType[] LEVEL_2_WIRELESS_TRANSMITTERS = new TransmitterType[] {
-		new TransmitterType( CHANNEL_1, 100, Color.DARK_GRAY ),
-		new TransmitterType( CHANNEL_2, 500, Color.LIGHT_GRAY ),
+		new TransmitterType( CHANNEL_1_FLAG, 100, Color.DARK_GRAY ),
+		new TransmitterType( CHANNEL_2_FLAG, 500, Color.LIGHT_GRAY ),
 	};
 	
 	static TransmitterType[] LEVEL_3_WIRELESS_TRANSMITTERS = new TransmitterType[] {
-		new TransmitterType( CHANNEL_1,  100, Color.DARK_GRAY ),
-		new TransmitterType( CHANNEL_2,  500, Color.LIGHT_GRAY ),
-		new TransmitterType( CHANNEL_3, 1500, Color.RED ),
+		new TransmitterType( CHANNEL_1_FLAG,  100, Color.DARK_GRAY ),
+		new TransmitterType( CHANNEL_2_FLAG,  500, Color.LIGHT_GRAY ),
+		new TransmitterType( CHANNEL_3_FLAG, 1500, Color.RED ),
 	};
 	
-	class Router extends WorldObject {
-		public boolean alive;
+	abstract class Router extends WorldObject {
 		public final byte[] macAddress;
+		
+		public boolean alive;
 		public byte[] ip6Address = new byte[16];
 		public int ip6PrefixLength = 128;
 		public int ip6ChildBits = 4;
 		public byte[][] addressesAllocated = new byte[16][];
 		public List<Neighbor> neighbors = new ArrayList<Neighbor>();
-		
-		public TransmitterType[] transmitters = BASIC_WIRELESS_TRANSMITTERS;
-		public int receiveChannels = CHANNEL_1;
-		public int type = 0;
 		
 		public Router( double x, double y, byte[] macAddress ) {
 			super( x, y );
@@ -69,18 +66,57 @@ public class RouterWorld implements EventHandler
 		}
 		
 		public TransmitterType transmitterForChannel( int channel ) {
-			for( TransmitterType tt : transmitters ) {
-				if( (tt.channels & channel) != 0 ) return tt;
+			for( TransmitterType tt : getTransmitters() ) {
+				if( (tt.channelFlag & channel) != 0 ) return tt;
 			}
 			return null;
 		}
 		
-		@Override public double getMaxRadius() {
-			return 2;
+		abstract TransmitterType[] getTransmitters();
+		
+		@Override public long getAutoUpdateTime() { return 0; }
+	}
+	
+	class Level1Router extends Router {
+		public Level1Router( double x, double y, byte[] mac ) {
+			super( x, y, mac );
 		}
 		
-		@Override public long getFlags() { return 0; }
-		@Override public long getAutoUpdateTime() { return 0; }
+		@Override public double getMaxRadius() { return 2; }
+		@Override public long getFlags() {
+			return CHANNEL_1_FLAG; 
+		}
+		@Override public TransmitterType[] getTransmitters() {
+			return LEVEL_1_WIRELESS_TRANSMITTERS;
+		}
+	}
+	
+	class Level2Router extends Router {
+		public Level2Router( double x, double y, byte[] mac ) {
+			super( x, y, mac );
+		}
+		
+		@Override public double getMaxRadius() { return 4; }
+		@Override public long getFlags() {
+			return CHANNEL_1_FLAG|CHANNEL_2_FLAG; 
+		}
+		@Override public TransmitterType[] getTransmitters() {
+			return LEVEL_2_WIRELESS_TRANSMITTERS;
+		}
+	}
+	
+	class Level3Router extends Router {
+		public Level3Router( double x, double y, byte[] mac ) {
+			super( x, y, mac );
+		}
+		
+		@Override public double getMaxRadius() { return 8; }
+		@Override public long getFlags() {
+			return CHANNEL_1_FLAG|CHANNEL_2_FLAG|CHANNEL_3_FLAG; 
+		}
+		@Override public TransmitterType[] getTransmitters() {
+			return LEVEL_3_WIRELESS_TRANSMITTERS;
+		}
 	}
 	
 	public Entree<Router> routerEntree = new QuadEntree<Router>( -32768, -32768, 65536, 65536, QuadEntreeNode.EMPTY, 11 );
@@ -97,28 +133,14 @@ public class RouterWorld implements EventHandler
 		return mac;
 	}
 	
-	protected void setRouterType( Router r, int type ) {
-		switch( type ) {
-		case( 3 ):
-			r.transmitters = LEVEL_3_WIRELESS_TRANSMITTERS;
-			r.receiveChannels = CHANNEL_1 | CHANNEL_2 | CHANNEL_3;
-			r.type = 3;
-			break;
-		case( 2 ):
-			r.transmitters = LEVEL_2_WIRELESS_TRANSMITTERS;
-			r.receiveChannels = CHANNEL_1 | CHANNEL_2;
-			r.type = 2;
-			break;
-		case( 1 ):
-			r.transmitters = BASIC_WIRELESS_TRANSMITTERS;
-			r.receiveChannels = CHANNEL_1;
-			r.type = 2;
-		}
-	}
-	
 	protected void addRouter( double x, double y, int type, WorldUpdateBuilder ub ) {
-		Router r = new Router( x, y, newMacAddress() );
-		setRouterType(r, type);
+		Router r;
+		switch( type ) {
+		case( 1 ): r = new Level1Router( x, y, newMacAddress() ); break;
+		case( 2 ): r = new Level2Router( x, y, newMacAddress() ); break;
+		case( 3 ): r = new Level3Router( x, y, newMacAddress() ); break;
+		default: throw new RuntimeException("Invalid router type: "+type);
+		}
 		r.alive = true;
 		ub.add(r);
 	}
@@ -436,13 +458,13 @@ public class RouterWorld implements EventHandler
 	protected void sendWireless( long ts, Router source, TransmitterType tt, byte[] destMac, Object payload ) throws Exception {
 		if( tt == null ) return;
 		eventScheduler.give( new WirelessTransmissionEvent( source.x, source.y, ts, c,
-			tt.power, tt.channels,
+			tt.power, tt.channelFlag,
 			new RouterWorld.Frame( source.macAddress, destMac, payload )
 		));
 	}
 
 	protected void sendWireless( long ts, Router source, byte[] destMac, Object payload ) throws Exception {
-		for( TransmitterType tt : source.transmitters ) {
+		for( TransmitterType tt : source.getTransmitters() ) {
 			sendWireless( ts, source, tt, destMac, payload );
 		}
 	}
@@ -510,11 +532,8 @@ public class RouterWorld implements EventHandler
 		if( evt instanceof WirelessTransmissionEvent ) {
 			final WirelessTransmissionEvent wtEvt = (WirelessTransmissionEvent)evt;
 			if( wtEvt.data instanceof Frame ) {
-				routerEntree.forEachObject(0, Long.MAX_VALUE, new TCircle(wtEvt.sx, wtEvt.sy, wtEvt.intensity), new Sink<RouterWorld.Router>() {
+				routerEntree.forEachObject(wtEvt.channels, Long.MAX_VALUE, new TCircle(wtEvt.sx, wtEvt.sy, wtEvt.intensity), new Sink<RouterWorld.Router>() {
 					@Override public void give(Router r) throws Exception {
-						// TODO: could use flags to indicate channels and possibly save some time
-						if( (r.receiveChannels & wtEvt.channels) == 0 ) return;
-						
 						double dx = r.x - wtEvt.sx;
 						double dy = r.y - wtEvt.sy;
 						double dist = Math.sqrt(dx*dx+dy*dy);

@@ -111,8 +111,8 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 				final HashSet<RouterPair> linksDrawn = new HashSet<RouterPair>();
 				
 				public void give(final Router r0) throws Exception {
-					for( final TransmitterType tt0 : r0.transmitters ) {
-						world.routerEntree.forEachObject(0, Long.MAX_VALUE, new TCircle(r0.x, r0.y, tt0.power), new Sink<Router>() {
+					for( final TransmitterType tt0 : r0.getTransmitters() ) {
+						world.routerEntree.forEachObject(tt0.channelFlag, Long.MAX_VALUE, new TCircle(r0.x, r0.y, tt0.power), new Sink<Router>() {
 							public void give(final Router r1) throws Exception {
 								if( r0 == r1 ) return;
 								
@@ -126,8 +126,8 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 								double dy = r1.y - r0.y;
 								double dist = Math.sqrt(dx*dx+dy*dy)-Math.min(r0.getMaxRadius(),r1.getMaxRadius());
 								
-								for( TransmitterType tt1 : r1.transmitters ) {
-									if( (tt0.channels & tt1.channels) != 0 ) {
+								for( TransmitterType tt1 : r1.getTransmitters() ) {
+									if( tt0.channelFlag == tt1.channelFlag ) {
 										double maxDist = Math.min(tt0.power,tt1.power);
 										if( dist <= maxDist ) {
 											worldToScreenCoords(  r0.x,  r0.y, width, height, c0 );
@@ -154,8 +154,10 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 					int sx = (int)c0[0];
 					int sy = (int)c0[1];
 					// if( sx < clip.x || sy < clip.y || sx >= clip.x + clip.width || sy >= clip.y + clip.height ) return;
-					g2d.setColor( r.type == 1 ? Color.GREEN : Color.WHITE );
-					g2d.fillRect( sx-(int)(scale*size/2), sy-(int)(scale*size/2), (int)scale*size, (int)scale*size );
+					int w = (int)scale*size;
+					// if( w == 0 ) w = 1;
+					g2d.setColor( Color.GREEN );
+					g2d.fillRect( sx-(int)(scale*size/2), sy-(int)(scale*size/2), w, w );
 					g2d.setColor( macColor );
 					g2d.drawString( AddressUtil.formatMacAddress(r.macAddress), sx, sy );
 					if( r.ip6Address[0] != 0 ) {
