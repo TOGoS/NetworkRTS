@@ -23,7 +23,7 @@ public class TimedEventQueue<E extends Timestamped> implements Timekeeper, Sink<
 	public synchronized E take() throws InterruptedException {
 		while( true ) {
 			E next = q.peek();
-			if( next != null && next.getTimestamp() < currentTimestamp ) return q.remove();
+			if( next != null && next.getTimestamp() <= currentTimestamp ) return q.remove();
 			this.wait();
 		}
 	}
