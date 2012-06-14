@@ -3,9 +3,9 @@ package togos.networkrts.experimental.entree2;
 import java.util.Collections;
 import java.util.Random;
 
-import togos.networkrts.experimental.cshape.CRectangle;
 import togos.networkrts.experimental.entree2.EntreeTest.SimpleWorldObject;
 import togos.networkrts.experimental.netsim2.Sink;
+import togos.networkrts.experimental.shape.TRectangle;
 
 public class EntreeFilterPerformanceTest
 {
@@ -23,7 +23,7 @@ public class EntreeFilterPerformanceTest
 	protected static long findSomeEntities( Entree<SimpleWorldObject> entree, long requireFlags, long maxAutoUpdateTime, double x, double y, double rad )
 		throws Exception
 	{
-		CRectangle cr = new CRectangle(x-rad, y-rad, rad*2, rad*2);
+		TRectangle cr = new TRectangle(x-rad, y-rad, rad*2, rad*2);
 		long begin = System.currentTimeMillis();
 		for( int i=0; i<100; ++i ) {
 			entree.forEachObject(requireFlags, maxAutoUpdateTime, cr, new Sink<EntreeTest.SimpleWorldObject>() {

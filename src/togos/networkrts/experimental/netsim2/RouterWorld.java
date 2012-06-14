@@ -7,15 +7,15 @@ import java.util.List;
 import java.util.Random;
 
 import togos.blob.util.BlobUtil;
-import togos.networkrts.experimental.cshape.CBoundless;
-import togos.networkrts.experimental.cshape.CCircle;
-import togos.networkrts.experimental.cshape.CShape;
 import togos.networkrts.experimental.entree2.Entree;
 import togos.networkrts.experimental.entree2.QuadEntree;
 import togos.networkrts.experimental.entree2.QuadEntreeNode;
 import togos.networkrts.experimental.entree2.WorldObject;
 import togos.networkrts.experimental.entree2.WorldUpdateBuilder;
 import togos.networkrts.experimental.gensim.Timestamped;
+import togos.networkrts.experimental.shape.TBoundless;
+import togos.networkrts.experimental.shape.TCircle;
+import togos.networkrts.experimental.shape.RectIntersector;
 
 public class RouterWorld implements EventHandler
 {
@@ -253,8 +253,8 @@ public class RouterWorld implements EventHandler
 			}
 		}
 		try {
-			routerEntree.forEachObject(0, Long.MAX_VALUE, new CShape() {
-				public int rectIntersection(double x, double y, double w, double h) { return CShape.INCLUDES_ALL; }
+			routerEntree.forEachObject(0, Long.MAX_VALUE, new RectIntersector() {
+				public int rectIntersection(double x, double y, double w, double h) { return RectIntersector.INCLUDES_ALL; }
 			}, new Sink<RouterWorld.Router>() {
 				int num = rand.nextInt(routerEntree.getObjectCount());
 				
@@ -283,7 +283,7 @@ public class RouterWorld implements EventHandler
 	
 	public void clear() {
 		try {
-			routerEntree.forEachObject(0,  Long.MAX_VALUE, CBoundless.INSTANCE, new Sink<Router>() {
+			routerEntree.forEachObject(0,  Long.MAX_VALUE, TBoundless.INSTANCE, new Sink<Router>() {
 				@Override public void give(Router r) throws Exception {
 					r.alive = false;
 				}
@@ -510,7 +510,7 @@ public class RouterWorld implements EventHandler
 		if( evt instanceof WirelessTransmissionEvent ) {
 			final WirelessTransmissionEvent wtEvt = (WirelessTransmissionEvent)evt;
 			if( wtEvt.data instanceof Frame ) {
-				routerEntree.forEachObject(0, Long.MAX_VALUE, new CCircle(wtEvt.sx, wtEvt.sy, wtEvt.intensity), new Sink<RouterWorld.Router>() {
+				routerEntree.forEachObject(0, Long.MAX_VALUE, new TCircle(wtEvt.sx, wtEvt.sy, wtEvt.intensity), new Sink<RouterWorld.Router>() {
 					@Override public void give(Router r) throws Exception {
 						// TODO: could use flags to indicate channels and possibly save some time
 						if( (r.receiveChannels & wtEvt.channels) == 0 ) return;

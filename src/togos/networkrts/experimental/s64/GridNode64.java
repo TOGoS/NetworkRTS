@@ -1,7 +1,7 @@
 package togos.networkrts.experimental.s64;
 
-import togos.networkrts.experimental.cshape.CShape;
 import togos.networkrts.experimental.s64.fill.GridNode64Filler;
+import togos.networkrts.experimental.shape.RectIntersector;
 
 public class GridNode64
 {
@@ -48,16 +48,16 @@ public class GridNode64
 		return true;
 	}
 
-	public GridNode64 fillArea(double nodeSize, double nodeX, double nodeY, CShape s, double minDetailSize, GridNode64Filler fill) {
+	public GridNode64 fillArea(double nodeSize, double nodeX, double nodeY, RectIntersector s, double minDetailSize, GridNode64Filler fill) {
 		int inclusiveness = s.rectIntersection(nodeX, nodeY, nodeSize, nodeSize);
 		
 		if( nodeSize <= minDetailSize ) {
-			if( inclusiveness == CShape.INCLUDES_SOME ) inclusiveness = CShape.INCLUDES_ALL;
+			if( inclusiveness == RectIntersector.INCLUDES_SOME ) inclusiveness = RectIntersector.INCLUDES_ALL;
 		}
 		
 		switch( inclusiveness ) {
-		case( CShape.INCLUDES_NONE ): return this;
-		case( CShape.INCLUDES_ALL ): return fill.getNode( nodeX, nodeY, nodeSize );
+		case( RectIntersector.INCLUDES_NONE ): return this;
+		case( RectIntersector.INCLUDES_ALL ): return fill.getNode( nodeX, nodeY, nodeSize );
 		}
 		
 		Block[][] newStacks = new Block[64][];
@@ -68,16 +68,16 @@ public class GridNode64
 				double snX = nodeX + subNodeSize*sx;
 				double snY = nodeY + subNodeSize*sy;
 				switch( s.rectIntersection(snX, snY, subNodeSize, subNodeSize) ) {
-				case( CShape.INCLUDES_NONE ):
+				case( RectIntersector.INCLUDES_NONE ):
 					newSubNodes[i] = subNodes[i];
 					newStacks[i] = blockStacks[i];
 					continue;
-				case( CShape.INCLUDES_ALL ):
+				case( RectIntersector.INCLUDES_ALL ):
 					GridNode64 n = fill.getNode( snX, snY, subNodeSize );
 					newSubNodes[i] = n;
 					newStacks[i] = n.blockStacks[36];
 					continue;
-				case( CShape.INCLUDES_SOME ):
+				case( RectIntersector.INCLUDES_SOME ):
 					newSubNodes[i] = subNodes[i].fillArea(subNodeSize, snX, snY, s, minDetailSize, fill);
 					newStacks[i] = newSubNodes[i].blockStacks[36];
 					continue;

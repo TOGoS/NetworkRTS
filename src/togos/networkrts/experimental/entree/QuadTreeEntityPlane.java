@@ -1,6 +1,6 @@
 package togos.networkrts.experimental.entree;
 
-import togos.networkrts.experimental.cshape.CShape;
+import togos.networkrts.experimental.shape.RectIntersector;
 
 public class QuadTreeEntityPlane<EntityClass extends PlaneEntity> implements EntityPlane<EntityClass>
 {
@@ -19,7 +19,7 @@ public class QuadTreeEntityPlane<EntityClass extends PlaneEntity> implements Ent
 		return new QuadTreeEntityPlane( sizeX, sizeY, root.update(u, 0, 0, rootSize), rootSize );
 	}
 	
-	public void eachEntity(	CShape s, int requireFlags, int forbidFlags, Iterated<EntityClass> cb) {
+	public void eachEntity(	RectIntersector s, int requireFlags, int forbidFlags, Iterated<EntityClass> cb) {
 		root.eachEntity( s, requireFlags | PlaneEntity.FLAG_EXISTS, forbidFlags, 0, 0, rootSize, cb );
 	}
 }

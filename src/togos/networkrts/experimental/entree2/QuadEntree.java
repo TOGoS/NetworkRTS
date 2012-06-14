@@ -1,7 +1,7 @@
 package togos.networkrts.experimental.entree2;
 
-import togos.networkrts.experimental.cshape.CShape;
 import togos.networkrts.experimental.netsim2.Sink;
+import togos.networkrts.experimental.shape.RectIntersector;
 
 public class QuadEntree<WorldObjectClass extends WorldObject> implements Entree<WorldObjectClass>
 {
@@ -28,7 +28,7 @@ public class QuadEntree<WorldObjectClass extends WorldObject> implements Entree<
 	}
 	
 	@Override
-	public void forEachObject(long flags, long autoUpdateTime, CShape s, Sink<WorldObjectClass> callback)
+	public void forEachObject(long flags, long autoUpdateTime, RectIntersector s, Sink<WorldObjectClass> callback)
 		throws Exception
 	{
 		root.forEachObject(flags, autoUpdateTime, s, callback, x, y, w, h);

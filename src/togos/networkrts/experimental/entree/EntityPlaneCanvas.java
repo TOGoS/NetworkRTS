@@ -5,7 +5,7 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 
 import togos.networkrts.awt.DoubleBufferedCanvas;
-import togos.networkrts.experimental.cshape.CRectangle;
+import togos.networkrts.experimental.shape.TRectangle;
 
 class EntityPlaneCanvas extends DoubleBufferedCanvas
 {
@@ -27,7 +27,7 @@ class EntityPlaneCanvas extends DoubleBufferedCanvas
 		final int w = getWidth();
 		final int h = getHeight();
 		Rectangle gClip = g.getClipBounds();
-		CRectangle wClip = new CRectangle(
+		TRectangle wClip = new TRectangle(
 			centerX + (gClip.getMinX() - w/2) / scale,
 			centerY + (gClip.getMinY() - h/2) / scale,
 			gClip.getWidth() / scale,

@@ -7,9 +7,9 @@ import java.util.Random;
 
 import togos.networkrts.awt.Apallit;
 import togos.networkrts.awt.TimestampedPaintable;
-import togos.networkrts.experimental.cshape.CCircle;
-import togos.networkrts.experimental.cshape.CShape;
-import togos.networkrts.experimental.cshape.CUnion;
+import togos.networkrts.experimental.shape.TCircle;
+import togos.networkrts.experimental.shape.RectIntersector;
+import togos.networkrts.experimental.shape.TUnion;
 
 public class GridWorld64Viewer extends Apallit implements TimestampedPaintable
 {
@@ -26,13 +26,13 @@ public class GridWorld64Viewer extends Apallit implements TimestampedPaintable
 		super.init();
 		
 		Random r = new Random();
-		CShape[] shapes = new CShape[20];
+		RectIntersector[] shapes = new RectIntersector[20];
 		for( int j=0; j<20; ++j ) {
 			for( int i=0; i<20; ++i ) {
-				CCircle c = new CCircle(0.2 + r.nextDouble() * 0.5, 0.2 + r.nextDouble() * 0.6, r.nextDouble()*r.nextDouble()*0.1);
+				TCircle c = new TCircle(0.2 + r.nextDouble() * 0.5, 0.2 + r.nextDouble() * 0.6, r.nextDouble()*r.nextDouble()*0.1);
 				shapes[i] = c;
 			}
-			setWorld( world.fillArea( new CUnion(shapes), 0.001, r.nextBoolean() ? Blocks.WATER_FILLER : Blocks.GRASS.getFiller() ) );
+			setWorld( world.fillArea( new TUnion(shapes), 0.001, r.nextBoolean() ? Blocks.WATER_FILLER : Blocks.GRASS.getFiller() ) );
 		}
 		
 		fillWith( this, 50 );

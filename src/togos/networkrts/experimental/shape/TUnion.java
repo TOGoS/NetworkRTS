@@ -1,10 +1,10 @@
-package togos.networkrts.experimental.cshape;
+package togos.networkrts.experimental.shape;
 
-public class CUnion implements CShape
+public class TUnion implements RectIntersector
 {
-	public final CShape[] subShapes;
+	public final RectIntersector[] subShapes;
 	
-	public CUnion( CShape[] subShapes ) {
+	public TUnion( RectIntersector[] subShapes ) {
 		this.subShapes = subShapes;
 	}
 	
@@ -12,7 +12,7 @@ public class CUnion implements CShape
 		int inclusiveness = 0;
 		for( int i=0; i<subShapes.length; ++i ) {
 			int subInc = subShapes[i].rectIntersection(x, y, w, h);
-			if( subInc == CShape.INCLUDES_ALL ) return subInc;
+			if( subInc == RectIntersector.INCLUDES_ALL ) return subInc;
 			inclusiveness |= subInc;
 		}
 		return inclusiveness;

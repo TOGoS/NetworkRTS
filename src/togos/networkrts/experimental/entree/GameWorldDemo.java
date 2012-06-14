@@ -10,14 +10,14 @@ import java.util.Random;
 
 import togos.networkrts.awt.Apallit;
 import togos.networkrts.awt.TimestampedPaintable;
-import togos.networkrts.experimental.cshape.CCircle;
-import togos.networkrts.experimental.cshape.CRectangle;
-import togos.networkrts.experimental.cshape.CShape;
-import togos.networkrts.experimental.cshape.CUnion;
 import togos.networkrts.experimental.s64.Block;
 import togos.networkrts.experimental.s64.Blocks;
 import togos.networkrts.experimental.s64.GridNode64;
 import togos.networkrts.experimental.s64.GridWorld64Viewer;
+import togos.networkrts.experimental.shape.TCircle;
+import togos.networkrts.experimental.shape.TRectangle;
+import togos.networkrts.experimental.shape.RectIntersector;
+import togos.networkrts.experimental.shape.TUnion;
 import togos.networkrts.tfunc.ConstantPositionFunction;
 import togos.networkrts.tfunc.ConstantScalarFunction;
 import togos.networkrts.tfunc.PositionFunction;
@@ -140,7 +140,7 @@ public class GameWorldDemo extends Apallit
 			if( gs == null ) return;
 			
 			Rectangle gClip = g.getClipBounds();
-			CRectangle wClip = new CRectangle(
+			TRectangle wClip = new TRectangle(
 				xf.x + (gClip.getMinX() - width/2) / xf.scale,
 				xf.y + (gClip.getMinY() - height/2) / xf.scale,
 				gClip.getWidth() / xf.scale,
@@ -269,12 +269,12 @@ public class GameWorldDemo extends Apallit
 		fillWith( drawer, 30 );
 		GridNode64 terrain = Blocks.GRASS.getHomogeneousNode();
 		for( int i=0; i<128; ++i ) {
-			CShape[] shapes = new CShape[4];
+			RectIntersector[] shapes = new RectIntersector[4];
 			for( int j=0; j<4; ++j ) {
-				CCircle c = new CCircle( r.nextDouble()*256, r.nextDouble()*256, r.nextDouble()*r.nextDouble()*16);
+				TCircle c = new TCircle( r.nextDouble()*256, r.nextDouble()*256, r.nextDouble()*r.nextDouble()*16);
 				shapes[j] = c;
 			}
-			terrain = terrain.fillArea( 256, 0, 0, new CUnion(shapes), 1, Blocks.WATER_FILLER );
+			terrain = terrain.fillArea( 256, 0, 0, new TUnion(shapes), 1, Blocks.WATER_FILLER );
 		}
 		ArrayList<double[]> treeLocations = new ArrayList<double[]>();
 		addTrees( terrain, 0, 0, 256, treeLocations );

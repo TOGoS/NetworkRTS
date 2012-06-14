@@ -1,6 +1,6 @@
-package togos.networkrts.experimental.cshape;
+package togos.networkrts.experimental.shape;
 
-public interface CShape
+public interface RectIntersector
 {
 	public static final int INCLUDES_NONE = 0;
 	public static final int INCLUDES_SOME = 1;

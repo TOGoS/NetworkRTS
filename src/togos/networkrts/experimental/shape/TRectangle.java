@@ -1,10 +1,10 @@
-package togos.networkrts.experimental.cshape;
+package togos.networkrts.experimental.shape;
 
-public class CRectangle implements CShape
+public class TRectangle implements RectIntersector
 {
 	public final double x, y, w, h;
 	
-	public CRectangle( double x, double y, double w, double h ) {
+	public TRectangle( double x, double y, double w, double h ) {
 		this.x = x; this.w = w;
 		this.y = y; this.h = h;
 	}
