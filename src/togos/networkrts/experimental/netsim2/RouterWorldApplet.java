@@ -26,12 +26,11 @@ public class RouterWorldApplet extends Apallit
 	
 	Random rand = new Random();
 	protected Router pickRouterWithIp6Address() {
-		Router[] routers = rw.routers.toArray(new Router[rw.routers.size()]);
-		for( int i=0; i<100; ++i ) {
-			Router r = routers[rand.nextInt(routers.length)];
-			if( r.ip6Address[0] != 0 ) return r;
+		Router r = rw.randomRouter();
+		for( int i=0; r != null && r.ip6Address[0] == 0 && i<100; ++i ) {
+			r = rw.randomRouter();
 		}
-		return routers[rand.nextInt(routers.length)];
+		return r;
 	}
 	
 	protected void ping() throws Exception {
@@ -50,8 +49,6 @@ public class RouterWorldApplet extends Apallit
 		rw.eventScheduler = simulator.teq;
 		simulator.teq.advanceTimeTo( System.currentTimeMillis() );
 		rw.init();
-		rwp.cx = 512;
-		rwp.cy = 512;
 		
 		addService( new InterruptableSingleThreadedService() {
 			@Override protected void _run() throws InterruptedException {

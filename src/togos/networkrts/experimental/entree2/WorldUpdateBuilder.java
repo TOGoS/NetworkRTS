@@ -2,7 +2,7 @@ package togos.networkrts.experimental.entree2;
 
 import java.util.ArrayList;
 
-class UpdateBuilder {
+public class WorldUpdateBuilder {
 	ArrayList<WorldObjectUpdate> updates = new ArrayList();
 	
 	public void add( WorldObject o ) {

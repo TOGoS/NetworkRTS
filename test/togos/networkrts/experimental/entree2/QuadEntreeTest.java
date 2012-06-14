@@ -4,7 +4,7 @@ package togos.networkrts.experimental.entree2;
 public abstract class QuadEntreeTest extends EntreeTest<QuadEntree>
 {
 	public void testAddThingThatFitsOnlyDirectly() {
-		UpdateBuilder ub = new UpdateBuilder();
+		WorldUpdateBuilder ub = new WorldUpdateBuilder();
 		ub.add( new SimpleWorldObject(512, 512, 512, Long.MAX_VALUE, 0) );
 		entree = (QuadEntree)ub.applyAndClear(entree);
 		
@@ -17,7 +17,7 @@ public abstract class QuadEntreeTest extends EntreeTest<QuadEntree>
 	}
 		
 	public void testAddThingThatDoesntFit() {
-		UpdateBuilder ub = new UpdateBuilder();
+		WorldUpdateBuilder ub = new WorldUpdateBuilder();
 		ub.add( new SimpleWorldObject(512, 512, 2048, Long.MAX_VALUE, 0) );
 		entree = (QuadEntree)ub.applyAndClear(entree);
 		

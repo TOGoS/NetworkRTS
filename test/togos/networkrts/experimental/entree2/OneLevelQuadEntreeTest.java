@@ -10,7 +10,7 @@ public class OneLevelQuadEntreeTest extends QuadEntreeTest
 		// It *would* fit as a sub-node if we allowed subdivision,
 		// but since this tree has maxSubdivision=0,
 		// it should end up in the root node anyway.
-		UpdateBuilder ub = new UpdateBuilder();
+		WorldUpdateBuilder ub = new WorldUpdateBuilder();
 		ub.add( new SimpleWorldObject(512, 512, 256, Long.MAX_VALUE, 0) );
 		entree = (QuadEntree)ub.applyAndClear(entree);
 		

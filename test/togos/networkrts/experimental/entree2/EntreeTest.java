@@ -38,7 +38,7 @@ public abstract class EntreeTest<EntreeClass extends Entree> extends TestCase
 	}
 	
 	public void testAddMultipleThingsAndGetThemAndThenRemoveThemAndStuff() throws Exception {
-		UpdateBuilder ub = new UpdateBuilder();
+		WorldUpdateBuilder ub = new WorldUpdateBuilder();
 		final SimpleWorldObject o0 = new SimpleWorldObject(128,  64,  32, Long.MAX_VALUE, 1);
 		final SimpleWorldObject o1 = new SimpleWorldObject(128, 128,  32, Long.MAX_VALUE, 2);
 		final SimpleWorldObject o2 = new SimpleWorldObject(256, 256,  64, Long.MAX_VALUE, 4);
@@ -127,7 +127,7 @@ public abstract class EntreeTest<EntreeClass extends Entree> extends TestCase
 	}
 	
 	public void testFlagFilters() throws Exception {
-		UpdateBuilder ub = new UpdateBuilder();
+		WorldUpdateBuilder ub = new WorldUpdateBuilder();
 		ub.add( new SimpleWorldObject(64, 32, 32, Long.MAX_VALUE, 0x01) );
 		ub.add( new SimpleWorldObject(64, 64, 32, Long.MAX_VALUE, 0x02) );
 		ub.add( new SimpleWorldObject(32, 64, 32, Long.MAX_VALUE, 0x04) );
@@ -145,7 +145,7 @@ public abstract class EntreeTest<EntreeClass extends Entree> extends TestCase
 	}
 	
 	public void testUpdateTimeFilters() throws Exception {
-		UpdateBuilder ub = new UpdateBuilder();
+		WorldUpdateBuilder ub = new WorldUpdateBuilder();
 		ub.add( new SimpleWorldObject(64, 32, 32, 100, 0x01) );
 		ub.add( new SimpleWorldObject(64, 64, 32, 100, 0x02) );
 		ub.add( new SimpleWorldObject(32, 64, 32, 200, 0x04) );

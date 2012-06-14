@@ -6,12 +6,15 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
 import togos.networkrts.awt.TimestampedPaintable;
+import togos.networkrts.experimental.entree.TouchyClipRectangle;
 import togos.networkrts.experimental.gensim.TimedEventQueue;
 import togos.networkrts.experimental.gensim.Timestamped;
+import togos.networkrts.experimental.netsim2.RouterWorld.Router;
 import togos.networkrts.experimental.netsim2.RouterWorld.TransmitterType;
 import togos.networkrts.inet.AddressUtil;
 
@@ -48,6 +51,11 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 		}
 	}
 	
+	protected void screenToWorldCoords( double sx, double sy, int screenWidth, int screenHeight, double[] dest ) {
+		dest[0] = cx + (sx - (screenWidth  / 2)) / scale;
+		dest[1] = cy + (sy - (screenHeight / 2)) / scale;
+	}
+	
 	protected void worldToScreenCoords( double wx, double wy, int screenWidth, int screenHeight, double[] dest ) {
 		dest[0] = screenWidth  / 2 + (wx - cx) * scale;
 		dest[1] = screenHeight / 2 + (wy - cy) * scale;
@@ -57,15 +65,32 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 		return v < min ? min : v > max ? max : v;
 	}
 	
+	static class RouterPair {
+		protected final Router r1, r2;
+		public RouterPair( Router r1, Router r2 ) {
+			this.r1 = r1; this.r2 = r2;
+		}
+		@Override public int hashCode() {
+			return r1.hashCode() + r2.hashCode();
+		}
+		@Override
+		public boolean equals(Object obj) {
+			if( !(obj instanceof RouterPair) ) return false;
+			
+			RouterPair rp1 = (RouterPair)obj;
+			return (rp1.r1 == r1 && rp1.r2 == r2) || (rp1.r1 == r2 && rp1.r2 == r1); 
+		}
+	}
+	
 	@Override
-	public void paint( long timestamp, int width, int height, Graphics2D g2d ) {
+	public void paint( final long timestamp, final int width, final int height, final Graphics2D g2d ) {
 		Font originalFont = g2d.getFont();
 		
-		Rectangle clip = g2d.getClipBounds();
+		final Rectangle clip = g2d.getClipBounds();
 		g2d.setColor( Color.BLACK );
 		g2d.fillRect( clip.x, clip.y, clip.width, clip.height );
-		double[] c0 = new double[2];
-		double[] c1 = new double[2];
+		final double[] c0 = new double[2];
+		final double[] c1 = new double[2];
 		
 		if( world == null ) return;
 		
@@ -73,45 +98,71 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 		
 		g2d.setStroke( new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1, new float[]{2,2}, 0 ));
 		g2d.setColor( Color.DARK_GRAY );
-		for( RouterWorld.Router r : world.routers ) {
-			for( RouterWorld.Router r1 : world.routers ) {
-				if( r.id < r1.id ) continue;
-				double dx = r1.x - r.x;
-				double dy = r1.y - r.y;
-				double dist = Math.sqrt(dx*dx+dy*dy);
-				for( TransmitterType tt0 : r.transmitters ) {
-					for( TransmitterType tt1 : r1.transmitters ) {
-						if( (tt0.channels & tt1.channels) != 0 ) {
-							double maxDist = Math.min(tt0.power,tt1.power);
-							if( dist <= maxDist ) {
-								worldToScreenCoords(  r.x,  r.y, width, height, c0 );
-								worldToScreenCoords( r1.x, r1.y, width, height, c1 );
-								g2d.setColor(tt0.color);
-								g2d.drawLine( (int)c0[0], (int)c0[1], (int)c1[0], (int)c1[1] );
+		
+		screenToWorldCoords( clip.getMinX(), clip.getMinY(), width, height, c0 );
+		screenToWorldCoords( clip.getMaxX(), clip.getMaxY(), width, height, c1 );
+		TouchyClipRectangle worldScreenClip = new TouchyClipRectangle(c0[0], c0[1], c1[0]-c0[0], c1[1]-c0[1]);
+		
+		final int[] drawCounters = new int[3];
+		final HashSet<RouterPair> linksDrawn = new HashSet<RouterPair>();
+		
+		try {
+			world.routerEntree.forEachObject(0, Long.MAX_VALUE, worldScreenClip, new Sink<Router>() {
+				public void give(final Router r) throws Exception {
+					for( final TransmitterType tt0 : r.transmitters ) {
+						world.routerEntree.forEachObject(0, Long.MAX_VALUE, new TouchyClipRectangle(r.x - tt0.power, r.y - tt0.power, tt0.power*2, tt0.power*2), new Sink<Router>() {
+							public void give(final Router r1) throws Exception {
+								++drawCounters[2];
+								
+								RouterPair rp = new RouterPair(r,r1);
+								if( linksDrawn.contains(rp) ) return;
+								linksDrawn.add(rp);
+								
+								double dx = r1.x - r.x;
+								double dy = r1.y - r.y;
+								double dist = Math.sqrt(dx*dx+dy*dy);
+								
+								for( TransmitterType tt1 : r1.transmitters ) {
+									if( (tt0.channels & tt1.channels) != 0 ) {
+										double maxDist = Math.min(tt0.power,tt1.power);
+										if( dist <= maxDist ) {
+											worldToScreenCoords(  r.x,  r.y, width, height, c0 );
+											worldToScreenCoords( r1.x, r1.y, width, height, c1 );
+											g2d.setColor(tt0.color);
+											g2d.drawLine( (int)c0[0], (int)c0[1], (int)c1[0], (int)c1[1] );
+											++drawCounters[1];
+										}
+									}
+								}
 							}
-						}
+						});
 					}
 				}
-			}
-		}
-		
-		Color macColor = new Color( 0, 0.8f, 0.8f, 0.5f );
-		Color ip6Color = new Color( 0.6f, 0.8f, 0.8f, 0.5f );
-		g2d.setColor( Color.GREEN );
-		for( RouterWorld.Router r : world.routers ) {
-			int size = r.type == 1 ? 2 : 4;
-			worldToScreenCoords( r.x, r.y, width, height, c0 );
-			int sx = (int)c0[0];
-			int sy = (int)c0[1];
-			if( sx < clip.x || sy < clip.y || sx >= clip.x + clip.width || sy >= clip.y + clip.height ) continue;
-			g2d.setColor( r.type == 1 ? Color.GREEN : Color.WHITE );
-			g2d.fillRect( sx-(int)(scale*size/2), sy-(int)(scale*size/2), (int)scale*size, (int)scale*size );
-			g2d.setColor( macColor );
-			g2d.drawString( AddressUtil.formatMacAddress(r.macAddress), sx, sy );
-			if( r.ip6Address[0] != 0 ) {
-				g2d.setColor( ip6Color );
-				g2d.drawString( AddressUtil.formatIp6Address(r.ip6Address,0)+"/"+r.ip6PrefixLength, sx, sy+12 );
-			}
+			});
+			
+			final Color macColor = new Color( 0, 0.8f, 0.8f, 0.5f );
+			final Color ip6Color = new Color( 0.6f, 0.8f, 0.8f, 0.5f );
+			g2d.setColor( Color.GREEN );
+			world.routerEntree.forEachObject(0, Long.MAX_VALUE, worldScreenClip, new Sink<Router>() {
+				public void give(Router r) throws Exception {
+					int size = r.type == 1 ? 2 : 4;
+					worldToScreenCoords( r.x, r.y, width, height, c0 );
+					int sx = (int)c0[0];
+					int sy = (int)c0[1];
+					// if( sx < clip.x || sy < clip.y || sx >= clip.x + clip.width || sy >= clip.y + clip.height ) return;
+					g2d.setColor( r.type == 1 ? Color.GREEN : Color.WHITE );
+					g2d.fillRect( sx-(int)(scale*size/2), sy-(int)(scale*size/2), (int)scale*size, (int)scale*size );
+					g2d.setColor( macColor );
+					g2d.drawString( AddressUtil.formatMacAddress(r.macAddress), sx, sy );
+					if( r.ip6Address[0] != 0 ) {
+						g2d.setColor( ip6Color );
+						g2d.drawString( AddressUtil.formatIp6Address(r.ip6Address,0)+"/"+r.ip6PrefixLength, sx, sy+12 );
+					}
+					++drawCounters[0];
+				}
+			});
+		} catch( Exception e ) {
+			e.printStackTrace();
 		}
 		
 		List<LiveEvent> events;
@@ -150,6 +201,8 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 		g2d.drawString( "Pings sent:     "+world.pingsSent, 12, 24+18 );
 		g2d.drawString( "Pongs sent:     "+world.pongsSent, 12, 24+18*2 );
 		g2d.drawString( "Pongs received: "+world.pongsReceived, 12, 24+18*3);
+		
+		g2d.drawString( String.format("Drew %04d lines, %04d routers, %04d inner loops", drawCounters[1], drawCounters[0], drawCounters[2]), 12, height-6-18 );
 		
 		if( statusText != null ) {
 			g2d.drawString( statusText, 12, height-6 );

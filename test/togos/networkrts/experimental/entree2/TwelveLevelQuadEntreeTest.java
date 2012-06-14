@@ -7,7 +7,7 @@ public class TwelveLevelQuadEntreeTest extends QuadEntreeTest
 	}
 	
 	public void testAddThingThatFitsInASubNode() {
-		UpdateBuilder ub = new UpdateBuilder();
+		WorldUpdateBuilder ub = new WorldUpdateBuilder();
 		ub.add( new SimpleWorldObject(512, 512, 256, Long.MAX_VALUE, 0) );
 		entree = (QuadEntree)ub.applyAndClear(entree);
 		
