@@ -195,7 +195,7 @@ public class RouterWorld implements EventHandler
 		case( 2 ):
 			// line!
 			double ang = rand.nextDouble()*Math.PI*2;
-			for( int i=rand.nextInt(7); i>=0; --i ) {
+			for( int i=rand.nextInt(20); i>=0; --i ) {
 				cx += 450*Math.cos(ang);
 				cy += 450*Math.sin(ang);
 				addLevel2Cluster( cx, cy, ub );
@@ -237,7 +237,7 @@ public class RouterWorld implements EventHandler
 		case( 2 ):
 			// line!
 			double ang = rand.nextDouble()*Math.PI*2;
-			for( int i=rand.nextInt(7); i>=0; --i ) {
+			for( int i=rand.nextInt(20); i>=0; --i ) {
 				cx += 1400*Math.cos(ang);
 				cy += 1400*Math.sin(ang);
 				addLevel3Cluster( cx, cy, ub );
