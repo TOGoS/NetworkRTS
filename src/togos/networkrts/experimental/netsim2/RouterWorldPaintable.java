@@ -105,29 +105,32 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 		TRectangle worldScreenClip = new TRectangle(c0[0], c0[1], c1[0]-c0[0], c1[1]-c0[1]);
 		
 		final int[] drawCounters = new int[3];
-		final HashSet<RouterPair> linksDrawn = new HashSet<RouterPair>();
 		
 		try {
 			world.routerEntree.forEachObject(0, Long.MAX_VALUE, worldScreenClip, new Sink<Router>() {
-				public void give(final Router r) throws Exception {
-					for( final TransmitterType tt0 : r.transmitters ) {
-						world.routerEntree.forEachObject(0, Long.MAX_VALUE, new TCircle(r.x, r.y, tt0.power), new Sink<Router>() {
+				final HashSet<RouterPair> linksDrawn = new HashSet<RouterPair>();
+				
+				public void give(final Router r0) throws Exception {
+					for( final TransmitterType tt0 : r0.transmitters ) {
+						world.routerEntree.forEachObject(0, Long.MAX_VALUE, new TCircle(r0.x, r0.y, tt0.power), new Sink<Router>() {
 							public void give(final Router r1) throws Exception {
+								if( r0 == r1 ) return;
+								
 								++drawCounters[2];
 								
-								RouterPair rp = new RouterPair(r,r1);
+								RouterPair rp = new RouterPair(r0,r1);
 								if( linksDrawn.contains(rp) ) return;
 								linksDrawn.add(rp);
 								
-								double dx = r1.x - r.x;
-								double dy = r1.y - r.y;
-								double dist = Math.sqrt(dx*dx+dy*dy);
+								double dx = r1.x - r0.x;
+								double dy = r1.y - r0.y;
+								double dist = Math.sqrt(dx*dx+dy*dy)-Math.min(r0.getMaxRadius(),r1.getMaxRadius());
 								
 								for( TransmitterType tt1 : r1.transmitters ) {
 									if( (tt0.channels & tt1.channels) != 0 ) {
 										double maxDist = Math.min(tt0.power,tt1.power);
 										if( dist <= maxDist ) {
-											worldToScreenCoords(  r.x,  r.y, width, height, c0 );
+											worldToScreenCoords(  r0.x,  r0.y, width, height, c0 );
 											worldToScreenCoords( r1.x, r1.y, width, height, c1 );
 											g2d.setColor(tt0.color);
 											g2d.drawLine( (int)c0[0], (int)c0[1], (int)c1[0], (int)c1[1] );
@@ -146,7 +149,7 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 			g2d.setColor( Color.GREEN );
 			world.routerEntree.forEachObject(0, Long.MAX_VALUE, worldScreenClip, new Sink<Router>() {
 				public void give(Router r) throws Exception {
-					int size = r.type == 1 ? 2 : 4;
+					int size = (int)r.getMaxRadius();
 					worldToScreenCoords( r.x, r.y, width, height, c0 );
 					int sx = (int)c0[0];
 					int sy = (int)c0[1];
