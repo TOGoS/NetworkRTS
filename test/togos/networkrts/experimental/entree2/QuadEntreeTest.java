@@ -3,18 +3,6 @@ package togos.networkrts.experimental.entree2;
 
 public abstract class QuadEntreeTest extends EntreeTest<QuadEntree>
 {
-	static class SimpleWorldObject extends WorldObject {
-		final long autoUpdateTime;
-		final long flags;
-		@Override public long getAutoUpdateTime() { return autoUpdateTime; }
-		@Override public long getFlags() { return flags; }
-		public SimpleWorldObject( double x, double y, double rad, long aat, long flags ) {
-			super( x, y, rad );
-			this.autoUpdateTime = aat;
-			this.flags = flags;
-		}
-	}
-	
 	public void testAddThingThatFitsOnlyDirectly() {
 		UpdateBuilder ub = new UpdateBuilder();
 		ub.add( new SimpleWorldObject(512, 512, 512, Long.MAX_VALUE, 0) );

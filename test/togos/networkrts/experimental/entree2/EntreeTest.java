@@ -11,12 +11,15 @@ public abstract class EntreeTest<EntreeClass extends Entree> extends TestCase
 	static class SimpleWorldObject extends WorldObject {
 		final long autoUpdateTime;
 		final long flags;
+		final double maxRadius;
 		@Override public long getAutoUpdateTime() { return autoUpdateTime; }
 		@Override public long getFlags() { return flags; }
+		@Override public double getMaxRadius() { return maxRadius; }
 		public SimpleWorldObject( double x, double y, double rad, long aat, long flags ) {
-			super( x, y, rad );
+			super( x, y );
 			this.autoUpdateTime = aat;
 			this.flags = flags;
+			this.maxRadius = rad;
 		}
 	}
 	

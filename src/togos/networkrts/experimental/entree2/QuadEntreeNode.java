@@ -64,14 +64,17 @@ public final class QuadEntreeNode
 	protected static final int CAT_DIRECT  = 4;
 	protected static final int CAT_OUTSIDE = 5;
 	
-	protected static final boolean fits( WorldObject obj, double x, double y, double w, double h ) {
+	protected static final boolean fits( WorldObjectUpdate up, double x, double y, double w, double h ) {
+		final WorldObject obj = up.worldObject;
+		final double rad = obj.getMaxRadius();
+		
 		final double maxx = x+w, maxy=y+h;
 		if( obj.x < x || obj.y < y || obj.x >= maxx || obj.y >= maxy ) return false;
 		
-		if( obj.x - obj.maxRadius < x-w/2 ) return false;
-		if( obj.y - obj.maxRadius < y-h/2 ) return false;
-		if( obj.x + obj.maxRadius > maxx+w/2 ) return false;
-		if( obj.y + obj.maxRadius > maxy+h/2 ) return false;
+		if( obj.x - rad < x-w/2 ) return false;
+		if( obj.y - rad < y-h/2 ) return false;
+		if( obj.x + rad > maxx+w/2 ) return false;
+		if( obj.y + rad > maxy+h/2 ) return false;
 		
 		return true;
 	}
@@ -85,7 +88,7 @@ public final class QuadEntreeNode
 	
 	protected static final boolean allUpdatesFit( WorldObjectUpdate[] updates, int begin, int end, double x, double y, double w, double h ) {
 		for( int i=begin; i<end; ++i ) {
-			if( !fits(updates[i].worldObject, x, y, w, h) ) return false;
+			if( !fits(updates[i], x, y, w, h) ) return false;
 		}
 		return true;
 	}
@@ -175,20 +178,20 @@ public final class QuadEntreeNode
 		// ^begin ^n0end ^n1end  ^n2begin ^n3begin ^end
 		
 		// Update n0 (begin***n0end...midoff)
-		for( int i=begin; i<midoff; ++i ) catScratch[i] = !fits(updates[i].worldObject, x, y, halfW, halfH);
+		for( int i=begin; i<midoff; ++i ) catScratch[i] = !fits(updates[i], x, y, halfW, halfH);
 		final int n0end = CatSort.sort(updates, catScratch, begin, midoff);
 		final QuadEntreeNode n0 = this.n0.updateUnchecked(updates, catScratch, scratch, begin, n0end, x, y, halfW, halfX, maxSubdivision-1);
 		// Update n1 (n0end***n1end...midoff)
-		for( int i=n0end; i<midoff; ++i ) catScratch[i] = !fits(updates[i].worldObject, halfX, y, halfW, halfH);
+		for( int i=n0end; i<midoff; ++i ) catScratch[i] = !fits(updates[i], halfX, y, halfW, halfH);
 		final int n1end = CatSort.sort(updates, catScratch, n0end, midoff);
 		final QuadEntreeNode n1 = this.n1.updateUnchecked(updates, catScratch, scratch, n0end, n1end, halfX, y, halfW, halfX, maxSubdivision-1); 
 		
 		// Update n3 (midoff...n3begin***end)
-		for( int i=midoff; i<end; ++i ) catScratch[i] = fits(updates[i].worldObject, halfX, halfY, halfW, halfH);
+		for( int i=midoff; i<end; ++i ) catScratch[i] = fits(updates[i], halfX, halfY, halfW, halfH);
 		final int n3begin = CatSort.sort(updates, catScratch, midoff, end);
 		final QuadEntreeNode n3 = this.n3.updateUnchecked(updates, catScratch, scratch, n3begin, end, halfX, halfY, halfW, halfX, maxSubdivision-1);
 		// Update n2 (midoff...n2begin***n3begin)
-		for( int i=midoff; i<n3begin; ++i ) catScratch[i] = fits(updates[i].worldObject, x, halfY, halfW, halfH);
+		for( int i=midoff; i<n3begin; ++i ) catScratch[i] = fits(updates[i], x, halfY, halfW, halfH);
 		final int n2begin = CatSort.sort(updates, catScratch, midoff, n3begin);
 		final QuadEntreeNode n2 = this.n2.updateUnchecked(updates, catScratch, scratch, n2begin, n3begin, x, halfY, halfW, halfX, maxSubdivision-1);
 		
@@ -206,7 +209,7 @@ public final class QuadEntreeNode
 		if( off == end ) return this; // No updates!
 		
 		for( int i=off; i<end; ++i ) {
-			catScratch[i] = !fits(updates[i].worldObject, x, y, w, h);
+			catScratch[i] = !fits(updates[i], x, y, w, h);
 		}
 		end = CatSort.sort( updates, catScratch, off, end );
 		
@@ -228,7 +231,7 @@ public final class QuadEntreeNode
 		n2.forEachObject(requireFlags, maxAutoUpdateTime, s, callback, x    , halfY, halfW, halfH);
 		n3.forEachObject(requireFlags, maxAutoUpdateTime, s, callback, halfX, halfY, halfW, halfH);
 		for( WorldObject o : objects ) {
-			if( !s.intersectsRect(o.x - o.maxRadius, o.y - o.maxRadius, o.maxRadius*2, o.maxRadius*2) ) continue;
+			if( !s.intersectsRect(o.x - o.getMaxRadius(), o.y - o.getMaxRadius(), o.getMaxRadius()*2, o.getMaxRadius()*2) ) continue;
 			if( (o.getFlags() & requireFlags) != requireFlags ) continue;
 			if( o.getAutoUpdateTime() > maxAutoUpdateTime ) continue;
 			

@@ -38,7 +38,7 @@ public class SetEntree<WorldObjectClass extends WorldObject> implements Entree<W
 	@Override
 	public void forEachObject(long requireFlags, long maxAutoUpdateTime, ClipShape clip, Sink<WorldObjectClass> callback) throws Exception {
 		for( WorldObjectClass o : objects ) {
-			if( !clip.intersectsRect(o.x - o.maxRadius, o.y - o.maxRadius, o.maxRadius*2, o.maxRadius*2) ) continue;
+			if( !clip.intersectsRect(o.x - o.getMaxRadius(), o.y - o.getMaxRadius(), o.getMaxRadius()*2, o.getMaxRadius()*2) ) continue;
 			if( (o.getFlags() & requireFlags) != requireFlags ) continue;
 			if( o.getAutoUpdateTime() > maxAutoUpdateTime ) continue;
 			

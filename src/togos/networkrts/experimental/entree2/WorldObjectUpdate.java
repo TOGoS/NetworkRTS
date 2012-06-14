@@ -2,6 +2,9 @@ package togos.networkrts.experimental.entree2;
 
 public final class WorldObjectUpdate<WorldObjectClass extends WorldObject> {
 	public final WorldObjectClass worldObject;
+	// Guess what!  There is no performance gain at all from caching the object's
+	// x, y, and rad in here.  Probably because it causes more cache thrashing.
+	//public final double x, y, rad; // Cached for supposed performance gain?
 	public final boolean isAddition; // Otherwise it is a removal
 	
 	protected WorldObjectUpdate( WorldObjectClass worldObject, boolean add ) {
