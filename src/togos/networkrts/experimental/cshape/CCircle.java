@@ -1,10 +1,10 @@
-package togos.networkrts.experimental.s64;
+package togos.networkrts.experimental.cshape;
 
-public class Circle implements Shape
+public class CCircle implements CShape
 {
 	final double cx, cy, rad;
 	
-	public Circle( double cx, double cy, double rad ) {
+	public CCircle( double cx, double cy, double rad ) {
 		this.cx = cx;
 		this.cy = cy;
 		this.rad = rad;
@@ -28,11 +28,11 @@ public class Circle implements Shape
 		}
 	}
 	
-	public int includes( double x, double y, double w, double h ) {
-		if( x+w <= cx - rad ) return Shape.INCLUDES_NONE;
-		if( x   >= cx + rad ) return Shape.INCLUDES_NONE;
-		if( y+h <= cy - rad ) return Shape.INCLUDES_NONE;
-		if( y   >= cy + rad ) return Shape.INCLUDES_NONE;
+	public int rectIntersection( double x, double y, double w, double h ) {
+		if( x+w <= cx - rad ) return CShape.INCLUDES_NONE;
+		if( x   >= cx + rad ) return CShape.INCLUDES_NONE;
+		if( y+h <= cy - rad ) return CShape.INCLUDES_NONE;
+		if( y   >= cy + rad ) return CShape.INCLUDES_NONE;
 		
 		boolean includesSomeCorners = false;
 		boolean includesAllCorners = true;
@@ -59,13 +59,13 @@ public class Circle implements Shape
 		}
 		
 		// All corners in => entire area in
-		if( includesAllCorners ) return Shape.INCLUDES_ALL;
+		if( includesAllCorners ) return CShape.INCLUDES_ALL;
 		// Some corners in => some of area in
-		if( includesSomeCorners ) return Shape.INCLUDES_SOME;
+		if( includesSomeCorners ) return CShape.INCLUDES_SOME;
 		
 		// If the circle includes no corners but the corners are in different quadrants,
 		// then parts the area must overlap the circle.
 		// If all corners are in the same quadrant, then the entire area is outside the circle.
-		return cornerQuadrant(x,y) == cornerQuadrant(x+w,y+h) ? Shape.INCLUDES_NONE : Shape.INCLUDES_SOME; 
+		return cornerQuadrant(x,y) == cornerQuadrant(x+w,y+h) ? CShape.INCLUDES_NONE : CShape.INCLUDES_SOME; 
 	}
 }

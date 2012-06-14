@@ -3,8 +3,6 @@ package togos.service;
 import java.util.HashSet;
 import java.util.Iterator;
 
-import togos.service.Service;
-
 /**
  * Aggregates multiple services so they can be treated
  * as one.

@@ -1,7 +1,7 @@
 package togos.networkrts.experimental.entree2;
 
 import junit.framework.TestCase;
-import togos.networkrts.experimental.entree.ClipRectangle;
+import togos.networkrts.experimental.cshape.CRectangle;
 import togos.networkrts.experimental.netsim2.Sink;
 
 public abstract class EntreeTest<EntreeClass extends Entree> extends TestCase
@@ -29,7 +29,7 @@ public abstract class EntreeTest<EntreeClass extends Entree> extends TestCase
 	
 	protected int findEntities( long flags, long autoUpdateTime, double x, double y, double w, double h ) throws Exception {
 		final int[] counter = new int[1];
-		entree.forEachObject(flags, autoUpdateTime, new ClipRectangle(x, y, w, h), new Sink<WorldObject>() {
+		entree.forEachObject(flags, autoUpdateTime, new CRectangle(x, y, w, h), new Sink<WorldObject>() {
 			public void give(WorldObject p) throws Exception {
 				++counter[0];
 			};
@@ -53,7 +53,7 @@ public abstract class EntreeTest<EntreeClass extends Entree> extends TestCase
 		assertEquals( 2, entree.getObjectCount() );
 		final boolean[] found = new boolean[4];
 		clear(found);
-		entree.forEachObject(0, Long.MAX_VALUE, new ClipRectangle(0,0,1024,1024), new Sink<WorldObject>() {
+		entree.forEachObject(0, Long.MAX_VALUE, new CRectangle(0,0,1024,1024), new Sink<WorldObject>() {
 			@Override public void give(WorldObject p) {
 				if( p == o0 ) {
 					found[0] = true;
@@ -68,7 +68,7 @@ public abstract class EntreeTest<EntreeClass extends Entree> extends TestCase
 		// We should find nothing in the right half, though:
 		
 		clear(found);
-		entree.forEachObject(0, Long.MAX_VALUE, new ClipRectangle(512,0,1024,1024), new Sink<WorldObject>() {
+		entree.forEachObject(0, Long.MAX_VALUE, new CRectangle(512,0,1024,1024), new Sink<WorldObject>() {
 			@Override public void give(WorldObject p) {
 				if( p == o0 ) {
 					found[0] = true;
@@ -88,7 +88,7 @@ public abstract class EntreeTest<EntreeClass extends Entree> extends TestCase
 
 		assertEquals( 4, entree.getObjectCount() );
 		clear(found);
-		entree.forEachObject(0, Long.MAX_VALUE, new ClipRectangle(0,0,1024,1024), new Sink<WorldObject>() {
+		entree.forEachObject(0, Long.MAX_VALUE, new CRectangle(0,0,1024,1024), new Sink<WorldObject>() {
 			@Override public void give(WorldObject p) {
 				if( p == o0 ) {
 					found[0] = true;
@@ -119,7 +119,7 @@ public abstract class EntreeTest<EntreeClass extends Entree> extends TestCase
 		assertEquals( 1, entree.getObjectCount() );
 		assertEquals( 1, findEntities(0, Long.MAX_VALUE, 0, 0, 1024, 1024) );
 		
-		entree.forEachObject(0, Long.MAX_VALUE, new ClipRectangle(0,0,1024,1024), new Sink<WorldObject>() {
+		entree.forEachObject(0, Long.MAX_VALUE, new CRectangle(0,0,1024,1024), new Sink<WorldObject>() {
 			@Override public void give(WorldObject p) {
 				assertSame( o0, p );
 			}

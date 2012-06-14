@@ -1,5 +1,7 @@
 package togos.networkrts.experimental.entree;
 
+import togos.networkrts.experimental.cshape.CShape;
+
 public class EntityQuadTreeNode
 {
 	public static final EntityQuadTreeNode EMPTY = new EntityQuadTreeNode();
@@ -132,13 +134,13 @@ public class EntityQuadTreeNode
 		);
 	}
 	
-	public void eachEntity( ClipShape s, int requireFlags, int forbidFlags, double nodeX, double nodeY, double nodeSize, Iterated cb) {
+	public void eachEntity( CShape s, int requireFlags, int forbidFlags, double nodeX, double nodeY, double nodeSize, Iterated cb) {
 		if( (entityFlags & requireFlags) != requireFlags ) return;
 		// Can't filter out entire nodes by forbidden entity flags, since they are ORd together!
 		
 		double halfNodeSize = nodeSize / 2; // NODE PADDING
 		double twiceNodeSize = nodeSize * 2;
-		if( !s.intersectsRect(nodeX - halfNodeSize, nodeY - halfNodeSize, twiceNodeSize, twiceNodeSize ) ) {
+		if( s.rectIntersection(nodeX - halfNodeSize, nodeY - halfNodeSize, twiceNodeSize, twiceNodeSize ) == CShape.INCLUDES_NONE ) {
 			// NODE PADDING ^
 			return;
 		}

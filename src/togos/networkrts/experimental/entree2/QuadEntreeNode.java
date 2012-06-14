@@ -1,6 +1,6 @@
 package togos.networkrts.experimental.entree2;
 
-import togos.networkrts.experimental.entree.ClipShape;
+import togos.networkrts.experimental.cshape.CShape;
 import togos.networkrts.experimental.netsim2.Sink;
 
 public final class QuadEntreeNode
@@ -216,13 +216,13 @@ public final class QuadEntreeNode
 		return updateUnchecked(updates, catScratch, scratch, off, end, x, y, w, h, maxSubdivision);
 	}
 
-	public final <WorldObjectClass extends WorldObject> void forEachObject(long requireFlags, long maxAutoUpdateTime, ClipShape s, Sink<WorldObjectClass> callback, double x, double y, double w, double h)
+	public final <WorldObjectClass extends WorldObject> void forEachObject(long requireFlags, long maxAutoUpdateTime, CShape s, Sink<WorldObjectClass> callback, double x, double y, double w, double h)
 		throws Exception
 	{
 		if( this.objectCount == 0 ) return;
 		if( (this.allFlags & requireFlags) != requireFlags ) return;
 		if( maxAutoUpdateTime < this.minAutoUpdateTime ) return;
-		if( !s.intersectsRect(x, y, w, h) ) return;
+		if( s.rectIntersection(x, y, w, h) == CShape.INCLUDES_NONE ) return;
 		
 		final double halfW = w/2, halfH = h/2;
 		final double halfX = x+halfW, halfY = y+halfH; 
@@ -231,7 +231,7 @@ public final class QuadEntreeNode
 		n2.forEachObject(requireFlags, maxAutoUpdateTime, s, callback, x    , halfY, halfW, halfH);
 		n3.forEachObject(requireFlags, maxAutoUpdateTime, s, callback, halfX, halfY, halfW, halfH);
 		for( WorldObject o : objects ) {
-			if( !s.intersectsRect(o.x - o.getMaxRadius(), o.y - o.getMaxRadius(), o.getMaxRadius()*2, o.getMaxRadius()*2) ) continue;
+			if( s.rectIntersection(o.x - o.getMaxRadius(), o.y - o.getMaxRadius(), o.getMaxRadius()*2, o.getMaxRadius()*2) == CShape.INCLUDES_NONE ) continue;
 			if( (o.getFlags() & requireFlags) != requireFlags ) continue;
 			if( o.getAutoUpdateTime() > maxAutoUpdateTime ) continue;
 			

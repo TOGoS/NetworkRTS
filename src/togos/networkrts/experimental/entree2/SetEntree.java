@@ -3,7 +3,7 @@ package togos.networkrts.experimental.entree2;
 import java.util.HashSet;
 import java.util.Set;
 
-import togos.networkrts.experimental.entree.ClipShape;
+import togos.networkrts.experimental.cshape.CShape;
 import togos.networkrts.experimental.netsim2.Sink;
 
 public class SetEntree<WorldObjectClass extends WorldObject> implements Entree<WorldObjectClass>
@@ -36,9 +36,9 @@ public class SetEntree<WorldObjectClass extends WorldObject> implements Entree<W
 	}
 
 	@Override
-	public void forEachObject(long requireFlags, long maxAutoUpdateTime, ClipShape clip, Sink<WorldObjectClass> callback) throws Exception {
+	public void forEachObject(long requireFlags, long maxAutoUpdateTime, CShape clip, Sink<WorldObjectClass> callback) throws Exception {
 		for( WorldObjectClass o : objects ) {
-			if( !clip.intersectsRect(o.x - o.getMaxRadius(), o.y - o.getMaxRadius(), o.getMaxRadius()*2, o.getMaxRadius()*2) ) continue;
+			if( clip.rectIntersection(o.x - o.getMaxRadius(), o.y - o.getMaxRadius(), o.getMaxRadius()*2, o.getMaxRadius()*2) == CShape.INCLUDES_NONE ) continue;
 			if( (o.getFlags() & requireFlags) != requireFlags ) continue;
 			if( o.getAutoUpdateTime() > maxAutoUpdateTime ) continue;
 			

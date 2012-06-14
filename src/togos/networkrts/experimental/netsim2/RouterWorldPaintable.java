@@ -11,7 +11,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import togos.networkrts.awt.TimestampedPaintable;
-import togos.networkrts.experimental.entree.TouchyClipRectangle;
+import togos.networkrts.experimental.cshape.CCircle;
+import togos.networkrts.experimental.cshape.CRectangle;
 import togos.networkrts.experimental.gensim.TimedEventQueue;
 import togos.networkrts.experimental.gensim.Timestamped;
 import togos.networkrts.experimental.netsim2.RouterWorld.Router;
@@ -101,7 +102,7 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 		
 		screenToWorldCoords( clip.getMinX(), clip.getMinY(), width, height, c0 );
 		screenToWorldCoords( clip.getMaxX(), clip.getMaxY(), width, height, c1 );
-		TouchyClipRectangle worldScreenClip = new TouchyClipRectangle(c0[0], c0[1], c1[0]-c0[0], c1[1]-c0[1]);
+		CRectangle worldScreenClip = new CRectangle(c0[0], c0[1], c1[0]-c0[0], c1[1]-c0[1]);
 		
 		final int[] drawCounters = new int[3];
 		final HashSet<RouterPair> linksDrawn = new HashSet<RouterPair>();
@@ -110,7 +111,7 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 			world.routerEntree.forEachObject(0, Long.MAX_VALUE, worldScreenClip, new Sink<Router>() {
 				public void give(final Router r) throws Exception {
 					for( final TransmitterType tt0 : r.transmitters ) {
-						world.routerEntree.forEachObject(0, Long.MAX_VALUE, new TouchyClipRectangle(r.x - tt0.power, r.y - tt0.power, tt0.power*2, tt0.power*2), new Sink<Router>() {
+						world.routerEntree.forEachObject(0, Long.MAX_VALUE, new CCircle(r.x, r.y, tt0.power), new Sink<Router>() {
 							public void give(final Router r1) throws Exception {
 								++drawCounters[2];
 								
