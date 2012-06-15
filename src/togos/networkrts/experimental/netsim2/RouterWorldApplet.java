@@ -117,6 +117,9 @@ public class RouterWorldApplet extends Apallit
 						e.printStackTrace();
 					}
 					break;
+				case( KeyEvent.VK_L ):
+					rwp.drawLinks ^= true;
+					break;
 				case( KeyEvent.VK_R ):
 					rw.clear();
 					rw.init();

@@ -29,6 +29,7 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 	
 	public Font statsFont = new Font("Monospaced", Font.PLAIN, 12);
 	public String statusText;
+	public boolean drawLinks = false;
 	
 	public RouterWorldPaintable() {}
 	
@@ -97,7 +98,7 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 		
 		g2d.setFont( originalFont.deriveFont( 10f ) );
 		
-		g2d.setStroke( new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1, new float[]{2,2}, 0 ));
+		//g2d.setStroke( new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1, new float[]{2,2}, 0 ));
 		g2d.setColor( Color.DARK_GRAY );
 		
 		screenToWorldCoords( clip.getMinX(), clip.getMinY(), width, height, c0 );
@@ -107,7 +108,7 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 		final int[] drawCounters = new int[3];
 		
 		try {
-			world.routerEntree.forEachObject(0, Long.MAX_VALUE, worldScreenClip, new Sink<Router>() {
+			if( drawLinks ) world.routerEntree.forEachObject(0, Long.MAX_VALUE, worldScreenClip, new Sink<Router>() {
 				final HashSet<RouterPair> linksDrawn = new HashSet<RouterPair>();
 				
 				public void give(final Router r0) throws Exception {
@@ -155,7 +156,7 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 					int sy = (int)c0[1];
 					// if( sx < clip.x || sy < clip.y || sx >= clip.x + clip.width || sy >= clip.y + clip.height ) return;
 					int w = (int)scale*size;
-					// if( w == 0 ) w = 1;
+					if( w == 0 ) w = 1;
 					g2d.setColor( Color.GREEN );
 					g2d.fillRect( sx-(int)(scale*size/2), sy-(int)(scale*size/2), w, w );
 					g2d.setColor( macColor );
