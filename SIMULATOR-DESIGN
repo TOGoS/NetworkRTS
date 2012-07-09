@@ -115,3 +115,14 @@ Entity tracking
  - You can still simulate without global ticks by keeping 'next event timestamp'
    on nodes of the tree containing entities.
  - But this means entities must be *entirely* self contained, with no magic back doors!
+
+
+Time advancement approaches
+ - Sloppy: Time is not advanced uniformly.  Every agent in the game in effect runs
+   in its own thread and modifies the world as it sees fit.
+    - Seems to imply mutable world objects
+    - The user and any physics engine(s) are simply additional agents 
+   
+ - Strict: World time advances all at once.  Events occur in a well-defined order.
+   If events are scheduled using timestamps, the order in which events that share
+   identical timestamps are processed must be well-defined.
