@@ -4,7 +4,6 @@ import java.awt.Color;
 
 import togos.networkrts.util.TMath;
 
-
 public class PulsatingColorFunction implements ColorFunction {
 	long prevTs;
 	Color prevColor;
