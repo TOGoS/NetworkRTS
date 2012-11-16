@@ -47,31 +47,24 @@ public class DungeonBuilder
 		}
 	}
 	
-	public Room north() {
+	public Room dig( int dx, int dy ) {
 		Room oldRoom = currentRoom;
 		Room newRoom = makeRoom( oldRoom.getWidth(), oldRoom.getHeight() );
-		connectSides( oldRoom, newRoom, 0, -1 );
+		connectSides( oldRoom, newRoom, dx, dy );
 		return currentRoom = newRoom;
 	}
 	
-	public Room south() {
-		Room oldRoom = currentRoom;
-		Room newRoom = makeRoom( oldRoom.getWidth(), oldRoom.getHeight() );
-		connectSides( oldRoom, newRoom, 0, +1 );
-		return currentRoom = newRoom;
-	}
+	public Room north() { return dig(0,-1); }
+	public Room south() { return dig(0,+1); }
+	public Room east( ) { return dig(+1,0); }
+	public Room west( ) { return dig(-1,0); }
 	
-	public Room east() {
-		Room oldRoom = currentRoom;
-		Room newRoom = makeRoom( oldRoom.getWidth(), oldRoom.getHeight() );
-		connectSides( oldRoom, newRoom, +1, 0 );
-		return currentRoom = newRoom;
+	public void digTo( int dx, int dy, Room target ) {
+		connectSides( currentRoom, target, dx, dy );
 	}
 
-	public Room west() {
-		Room oldRoom = currentRoom;
-		Room newRoom = makeRoom( oldRoom.getWidth(), oldRoom.getHeight() );
-		connectSides( oldRoom, newRoom, -1, 0 );
-		return currentRoom = newRoom;
-	}
+	public void northTo( Room target ) { digTo(0,-1,target); }
+	public void southTo( Room target ) { digTo(0,+1,target); }
+	public void eastTo(  Room target ) { digTo(-1,0,target); }
+	public void westTo(  Room target ) { digTo(+1,0,target); }
 }

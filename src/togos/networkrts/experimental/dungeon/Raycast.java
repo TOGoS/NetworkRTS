@@ -8,14 +8,14 @@ public class Raycast
 		
 		CellCursor cursor = new CellCursor();
 		
-		final int rayCount=512;
+		final int rayCount=1024;
 		for( int i=0; i<rayCount; ++i ) {
 			// 64 rays!
 			float angle = i*(float)Math.PI*2/rayCount;
 			float dx = (float)Math.cos(angle);
 			float dy = (float)Math.sin(angle);
 			float ox = x - (float)Math.floor(x), oy = y - (float)Math.floor(y); 
-			cursor.init( r, x, y );
+			cursor.set( r, x, y );
 			float visibility = 1;
 			for( int j=100; j>=0 && visibility > 0; cursor.move(dx,dy), ox += dx, oy += dy, --j ) {
 				//int cellX = (int)Math.floor(cx), cellY = (int)Math.floor(cy);

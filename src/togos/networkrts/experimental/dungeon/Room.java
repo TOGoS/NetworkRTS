@@ -18,6 +18,7 @@ class Room {
 		}
 	}
 	
+	public long roomId;
 	public BlockField blockField;
 	public final List<Room.Neighbor> neighbors = new ArrayList();
 	

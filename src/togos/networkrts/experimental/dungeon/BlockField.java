@@ -4,10 +4,12 @@ class BlockField
 {
 	final int w, h;
 	Block[][] blockStacks;
+	int[] light;
 	
 	public BlockField( int w, int h ) {
 		this.w = w; this.h = h;
 		this.blockStacks = new Block[w*h][];
+		this.light = new int[w*h];
 	}
 	
 	public void fill( Block[] stack ) {
