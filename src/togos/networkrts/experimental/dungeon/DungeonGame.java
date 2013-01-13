@@ -9,6 +9,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.VolatileImage;
 import java.util.Random;
 
 
@@ -20,8 +21,9 @@ public class DungeonGame
 		BlockField region;
 		int cx, cy;
 		
-		@Override
-		public void paint( Graphics g ) {
+		VolatileImage buffer;
+		
+		protected void paintBuffer( Graphics g ) {
 			int tileSize = 16;
 			for( int y=0; y<region.h; ++y ) {
 				for( int x=0; x<region.w; ++x ) {
@@ -33,57 +35,33 @@ public class DungeonGame
 					}
 				}
 			}
-			/*
-			g.setColor( Color.GREEN );
-			g.drawOval( 0, 0, tileSize, tileSize );
-			*/
+		}
+		
+		@Override
+		public void paint( Graphics g ) {
+			if( buffer == null || buffer.contentsLost() || buffer.getWidth() != getWidth() || buffer.getHeight() != getHeight() ) {
+				buffer = createVolatileImage(getWidth(), getHeight());
+			}
+			if( buffer == null ) return; // *shrug*
+			
+			Graphics bg = buffer.getGraphics();
+			bg.setClip(g.getClip());
+			bg.setColor( getBackground() );
+			bg.fillRect(0, 0, getWidth(), getHeight());
+			paintBuffer( bg );
+			g.drawImage( buffer, 0, 0, null );
+		}
+		
+		@Override
+		public void update( Graphics g ) {
+			paint(g);
 		}
 	}
 	
 	public static void main( String[] args ) {
 		final CellCursor gs = new CellCursor();
-		
-		/*
-		final Room region = new Room( 16, 16 );
-		region.blockField.fill( Block.WALL.stack );
-		gs.init( region, 0.5f, 0.5f );
-		
-		Random rand = new Random();
-		int tx = 0, ty = 0;
-		boolean gMode = false;
-		for( int i=0; i<4096; ++i ) {
-			if( gMode ) {
-				for( int y=-5; y<=5; ++y ) {
-					for( int x=-5; x<=5; ++x ) {
-						region.blockField.setStack( tx+x, ty+y, Block.GRASS.stack );
-					}
-				}
+		final CellCursor tempCursor = new CellCursor();
 				
-				if( rand.nextBoolean() ) {
-					tx += rand.nextInt(10)-5;
-				} else {
-					ty += rand.nextInt(10)-5;
-				}
-				
-				if( rand.nextInt(10) <= 1 ) gMode = false;
-			} else {
-				int dx = 0, dy = 0;
-				if( rand.nextBoolean() ) {
-					dx = (rand.nextBoolean() ? 1 : -1);
-				} else {
-					dy += (rand.nextBoolean() ? 1 : -1);
-				}
-				
-				for( int j=rand.nextInt(10); j>=0; --j ) {
-					region.blockField.setStack( tx, ty, Block.FLOOR.stack );
-					tx += dx; ty += dy;					
-				}
-				
-				if( rand.nextInt(50) <= 1 ) gMode = true;
-			}
-		}
-		*/
-		
 		Block[][] tileMap = new Block[][] { Block.FLOOR.stack, Block.WALL.stack };
 		
 		int[][] shapes = new int[][] {
@@ -103,10 +81,34 @@ public class DungeonGame
 		db.north();
 		db.east();
 		db.south();
+		Room r1 = db.west();
 		db.west();
+		db.north();
+		db.north();
+		db.westTo(r0);
+		db.currentRoom = r0;
+		db.east();
+		db.east();
+		db.north();
+		db.currentRoom = r1;
+		db.south();
+		Room r2 = db.south();
 		db.west();
 		
-		gs.init( r0, 2.5f, 2.5f );
+		Random rand = new Random();
+		int dir = 2;
+		for( int i=0; i<50 || dir == 0; ++i ) {
+			dir = NumUtil.tmod(dir + rand.nextInt(3) - 1, 4);
+			switch( dir ) {
+			case( 0 ): db.east(); break;
+			case( 1 ): db.south(); break;
+			case( 2 ): db.west(); break;
+			case( 3 ): db.north(); break;
+			}
+		}
+		db.eastTo(r2);
+		
+		gs.set( r0, 2.5f, 2.5f );
 		gs.addBlock( Block.PLAYER );
 		
 		final BlockField projection = new BlockField( 55, 55 );
@@ -121,27 +123,35 @@ public class DungeonGame
 		regionCanvas.setBackground( Color.BLACK );
 		regionCanvas.addKeyListener( new KeyListener() {
 			@Override public void keyPressed( KeyEvent kevt ) {
-				gs.removeBlock( Block.PLAYER );
+				tempCursor.set(gs);
 				switch( kevt.getKeyCode() ) {
-				case( KeyEvent.VK_UP    ): gs.move( 0, -1 ); break;
-				case( KeyEvent.VK_DOWN  ): gs.move( 0, +1 ); break;
-				case( KeyEvent.VK_LEFT  ): gs.move( -1, 0 ); break;
-				case( KeyEvent.VK_RIGHT ): gs.move( +1, 0 ); break;
+				case( KeyEvent.VK_UP    ): tempCursor.move( 0, -1 ); break;
+				case( KeyEvent.VK_DOWN  ): tempCursor.move( 0, +1 ); break;
+				case( KeyEvent.VK_LEFT  ): tempCursor.move( -1, 0 ); break;
+				case( KeyEvent.VK_RIGHT ): tempCursor.move( +1, 0 ); break;
 				default:
 					System.err.println(kevt.getKeyCode());
 				}
-				gs.addBlock( Block.PLAYER );
-				Raycast.project( gs.room, gs.x, gs.y, projection, projection.w/2, projection.h/2 );
-				regionCanvas.cx = projection.w/2;
-				regionCanvas.cy = projection.h/2;
-				regionCanvas.repaint();
+				boolean blocked = false;
+				for( Block b : tempCursor.getAStack() ) {
+					if( b.blocking ) blocked = true;
+				}
+				if( !blocked ) {
+					gs.removeBlock( Block.PLAYER );
+					gs.set(tempCursor);
+					gs.addBlock( Block.PLAYER );
+					Raycast.project( gs.room, gs.x, gs.y, projection, projection.w/2, projection.h/2 );
+					regionCanvas.cx = projection.w/2;
+					regionCanvas.cy = projection.h/2;
+					regionCanvas.repaint();
+				}
 			}
 			@Override public void keyReleased( KeyEvent kevt ) {
 			}
 			@Override public void keyTyped( KeyEvent kevt ) {
 			}
 		});
-
+		
 		final Frame window = new Frame("Robot Client");
 		window.add(regionCanvas);
 		window.pack();

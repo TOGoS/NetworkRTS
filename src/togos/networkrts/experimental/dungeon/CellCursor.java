@@ -7,11 +7,13 @@ class CellCursor {
 	
 	public CellCursor() { }
 	
-	public void init( Room room, float x, float y ) {
+	public void set( Room room, float x, float y ) {
 		this.room = room;
 		this.x = x; this.y = y;
 	}
 	
+	public void set( CellCursor c ) { set( c.room, c.x, c.y ); }
+		
 	public void move( float dx, float dy ) {
 		x += dx; y += dy;
 		if( room != null && !room.contains(x,y) ) {
@@ -26,6 +28,11 @@ class CellCursor {
 	}
 	
 	public static int floor( float x ) { return (int)Math.floor(x); }
+	
+	public Block[] getAStack() {
+		Block[] stack = getStack();
+		return stack == null ? Block.EMPTY_STACK : stack;
+	}
 	
 	public Block[] getStack() {
 		if( room == null ) return null;
