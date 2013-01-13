@@ -121,8 +121,29 @@ Time advancement approaches
  - Sloppy: Time is not advanced uniformly.  Every agent in the game in effect runs
    in its own thread and modifies the world as it sees fit.
     - Seems to imply mutable world objects
-    - The user and any physics engine(s) are simply additional agents 
+    - The user and any physics engine(s) are simply additional agents
    
- - Strict: World time advances all at once.  Events occur in a well-defined order.
+ - Atomic: World time advances atomically.  Events occur in a well-defined order.
    If events are scheduled using timestamps, the order in which events that share
    identical timestamps are processed must be well-defined.
+   
+   - Fixed update interval
+     - Every object in the world is updated every N milliseconds; there may be
+       optimizations to skip updating dormant objects
+   - Variable update interval
+     - Events occur at specific moments in time, and no calculations need to be
+       done between events
+     - To accommodate externally-triggered events, it must be possible to preempt
+       planned events (something like externalEventQueue.wait( timeToNextPlannedEvent )
+       accomplishes this nicely)
+     - gensim1 approach:
+       - event loop pulls events from a queue; preempting logic is in the queue class.
+       - simple event loop
+       - timed event queue is a little hard to understand
+     - gensim5 approach:
+       - event loop tells simulation to updat itself when needed and waits for
+         external events from a separate real-time event source.
+       - simple event loop
+       - simulation's can manage internal events in whatever way it chooses
+       - must add events differently from within the simulation thread (execute directly or add to internal queue)
+         and from other threads (post to real time event source, even to add a timer to the simulator)
