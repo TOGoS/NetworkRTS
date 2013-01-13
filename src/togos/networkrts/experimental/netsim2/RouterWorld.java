@@ -12,12 +12,13 @@ import togos.networkrts.experimental.entree2.QuadEntree;
 import togos.networkrts.experimental.entree2.QuadEntreeNode;
 import togos.networkrts.experimental.entree2.WorldObject;
 import togos.networkrts.experimental.entree2.WorldUpdateBuilder;
-import togos.networkrts.experimental.gensim.Timestamped;
+import togos.networkrts.experimental.gensim.TimedEventHandler;
+import togos.networkrts.experimental.gensim.TimedEventQueue;
+import togos.networkrts.experimental.shape.RectIntersector;
 import togos.networkrts.experimental.shape.TBoundless;
 import togos.networkrts.experimental.shape.TCircle;
-import togos.networkrts.experimental.shape.RectIntersector;
 
-public class RouterWorld implements EventHandler
+public class RouterWorld implements TimedEventHandler<Object>
 {
 	public static final int CHANNEL_1_FLAG = 0x01;
 	public static final int CHANNEL_2_FLAG = 0x02;
@@ -121,7 +122,7 @@ public class RouterWorld implements EventHandler
 	
 	public Entree<Router> routerEntree = new QuadEntree<Router>( -32768, -32768, 65536, 65536, QuadEntreeNode.EMPTY, 11 );
 	
-	public Sink<Timestamped> eventScheduler;
+	public TimedEventQueue<Object> eventQueue;
 	double c = 300;
 	public int pingsSent, pongsSent, pongsReceived;
 	
@@ -293,11 +294,11 @@ public class RouterWorld implements EventHandler
 		return null;
 	}
 	
-	public void beginAddressAllocation( long timestamp ) {
+	public void beginAddressAllocation() {
 		Router rootRouter = randomRouter();
 		if( rootRouter == null ) return;
 		try {
-			giveAddress( rootRouter, timestamp, new byte[]{0x20,0x20,0,0,0,0,0,0,0x12,0x34,0,0,0,0,0,1}, 80 );
+			giveAddress( rootRouter, new byte[]{0x20,0x20,0,0,0,0,0,0,0x12,0x34,0,0,0,0,0,1}, 80 );
 		} catch( Exception e ) {
 			throw new RuntimeException(e);
 		}
@@ -403,8 +404,8 @@ public class RouterWorld implements EventHandler
 	}
 	
 	static class WirelessTransmissionEvent implements LiveEvent {
-		public final double sx, sy;
-		public final long time;
+		public final double sx, sy; // point of origination
+		public final long time; // Time of origination
 		public final double speed;
 		public final double intensity; // at radius = 1; also = distance it will travel
 		public final int channels;
@@ -420,9 +421,6 @@ public class RouterWorld implements EventHandler
 			this.data = data;
 		}
 		
-		@Override public long getTimestamp() {
-			return time;
-		}
 		public double getRadius( long t ) {
 			return (t - time) * speed / 1000;
 		}
@@ -435,37 +433,31 @@ public class RouterWorld implements EventHandler
 		}
 	}
 	
-	static class FrameReceptionEvent implements Timestamped {
+	static class FrameReceptionEvent {
 		public final Router destination;
-		public final long timestamp;
 		public final int channel;
 		public final Frame data;
 		
-		public FrameReceptionEvent( Router dest, long timestamp, int channel, Frame data ) {
+		public FrameReceptionEvent( Router dest, int channel, Frame data ) {
 			this.destination = dest;
-			this.timestamp = timestamp;
 			this.channel = channel;
 			this.data = data;
-		}
-		
-		@Override public long getTimestamp() {
-			return timestamp;
 		}
 	}
 	
 	public static final byte[] BROADCAST_MAC_ADDRESS = new byte[]{-1,-1,-1,-1,-1,-1};
 	
-	protected void sendWireless( long ts, Router source, TransmitterType tt, byte[] destMac, Object payload ) throws Exception {
+	protected void sendWireless( Router source, TransmitterType tt, byte[] destMac, Object payload ) throws Exception {
 		if( tt == null ) return;
-		eventScheduler.give( new WirelessTransmissionEvent( source.x, source.y, ts, c,
+		eventQueue.enqueue( currentTime, new WirelessTransmissionEvent( source.x, source.y, currentTime, c,
 			tt.power, tt.channelFlag,
 			new RouterWorld.Frame( source.macAddress, destMac, payload )
 		));
 	}
-
-	protected void sendWireless( long ts, Router source, byte[] destMac, Object payload ) throws Exception {
+	
+	protected void sendWireless( Router source, byte[] destMac, Object payload ) throws Exception {
 		for( TransmitterType tt : source.getTransmitters() ) {
-			sendWireless( ts, source, tt, destMac, payload );
+			sendWireless( source, tt, destMac, payload );
 		}
 	}
 	
@@ -524,11 +516,17 @@ public class RouterWorld implements EventHandler
 		
 		if( next != null ) {
 			TransmitterType tt = source.transmitterForChannel(next.channel);
-			sendWireless( timestamp, source, tt, next.macAddress, packet );
+			sendWireless( source, tt, next.macAddress, packet );
 		}
 	}
 	
-	@Override public void eventOccured( final Timestamped evt ) throws Exception {
+	long currentTime = Long.MIN_VALUE;
+	
+	@Override public void setCurrentTime( long time ) {
+		currentTime = time;
+	}
+	
+	@Override public void handleEvent( final Object evt ) throws Exception {
 		if( evt instanceof WirelessTransmissionEvent ) {
 			final WirelessTransmissionEvent wtEvt = (WirelessTransmissionEvent)evt;
 			if( wtEvt.data instanceof Frame ) {
@@ -538,10 +536,10 @@ public class RouterWorld implements EventHandler
 						double dy = r.y - wtEvt.sy;
 						double dist = Math.sqrt(dx*dx+dy*dy);
 						double interval = dist / wtEvt.speed;
-						long receptionTime = wtEvt.getTimestamp() + (long)(interval*1000);
+						long receptionTime = currentTime + (long)(interval*1000);
 						double receptionIntensity = wtEvt.getIntensity( receptionTime );
 						if( dist > 0 && receptionIntensity >= 1 ) {
-							eventScheduler.give( new FrameReceptionEvent(r, receptionTime, wtEvt.channels, wtEvt.data) );
+							eventQueue.enqueue( receptionTime, new FrameReceptionEvent(r, wtEvt.channels, wtEvt.data) );
 						}
 					}
 				});
@@ -566,20 +564,20 @@ public class RouterWorld implements EventHandler
 				if( BlobUtil.equals( destPack.destAddress, dest.ip6Address) ) {
 					if( payload instanceof PingPacket ) {
 						PingPacket ping = (PingPacket)payload;
-						forward( dest, frEvt.getTimestamp(), new PongPacket(ping.destAddress, ping.sourceAddress, ping.data) );
+						forward( dest, currentTime, new PongPacket(ping.destAddress, ping.sourceAddress, ping.data) );
 						++pongsSent;
 					} else if( payload instanceof PongPacket ) {
 						++pongsReceived;
 					}
 				} else if( destPack.getTtl() > 0 ) {
-					forward( dest, frEvt.getTimestamp(), destPack.decrTtl() );
+					forward( dest, currentTime, destPack.decrTtl() );
 				}
 			} else if( payload instanceof AddressAnnouncementPacket ) {
 				AddressAnnouncementPacket aap = (AddressAnnouncementPacket)payload;
 				if( dest.ip6Address[0] == 0 || dest.ip6PrefixLength > aap.prefixLength+aap.childBits ) {
 					// Request an address from the sender
 					TransmitterType tt = dest.transmitterForChannel(frEvt.channel);
-					sendWireless( frEvt.getTimestamp(), dest, tt, frame.sourceMacAddress, new RouterWorld.AddressRequestPacket() );
+					sendWireless( dest, tt, frame.sourceMacAddress, new RouterWorld.AddressRequestPacket() );
 				}
 				for( Iterator<Neighbor> ni = dest.neighbors.iterator(); ni.hasNext(); ) {
 					if( BlobUtil.equals( frame.sourceMacAddress, ni.next().macAddress ) ) {
@@ -604,23 +602,23 @@ public class RouterWorld implements EventHandler
 						for( int j=0; j<16; ++j ) addr[j] = dest.ip6Address[j];
 						byte o = addr[dest.ip6PrefixLength/8];
 						addr[dest.ip6PrefixLength/8] = (dest.ip6PrefixLength % 8 == 0) ? setHigh(o,i) : setLow(o,i);
-						sendWireless( frEvt.getTimestamp(), dest, tt, frame.sourceMacAddress, new AddressGivementPacket(addr, dest.ip6PrefixLength+dest.ip6ChildBits) );
+						sendWireless( dest, tt, frame.sourceMacAddress, new AddressGivementPacket(addr, dest.ip6PrefixLength+dest.ip6ChildBits) );
 						break;
 					}
 				}
 			} else if( payload instanceof AddressGivementPacket ) {
 				AddressGivementPacket adp = (AddressGivementPacket)payload;
-				giveAddress( dest, frEvt.getTimestamp(), adp.address, adp.prefixLength );
+				giveAddress( dest, adp.address, adp.prefixLength );
 			}
 		}
 	}
 
-	public void giveAddress( Router r, long ts, byte[] address, int prefixLength ) throws Exception {
+	public void giveAddress( Router r, byte[] address, int prefixLength ) throws Exception {
 		if( r.ip6Address[0] == 0 || prefixLength < r.ip6PrefixLength ) {
 			r.ip6Address = address;
 			r.ip6PrefixLength = prefixLength;
 			
-			sendWireless( ts, r, BROADCAST_MAC_ADDRESS, new RouterWorld.AddressAnnouncementPacket( r.ip6Address, r.ip6PrefixLength, r.ip6ChildBits ) );
+			sendWireless( r, BROADCAST_MAC_ADDRESS, new RouterWorld.AddressAnnouncementPacket( r.ip6Address, r.ip6PrefixLength, r.ip6ChildBits ) );
 		}
 	}
 	

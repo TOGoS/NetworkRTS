@@ -1,4 +1,4 @@
-package togos.networkrts.experimental.gensim5;
+package togos.networkrts.experimental.gensim;
 
 import java.io.IOException;
 

@@ -1,5 +1,22 @@
 Model for simulation with variable-length step intervals.
 
+== Event Loop A ==
+In which all events (scheduled and realtime) go through a TimedEventQueue.
+ ________________
+|                |
+|  EventHandler  |-------------+
+|________________|             | enqueued
+   ^                           | events
+   | time, events              |
+ __|__________          _______v___________
+|             |        |                   |
+|  EventLoop  |<-------|  TimedEventQueue  |<-- external inputs
+|_____________|        |___________________|
+
+
+== Event Loop B ==
+In which the simulator tracks scheduled events internally.  
+
 Design is similar to the that of the main loop in 'automatic.d' or whatever the I renamed that to most recently.
 
 The main loop pulls events and the current time from a real time event
@@ -31,10 +48,10 @@ modifications to it by passing events back through the real-time event source.
 |______|______________________________|           |
  time, |   |                                      |
  events|   | next internal update time            |
-      _|___v______           _____________________v_
-     |            |  time,  |                       |
-     |  MainLoop  |<--------|  RealtimeEventSource  |
-     |____________|  events |_______________________|
+     __|___v______           _____________________v_
+    |             |  time,  |                       |
+    |  EventLoop  |<--------|  RealtimeEventSource  |
+    |_____________|  events |_______________________|
                               ^        ^
                               |        |
                      input from user, network, etc

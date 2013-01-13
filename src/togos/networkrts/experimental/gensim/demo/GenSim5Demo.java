@@ -1,12 +1,12 @@
-package togos.networkrts.experimental.gensim5.demo;
+package togos.networkrts.experimental.gensim.demo;
 
 import java.util.ArrayList;
 import java.util.PriorityQueue;
 
-import togos.networkrts.experimental.gensim5.MainLoop;
-import togos.networkrts.experimental.gensim5.RealTimeEventSource;
-import togos.networkrts.experimental.gensim5.Stepper;
-import togos.networkrts.experimental.gensim5.Timer;
+import togos.networkrts.experimental.gensim.RealTimeEventSource;
+import togos.networkrts.experimental.gensim.Stepper;
+import togos.networkrts.experimental.gensim.EventLoop;
+import togos.networkrts.util.Timed;
 
 public class GenSim5Demo
 {	
@@ -80,22 +80,22 @@ public class GenSim5Demo
 	}
 	
 	static class DemoSimulation implements Stepper<DemoEvent> {
-		PriorityQueue<Timer<DemoEvent>> timerQueue = new PriorityQueue();
+		PriorityQueue<Timed<DemoEvent>> timerQueue = new PriorityQueue();
 		ArrayList<DemoActor> actors = new ArrayList();
 		long currentTime = 0;
 		
 		public void enqueueEvent( long targetTime, DemoEvent evt ) {
-			timerQueue.add( new Timer(targetTime, evt) );
+			timerQueue.add( new Timed(targetTime, evt) );
 		}
 		
 		public long getNextInternalUpdateTime() {
-			Timer timer = timerQueue.peek();
+			Timed timer = timerQueue.peek();
 			return timer == null ? Long.MAX_VALUE : timer.time;
 		}
 		
 		public void setCurrentTime( long t ) {
 			currentTime = t;
-			Timer<DemoEvent> timer;
+			Timed<DemoEvent> timer;
 			while( (timer = timerQueue.peek()) != null && timer.time <= currentTime ) {
 				timerQueue.remove();
 				timer.payload.run(this);
@@ -107,7 +107,7 @@ public class GenSim5Demo
 				double dx = actor.x-sourceX, dy = actor.y-sourceY;
 				double dist = Math.sqrt(dx*dx+dy*dy);
 				if( dist == 0 ) continue;
-				timerQueue.add( new Timer(currentTime+(long)(dist*100), new Reception(actor, message)));
+				timerQueue.add( new Timed(currentTime+(long)(dist*100), new Reception(actor, message)));
 			}
 		}
 		
@@ -122,6 +122,6 @@ public class GenSim5Demo
 		sim.actors.add( new DemoActor( sim, "Ralph", -1, -1 ));
 		final DemoRealTimeEventSource es = new DemoRealTimeEventSource();
 		es.post( new Transmission(0, 0, "Yuk yuk!") );
-		MainLoop.run( es, sim );
+		EventLoop.run( es, sim );
 	}
 }

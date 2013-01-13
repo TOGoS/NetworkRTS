@@ -11,15 +11,15 @@ import java.util.Iterator;
 import java.util.List;
 
 import togos.networkrts.awt.TimestampedPaintable;
+import togos.networkrts.experimental.gensim.TimedEventHandler;
 import togos.networkrts.experimental.gensim.TimedEventQueue;
-import togos.networkrts.experimental.gensim.Timestamped;
 import togos.networkrts.experimental.netsim2.RouterWorld.Router;
 import togos.networkrts.experimental.netsim2.RouterWorld.TransmitterType;
 import togos.networkrts.experimental.shape.TCircle;
 import togos.networkrts.experimental.shape.TRectangle;
 import togos.networkrts.inet.AddressUtil;
 
-public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
+public class RouterWorldPaintable implements TimestampedPaintable, TimedEventHandler<Object>
 {
 	protected RouterWorld world;
 	protected double cx, cy, scale = 1.0;
@@ -37,7 +37,11 @@ public class RouterWorldPaintable implements TimestampedPaintable, EventHandler
 		this.world = world;
 	}
 	
-	@Override public synchronized void eventOccured(Timestamped event) throws Exception {
+	@Override public void setCurrentTime( long time ) throws Exception {
+		// Ignored; we will repaint in real time.
+	}
+	
+	@Override public synchronized void handleEvent( Object event ) throws Exception {
 		if( event instanceof LiveEvent ) {
 			activeEvents.add( (LiveEvent)event );
 		}

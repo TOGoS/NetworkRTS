@@ -7,10 +7,14 @@ import java.util.List;
 
 import togos.blob.ByteChunk;
 import togos.blob.SimpleByteChunk;
-import togos.networkrts.experimental.gensim.Timestamped;
+import togos.networkrts.experimental.gensim.EventLoop;
+import togos.networkrts.experimental.gensim.TimedEventHandler;
+import togos.networkrts.experimental.gensim.TimedEventQueue;
 
-public class Simulator extends togos.networkrts.experimental.gensim.Simulator
+public class Simulator implements TimedEventHandler<Simulator.SimulatorEvent>
 {
+	TimedEventQueue<SimulatorEvent> teq = new TimedEventQueue<SimulatorEvent>();
+	
 	interface HostAction {
 		public void apply( Simulator s, String hostId );
 	}
@@ -57,10 +61,8 @@ public class Simulator extends togos.networkrts.experimental.gensim.Simulator
 		public HashMap<String,String> interfaceLinkIds = new HashMap<String,String>();
 	}
 	
-	static abstract class SimulatorEvent implements Timestamped, Runnable {
-		long ts;
-		public SimulatorEvent( long ts ) {  this.ts = ts;  }
-		public long getTimestamp() {  return ts;  }
+	interface SimulatorEvent {
+		public void run( Simulator s );
 	}
 	
 	protected HashMap<String,Host> hosts = new HashMap<String,Host>();
@@ -156,10 +158,11 @@ public class Simulator extends togos.networkrts.experimental.gensim.Simulator
 	
 	// Arbitrary tick interval
 	long tickInterval = 10;
+	long currentTime = Long.MIN_VALUE;
 	
 	/** Return the simulation time of the next 'tick' after the given delay */
 	public long tickAfterDelay( long delay ) {
-		long destTime = procTime + delay;
+		long destTime = currentTime + delay;
 		if( destTime % tickInterval > 0 ) {
 			// Round up to next tick
 			return destTime + tickInterval - (destTime % tickInterval);
@@ -187,11 +190,19 @@ public class Simulator extends togos.networkrts.experimental.gensim.Simulator
 			toInterfaceId = l.if1;
 		}
 		
-		teq.add( new SimulatorEvent(tickAfterDelay(l.delay)) {
-			public void run() {
-				deliverPacket(toHostId, toInterfaceId, packet);
+		teq.enqueue( tickAfterDelay(l.delay), new SimulatorEvent() {
+			public void run( Simulator s ) {
+				s.deliverPacket(toHostId, toInterfaceId, packet);
 			}
 		});
+	}
+	
+	@Override public void setCurrentTime( long time ) {
+		currentTime = time;
+	}
+	
+	@Override public void handleEvent( SimulatorEvent evt ) {
+		evt.run( this );
 	}
 	
 	public static void main( String[] args ) throws Exception {
@@ -203,7 +214,7 @@ public class Simulator extends togos.networkrts.experimental.gensim.Simulator
 			public HostBehaviorResult packetReceived(String interfaceId, ByteChunk payload) {
 				List<HostAction> actions = new ArrayList<HostAction>();
 				if( interfaceId.startsWith("lo") ) {
-					System.err.println( "Got packet on interface " + interfaceId + " ("+System.currentTimeMillis()+"/"+s.procTime+")");
+					System.err.println( "Got packet on interface " + interfaceId + " ("+System.currentTimeMillis()+"/"+s.currentTime+")");
 					actions.add(new SendPacketAction( interfaceId, payload));
 				}
 				return new HostBehaviorResult(this, actions);
@@ -213,15 +224,14 @@ public class Simulator extends togos.networkrts.experimental.gensim.Simulator
 		s.connectLoopback(hostId, "lo-10ms"  ,   10);
 		s.connectLoopback(hostId, "lo-100ms" ,  100);
 		s.connectLoopback(hostId, "lo-1000ms", 1000);
-		s.procTime = System.currentTimeMillis();
 		
-		s.teq.add(new SimulatorEvent(s.getSimulationTime()) {
-			public void run() {
+		s.teq.enqueueImmediate(new SimulatorEvent() {
+			public void run( Simulator s ) {
 				s.deliverPacket( hostId, "lo-100ms", SimpleByteChunk.EMPTY );
 				s.deliverPacket( hostId, "lo-10ms", SimpleByteChunk.EMPTY );
 			}
 		});
 		
-		s.run();
+		EventLoop.run( s.teq, s );
 	}
 }

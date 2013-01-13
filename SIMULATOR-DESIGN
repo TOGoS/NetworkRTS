@@ -136,12 +136,13 @@ Time advancement approaches
      - To accommodate externally-triggered events, it must be possible to preempt
        planned events (something like externalEventQueue.wait( timeToNextPlannedEvent )
        accomplishes this nicely)
-     - gensim1 approach:
+     - U-loop approach:
        - event loop pulls events from a queue; preempting logic is in the queue class.
        - simple event loop
-       - timed event queue is a little hard to understand
-     - gensim5 approach:
-       - event loop tells simulation to updat itself when needed and waits for
+       - implementation of timed event queue is a little hard to understand
+       - maybe a little simpler than gensim5 if simulation is based on an event queue anyway
+     - I-loop approach:
+       - event loop tells simulation to update itself when needed and waits for
          external events from a separate real-time event source.
        - simple event loop
        - simulation's can manage internal events in whatever way it chooses

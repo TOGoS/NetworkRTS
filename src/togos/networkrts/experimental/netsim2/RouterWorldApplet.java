@@ -10,9 +10,9 @@ import java.awt.event.WindowEvent;
 import java.util.Random;
 
 import togos.networkrts.awt.Apallit;
-import togos.networkrts.experimental.gensim.Simulator;
+import togos.networkrts.experimental.gensim.EventLoop;
+import togos.networkrts.experimental.gensim.TimedEventHandler;
 import togos.networkrts.experimental.gensim.TimedEventQueue;
-import togos.networkrts.experimental.gensim.Timestamped;
 import togos.networkrts.experimental.netsim2.RouterWorld.Router;
 import togos.networkrts.inet.AddressUtil;
 import togos.service.InterruptableSingleThreadedService;
@@ -44,16 +44,23 @@ public class RouterWorldApplet extends Apallit
 		setTitle("Router World");
 		super.init();
 		
-		final Simulator simulator = new Simulator();
-		simulator.teq = new TimedEventQueue<Timestamped>();
-		rw.eventScheduler = simulator.teq;
-		simulator.teq.advanceTimeTo( System.currentTimeMillis() );
+		rw.eventQueue = new TimedEventQueue<Object>();
 		rw.init();
 		
 		addService( new InterruptableSingleThreadedService() {
 			@Override protected void _run() throws InterruptedException {
 				try {
-					simulator.run();
+					EventLoop.run( rw.eventQueue, new TimedEventHandler<Object>() {
+						@Override public void setCurrentTime( long time ) throws Exception {
+							rwp.setCurrentTime(time);
+							rw.setCurrentTime(time);
+						}
+						@Override public void handleEvent( Object evt ) throws Exception {
+							rwp.handleEvent( evt );
+							rw.handleEvent( evt );
+						}
+						
+					} );
 				} catch( InterruptedException e ) {
 					throw e;
 				} catch( Exception e ) {
@@ -61,27 +68,6 @@ public class RouterWorldApplet extends Apallit
 				}
 			}
 		});
-		addService( new InterruptableSingleThreadedService() {
-			@Override protected void _run() throws InterruptedException {
-				try {
-					while( true ) {
-						Thread.sleep(10);
-						simulator.teq.advanceTimeTo(System.currentTimeMillis());
-					}
-				} catch( InterruptedException e ) {
-					throw e;
-				} catch( Exception e ) {
-					e.printStackTrace();
-				}
-			}
-		});
-		
-		simulator.eventHandler = new EventHandler() {
-			@Override public void eventOccured(Timestamped event) throws Exception {
-				rwp.eventOccured( event );
-				rw.eventOccured( event );
-			}
-		};
 		
 		// Initialize UI
 		
@@ -123,7 +109,7 @@ public class RouterWorldApplet extends Apallit
 				case( KeyEvent.VK_R ):
 					rw.clear();
 					rw.init();
-					rw.beginAddressAllocation(simulator.teq.getCurrentTimestamp());
+					rw.beginAddressAllocation();
 					break;
 				case( KeyEvent.VK_F1 ):
 					TextArea helpTextArea = new TextArea(
@@ -134,6 +120,7 @@ public class RouterWorldApplet extends Apallit
 						"+/- zoom in and out.\n" +
 						"P pings a random node from another.\n" +
 						"R randomizes the world.\n" +
+						"L toggles display of links.\n" +
 						"\n" +
 						"About:\n" +
 						"Demonstrates a simple algorithm for allocating\n" +
@@ -171,7 +158,8 @@ public class RouterWorldApplet extends Apallit
 			}
 		});
 		
-		rw.beginAddressAllocation( simulator.teq.getCurrentTimestamp() );
+		rw.setCurrentTime(System.currentTimeMillis());
+		rw.beginAddressAllocation();
 	}
 	
 	public void start() {
