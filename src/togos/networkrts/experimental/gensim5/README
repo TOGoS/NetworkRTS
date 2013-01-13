@@ -1,0 +1,40 @@
+Model for simulation with variable-length step intervals.
+
+Design is similar to the that of the main loop in 'automatic.d' or whatever the I renamed that to most recently.
+
+The main loop pulls events and the current time from a real time event
+source and passes increments of time and events on to the simulation.
+It will wait for an event from the event source until the next automatic
+update by the simulation occurs.
+
+The simulation probably contains a timer queue and a world.
+
+World objects can react to events by putting new events in the timer queue,
+modifying the world immediately, or sending messages to external actors.
+
+External actors are simulated outside the simulation and can only make
+modifications to it by passing events back through the real-time event source.
+
+ _____________________________________
+|  _________________                  |
+| |                 |-----------------------------+
+| | World (objects) |------+    messages          |
+| |_________________|---+  |          |           |
+|      ^        ^       |  |events    |    _______v___________
+|      |        +-------+  |          |   |                   |
+|      |     direct mods   |          |   |  External actors  |
+|      |events       ______v________  |   |___________________|
+|      |            |               | |           |
+|      +------------|  Timer queue  | |           |
+|      |            |_______________| |           |
+|      |  Simulator                   |           |
+|______|______________________________|           |
+ time, |   |                                      |
+ events|   | next internal update time            |
+      _|___v______           _____________________v_
+     |            |  time,  |                       |
+     |  MainLoop  |<--------|  RealtimeEventSource  |
+     |____________|  events |_______________________|
+                              ^        ^
+                              |        |
+                     input from user, network, etc
