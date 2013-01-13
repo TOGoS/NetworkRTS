@@ -1,6 +1,6 @@
 package togos.networkrts.experimental.gensim5;
 
-public interface Simulation<EventClass>
+public interface Stepper<EventClass>
 {
 	public long getNextInternalUpdateTime();
 	public void setCurrentTime(long time);

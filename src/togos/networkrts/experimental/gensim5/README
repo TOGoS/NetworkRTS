@@ -27,7 +27,7 @@ modifications to it by passing events back through the real-time event source.
 |      |            |               | |           |
 |      +------------|  Timer queue  | |           |
 |      |            |_______________| |           |
-|      |  Simulator                   |           |
+|      |  Simulation                  |           |
 |______|______________________________|           |
  time, |   |                                      |
  events|   | next internal update time            |
