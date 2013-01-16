@@ -3,9 +3,9 @@ package togos.networkrts.experimental.gensim.demo;
 import java.util.ArrayList;
 import java.util.PriorityQueue;
 
-import togos.networkrts.experimental.gensim.RealTimeEventSource;
-import togos.networkrts.experimental.gensim.Stepper;
 import togos.networkrts.experimental.gensim.EventLoop;
+import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
+import togos.networkrts.experimental.gensim.Stepper;
 import togos.networkrts.util.Timed;
 
 public class GenSim5Demo
@@ -25,28 +25,6 @@ public class GenSim5Demo
 				System.out.println(m);
 				w.transmit( x, y, m );
 			}
-		}
-	}
-	
-	static class DemoRealTimeEventSource implements RealTimeEventSource<DemoEvent> {
-		@Override public synchronized DemoEvent recv( long returnBy ) throws InterruptedException {
-			long waitTime;
-			DemoEvent evt;
-			while( (evt = incomingEvent) == null && (waitTime = returnBy - getCurrentTime()) > 0 ) wait( waitTime );
-			incomingEvent = null;
-			return evt;
-		}
-		
-		@Override public long getCurrentTime() {
-			return System.currentTimeMillis();
-		}
-		
-		DemoEvent incomingEvent;
-		
-		public synchronized void post( DemoEvent evt ) throws InterruptedException {
-			while( incomingEvent != null ) wait();
-			incomingEvent = evt;
-			notify();
 		}
 	}
 	
@@ -120,7 +98,7 @@ public class GenSim5Demo
 		final DemoSimulation sim = new DemoSimulation();
 		sim.actors.add( new DemoActor( sim, "Frank",  1,  1 ));
 		sim.actors.add( new DemoActor( sim, "Ralph", -1, -1 ));
-		final DemoRealTimeEventSource es = new DemoRealTimeEventSource();
+		final QueuelessRealTimeEventSource<DemoEvent> es = new QueuelessRealTimeEventSource();
 		es.post( new Transmission(0, 0, "Yuk yuk!") );
 		EventLoop.run( es, sim );
 	}
