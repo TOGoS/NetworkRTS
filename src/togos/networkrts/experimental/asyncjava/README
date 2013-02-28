@@ -1,0 +1,19 @@
+Framework for a Node.js-like event loop.
+
+ProgramRunner implements the event loop.
+
+A ProgramSegment is a series of non-blocking instructions.
+
+ProgramSegments can schedule other program segments for immediate
+execution after their run() method returns.  This allow
+continuation-passing-style function calls and returns.
+
+ProgramSegments can also schedule other program segments to be run
+at a specific time in the future or when data is available from an
+external source (these external sources are implementations of Pusher).
+In either case, the scheduled program segment will run in the main
+interpreter thread.
+
+It would be cumbersome to implement a program out of ProgramSegments
+directly in Java.  The idea is to compile them from another language,
+possibly a Java-like language with functions added.
