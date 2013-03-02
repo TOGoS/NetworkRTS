@@ -63,7 +63,7 @@ public class GenSim5Demo
 		long currentTime = 0;
 		
 		public void enqueueEvent( long targetTime, DemoEvent evt ) {
-			timerQueue.add( new Timed(targetTime, evt) );
+			timerQueue.add( new Timed(targetTime, 0, evt) );
 		}
 		
 		public long getNextInternalUpdateTime() {
@@ -85,11 +85,11 @@ public class GenSim5Demo
 				double dx = actor.x-sourceX, dy = actor.y-sourceY;
 				double dist = Math.sqrt(dx*dx+dy*dy);
 				if( dist == 0 ) continue;
-				timerQueue.add( new Timed(currentTime+(long)(dist*100), new Reception(actor, message)));
+				timerQueue.add( new Timed(currentTime+(long)(dist*100), 0, new Reception(actor, message)));
 			}
 		}
 		
-		public void handleEvent( DemoEvent evt ) {
+		@Override public void handleEvent( DemoEvent evt ) {
 			evt.run(this);
 		}
 	}

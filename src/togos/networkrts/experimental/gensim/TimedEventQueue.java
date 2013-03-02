@@ -33,7 +33,11 @@ public class TimedEventQueue<EventClass>
 		enqueue( new Timed(System.currentTimeMillis(),evt) );
 	}
 	
+	public void enqueue( long executeAt, long code, EventClass evt ) {
+		enqueue( new Timed(executeAt,code,evt) );
+	}
+	
 	public void enqueue( long executeAt, EventClass evt ) {
-		enqueue( new Timed(executeAt,evt) );
+		enqueue( executeAt, 0, evt );
 	}
 }
