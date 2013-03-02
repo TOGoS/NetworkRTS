@@ -2,12 +2,7 @@ package togos.networkrts.experimental.gensim;
 
 public class QueuelessRealTimeEventSource<EventClass> implements RealTimeEventSource<EventClass>
 {
-	static long clamp( long min, long v, long max ) {
-		return v < min ? min : v > max ? max : v;
-	}
-	
 	@Override public synchronized boolean recv( long returnBy, EventBuffer buf ) throws InterruptedException {
-		long prevTime = buf.time;
 		long waitTime;
 		EventClass evt;
 		while( (evt = incomingEvent) == null && (waitTime = returnBy - getCurrentTime()) > 0 ) wait( waitTime );
@@ -17,8 +12,7 @@ public class QueuelessRealTimeEventSource<EventClass> implements RealTimeEventSo
 		}
 		incomingEvent = null;
 		notifyAll(); // Allow a new event to be posted!
-		buf.time = clamp( prevTime, incomingEventTime, returnBy );
-		buf.data = evt;
+		buf.update( evt, incomingEventTime, returnBy );
 		return true;
 	}
 	
