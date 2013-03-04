@@ -1,0 +1,66 @@
+package togos.networkrts.experimental.gensim;
+
+import java.util.PriorityQueue;
+
+import togos.networkrts.util.Timer;
+
+public abstract class BaseMutableStepper<EventClass> implements Stepper<EventClass>
+{
+	private long currentTime = Long.MIN_VALUE;
+	private PriorityQueue<Timer<EventClass>> timerQueue = new PriorityQueue();
+	
+	//// Stepper implementation
+	
+	@Override public long getNextInternalUpdateTime() {
+		Timer<EventClass> t = timerQueue.peek();
+		return t == null ? Long.MAX_VALUE : t.time;
+	}
+	
+	@Override public final BaseMutableStepper<EventClass> update( long targetTime, EventClass evt ) throws Exception {
+		if( targetTime < currentTime ) {
+			throw new RuntimeException("Tried to rewind time from "+currentTime+" to "+targetTime);
+		}
+		
+		Timer<EventClass> timer;
+		while( (timer = timerQueue.peek()) != null && timer.time <= currentTime ) {
+			timerQueue.remove();
+			_update( timer.time, timer.payload );
+		}
+		
+		_update( targetTime, evt );
+		return this;
+	}
+	
+	private final void _update( long targetTime, EventClass evt ) {
+		passTime( currentTime, targetTime );
+		this.currentTime = targetTime;
+		if( evt != null ) handleEvent( evt );
+	}
+	
+	//// For use internally
+	
+	protected final void schedule( long time, EventClass evt ) {
+		timerQueue.add(new Timer<EventClass>(time, evt));
+	}
+	
+	protected final int getTimerCount() {
+		return timerQueue.size();
+	}
+	
+	protected final long getCurrentTime() {
+		return currentTime;
+	}
+	
+	//// Override these
+	
+	/**
+	 * Simulate time passing between the given times.
+	 * The value of currentTime while this executes is undefined.
+	 */
+	protected void passTime( long currentTime, long targetTime ) { }
+	
+	/**
+	 * Simulate the given event occurring at currentTime.
+	 */
+	protected void handleEvent( EventClass evt ) { }
+}

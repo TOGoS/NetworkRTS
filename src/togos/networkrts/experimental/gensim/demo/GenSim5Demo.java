@@ -1,12 +1,10 @@
 package togos.networkrts.experimental.gensim.demo;
 
 import java.util.ArrayList;
-import java.util.PriorityQueue;
 
+import togos.networkrts.experimental.gensim.BaseMutableStepper;
 import togos.networkrts.experimental.gensim.EventLoop;
 import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
-import togos.networkrts.experimental.gensim.Stepper;
-import togos.networkrts.util.Timed;
 
 public class GenSim5Demo
 {	
@@ -57,43 +55,20 @@ public class GenSim5Demo
 		}
 	}
 	
-	static class DemoSimulation implements Stepper<DemoEvent> {
-		PriorityQueue<Timed<DemoEvent>> timerQueue = new PriorityQueue();
+	static class DemoSimulation extends BaseMutableStepper<DemoEvent> {
 		ArrayList<DemoActor> actors = new ArrayList();
-		long currentTime = Long.MIN_VALUE;
-		
-		public void enqueueEvent( long targetTime, DemoEvent evt ) {
-			timerQueue.add( new Timed(targetTime, 0, evt) );
-		}
-		
-		public long getNextInternalUpdateTime() {
-			Timed timer = timerQueue.peek();
-			return timer == null ? Long.MAX_VALUE : timer.time;
-		}
 		
 		public void transmit( double sourceX, double sourceY, String message ) {
 			for( DemoActor actor : actors ) {
 				double dx = actor.x-sourceX, dy = actor.y-sourceY;
 				double dist = Math.sqrt(dx*dx+dy*dy);
 				if( dist == 0 ) continue;
-				timerQueue.add( new Timed(currentTime+(long)(dist*100), 0, new Reception(actor, message)));
+				schedule( getCurrentTime()+(long)(dist*100), new Reception(actor, message) );
 			}
 		}
 		
-		@Override public DemoSimulation update( long time, DemoEvent evt ) {
-			if( time < currentTime ) {
-				throw new RuntimeException("Tried to rewind time from "+currentTime+" to "+time);
-			}
-			
-			Timed<DemoEvent> timer;
-			while( (timer = timerQueue.peek()) != null && timer.time <= currentTime ) {
-				timerQueue.remove();
-				timer.payload.run(this);
-			}
-			
-			currentTime = time;
-			if( evt != null ) evt.run(this);
-			return this;
+		@Override public void handleEvent( DemoEvent evt ) {
+			evt.run(this);
 		}
 	}
 	

@@ -1,8 +1,8 @@
 package togos.networkrts.experimental.gensim;
 
 public final class EventBuffer<EventClass> {
-	long time;
-	EventClass data;
+	public long time;
+	public EventClass payload;
 	
 	public EventBuffer( long initialTime ) {
 		this.time = initialTime;
@@ -15,7 +15,7 @@ public final class EventBuffer<EventClass> {
 	 * and maxTime. 
 	 */
 	public final void update( EventClass data, long newTime, long maxTime ) {
-		this.data = data;
+		this.payload = data;
 		this.time = newTime < time ? time : newTime > maxTime ? maxTime : newTime;
 	}
 }

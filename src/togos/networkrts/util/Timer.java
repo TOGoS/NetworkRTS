@@ -6,7 +6,7 @@ package togos.networkrts.util;
  * .order provides explicit sub-timestamp ordering and defaults
  * to the order in which Timed objects are created. 
  */
-public final class Timed<PayloadClass> implements Comparable<Timed<?>>
+public final class Timer<PayloadClass> implements Comparable<Timer<?>>
 {
 	static long _nextOrder = 0;
 	synchronized static long nextOrder() {
@@ -17,18 +17,18 @@ public final class Timed<PayloadClass> implements Comparable<Timed<?>>
 	public final long order;
 	public final PayloadClass payload;
 	
-	public Timed( long executeAt, long order, PayloadClass payload ) {
+	public Timer( long executeAt, long order, PayloadClass payload ) {
 		this.time = executeAt;
 		this.order = order;
 		this.payload = payload;
 	}
 	
-	public Timed( long time, PayloadClass payload ) {
+	public Timer( long time, PayloadClass payload ) {
 		this( time, nextOrder(), payload );
 	}
 
 	@Override
-	public int compareTo( Timed t ) {
+	public int compareTo( Timer t ) {
 		return time < t.time ? -1 : time > t.time ? 1 : order < t.order ? -1 : order > t.order ? 1 : 0;
 	}
 }

@@ -4,14 +4,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.PriorityQueue;
 
 import togos.networkrts.experimental.asyncjava.Callback;
 import togos.networkrts.experimental.asyncjava.ProgramSegment;
 import togos.networkrts.experimental.asyncjava.ProgramShell;
 import togos.networkrts.experimental.asyncjava.Puller;
+import togos.networkrts.experimental.gensim.BaseMutableStepper;
+import togos.networkrts.experimental.gensim.EventLoop;
+import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
 
-public class ProgramRunner implements Runnable, ProgramShell
+public class ProgramRunner extends BaseMutableStepper<ProgramSegment> implements Runnable
 {
 	static final class PullerState<DataType> {
 		public final Puller<DataType> puller;
@@ -24,33 +26,31 @@ public class ProgramRunner implements Runnable, ProgramShell
 			this.callbacks = new ArrayList<Callback<DataType>>();
 		}
 	}
-	
-	static final class SegmentTimer implements Comparable<SegmentTimer> {
-		final long timestamp;
-		final long order;
-		final ProgramSegment seg;
-		public SegmentTimer( long ts, long order, ProgramSegment seg ) {
-			this.timestamp = ts;
-			this.seg       = seg;
-			this.order     = order;
-		}
-		@Override public int compareTo(SegmentTimer o) {
-			return timestamp < o.timestamp ? -1 : timestamp > o.timestamp ? 1 :
-				order < o.order ? -1 : order > o.order ? 1 : 0;
-		}
-	}
-	
+		
 	LinkedList<ProgramSegment> immediatelyScheduledSegments = new LinkedList<ProgramSegment>();
 	/** State information about active or not-yet-started pullers. */
 	HashMap<Puller,PullerState> pullerStates = new HashMap<Puller,PullerState>();
-	
-	PriorityQueue<SegmentTimer> timedSegments = new PriorityQueue<SegmentTimer>();
+	QueuelessRealTimeEventSource<ProgramSegment> inputEventSource = new QueuelessRealTimeEventSource<ProgramSegment>() {
+		public boolean hasMoreEvents() {
+			return super.hasMoreEvents() && activePullerCount > 0 && getNextInternalUpdateTime() != TIME_INFINITY;
+		}
+	};
+	ProgramShell shell = new ProgramShell() {
+		public long getCurrentTime() { return ProgramRunner.this.getCurrentTime(); };
+		public <DataType> void onData( Puller<DataType> puller, Callback<DataType> trigger ) { ProgramRunner.this.onData( puller, trigger ); };
+		public void schedule(ProgramSegment seg) { ProgramRunner.this.schedule( seg ); };
+		public void schedule(long timestamp, ProgramSegment seg) { ProgramRunner.this.schedule( timestamp, seg ); };
+		public <DataType> void start( Puller<DataType> puller ) { ProgramRunner.this.start( puller ); }
+		public <DataType> void stop( Puller<DataType> puller ) { ProgramRunner.this.stop( puller ); }
+	};
 	
 	Thread mainThread = null;
 	protected synchronized boolean isMainThread() {
 		if( mainThread == null ) mainThread = Thread.currentThread();
 		return mainThread == Thread.currentThread();
 	}
+	
+	//// Puller management stuff ////
 	
 	protected <T> PullerState<T> getEventTriggers( Puller<T> puller ) {
 		assert isMainThread();
@@ -134,84 +134,55 @@ public class ProgramRunner implements Runnable, ProgramShell
 	 */
 	public void scheduleAsync( ProgramSegment seg ) {
 		try {
-			pushIncomingSegment(seg);
+			inputEventSource.post(seg);
 		} catch( InterruptedException e ) {
 			e.printStackTrace();
 			Thread.currentThread().interrupt();
 		}
 	}
 	
-	public long getCurrentTime() {
-		assert isMainThread();
-		return System.currentTimeMillis();
+	@Override public long getNextInternalUpdateTime() {
+		return immediatelyScheduledSegments.size() > 0 ? getCurrentTime() : super.getNextInternalUpdateTime();
 	}
 	
-	@Override public void schedule( ProgramSegment seg ) {
+	public void schedule( ProgramSegment seg ) {
 		assert isMainThread();
 		immediatelyScheduledSegments.add(0, seg);
 	}
 	
-	protected long order = 0;
-	@Override public void schedule( final long timestamp, final ProgramSegment seg ) {
-		assert isMainThread();
-		timedSegments.add( new SegmentTimer( timestamp, order++, seg ) );
-	}
-	
-	@Override public <DataType> void onData(Puller<DataType> input, Callback<DataType> trigger) {
+	public <DataType> void onData(Puller<DataType> input, Callback<DataType> trigger) {
 		assert isMainThread();
 		getEventTriggers(input).callbacks.add(trigger);
 	}
 	
-	protected ProgramSegment incomingSegment = null;
+	////
 	
-	protected synchronized void pushIncomingSegment( ProgramSegment seg ) throws InterruptedException {
-		while( incomingSegment != null ) wait();
-		incomingSegment = seg;
-		notifyAll();
-	}
-	protected synchronized ProgramSegment pullIncomingSegment( long until ) throws InterruptedException {
-		assert isMainThread();
-		long ct = getCurrentTime();
-		while( incomingSegment == null && ct < until ) {
-			wait( until - ct );
-			ct = System.currentTimeMillis();
+	protected void runImmediateSegments() {
+		while( immediatelyScheduledSegments.size() > 0 ) {
+			immediatelyScheduledSegments.remove().run( shell );
 		}
-		ProgramSegment seg = incomingSegment;
-		incomingSegment = null;
-		notify(); // Since all others waiting should be pushers, only need to notify one.
-		return seg;
 	}
+	
+	@Override protected void passTime(long currentTime, long targetTime) {
+		runImmediateSegments();
+	}
+	
+	@Override protected void handleEvent(ProgramSegment evt) {
+		evt.run( shell );
+		runImmediateSegments();
+	}
+	
+	////
 	
 	@Override public void run() {
 		assert isMainThread();
-		while( immediatelyScheduledSegments.size() > 0 || timedSegments.size() > 0 || activePullerCount > 0 ) {
-			while( immediatelyScheduledSegments.size() > 0 ) {
-				immediatelyScheduledSegments.remove().run(this);
-			}
-			
-			long nextTimer;
-			SegmentTimer segTimer = timedSegments.peek();
-			nextTimer = (segTimer != null) ? segTimer.timestamp : Long.MAX_VALUE;
-			if( segTimer.timestamp <= getCurrentTime() ) {
-				timedSegments.remove();
-				System.err.println("Got a timed segment for "+segTimer.timestamp);
-				segTimer.seg.run(this);
-			} else if( activePullerCount > 0 )  {
-				ProgramSegment inSeg;
-				try {
-					inSeg = pullIncomingSegment( nextTimer );
-				} catch( InterruptedException e ) {
-					Thread.currentThread().interrupt();
-					e.printStackTrace();
-					return;
-				}
-				if( inSeg != null ) {
-					inSeg.run(this);
-				} else if( segTimer != null ) {
-					timedSegments.remove();
-					segTimer.seg.run(this);
-				}
-			}
+		
+		try {
+			EventLoop.run(inputEventSource, this);
+		} catch( InterruptedException e ) {
+			Thread.currentThread().interrupt();
+		} catch( Exception e ) {
+			e.printStackTrace();
 		}
 	}
 }

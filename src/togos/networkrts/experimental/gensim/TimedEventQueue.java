@@ -2,19 +2,19 @@ package togos.networkrts.experimental.gensim;
 
 import java.util.PriorityQueue;
 
-import togos.networkrts.util.Timed;
+import togos.networkrts.util.Timer;
 
 public class TimedEventQueue<EventClass>
 {
-	protected final PriorityQueue<Timed<EventClass>> q = new PriorityQueue<Timed<EventClass>>( 128 );
+	protected final PriorityQueue<Timer<EventClass>> q = new PriorityQueue<Timer<EventClass>>( 128 );
 	
-	public synchronized Timed<EventClass> peek() {
-		Timed<EventClass> next = q.peek();
+	public synchronized Timer<EventClass> peek() {
+		Timer<EventClass> next = q.peek();
 		return (next != null && next.time <= System.currentTimeMillis() ) ? next : null;
 	}
 	
-	public synchronized Timed<EventClass> take() throws InterruptedException {
-		Timed<EventClass> next;
+	public synchronized Timer<EventClass> take() throws InterruptedException {
+		Timer<EventClass> next;
 		long waitTime = -1; // Compiler thinks this needs to be initialized
 		while( (next = q.peek()) == null || (waitTime = next.time - System.currentTimeMillis()) > 0 ) {
 			if( next == null ) wait();
@@ -24,17 +24,17 @@ public class TimedEventQueue<EventClass>
 		return next;
 	}
 	
-	public synchronized void enqueue( Timed<EventClass> elem ) {
+	public synchronized void enqueue( Timer<EventClass> elem ) {
 		q.add( elem );
 		notifyAll();
 	}
 	
 	public void enqueueImmediate( EventClass evt ) {
-		enqueue( new Timed(System.currentTimeMillis(),evt) );
+		enqueue( new Timer(System.currentTimeMillis(),evt) );
 	}
 	
 	public void enqueue( long executeAt, long code, EventClass evt ) {
-		enqueue( new Timed(executeAt,code,evt) );
+		enqueue( new Timer(executeAt,code,evt) );
 	}
 	
 	public void enqueue( long executeAt, EventClass evt ) {

@@ -9,7 +9,7 @@ import java.io.IOException;
  * time never appears to go backwards.
  * 
  * ('real time' refers to that events can come in at any point,
- * not that the time values necessarily correspond to system time values)
+ * not that the time values necessarily correspond to system time values.)
  */
 public interface RealTimeEventSource<EventClass>
 {
@@ -27,4 +27,8 @@ public interface RealTimeEventSource<EventClass>
 	 * Useful for initializing buf.time. 
 	 */
 	public long getCurrentTime();
+	/**
+	 * Return true unless it is known that there will never be another event.
+	 */
+	public boolean hasMoreEvents();
 }

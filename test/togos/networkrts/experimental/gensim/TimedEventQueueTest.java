@@ -1,13 +1,13 @@
 package togos.networkrts.experimental.gensim;
 
-import togos.networkrts.util.Timed;
+import togos.networkrts.util.Timer;
 import junit.framework.TestCase;
 
 public class TimedEventQueueTest extends TestCase
 {
 	public void testNoDelay() throws InterruptedException {
 		long t1, t2;
-		Timed evt;
+		Timer evt;
 		TimedEventQueue<String> eq = new TimedEventQueue<String>();
 		
 		t1 = System.currentTimeMillis();
@@ -21,7 +21,7 @@ public class TimedEventQueueTest extends TestCase
 	
 	public void testSomeDelay() throws InterruptedException {
 		long t1, t2;
-		Timed evt;
+		Timer evt;
 		TimedEventQueue<String> eq = new TimedEventQueue<String>();
 		
 		t1 = System.currentTimeMillis();
@@ -39,7 +39,7 @@ public class TimedEventQueueTest extends TestCase
 	
 	public void testInsert3Things() throws InterruptedException {
 		long t1, t2;
-		Timed evt;
+		Timer evt;
 		TimedEventQueue<String> eq = new TimedEventQueue<String>();
 		
 		t1 = System.currentTimeMillis();
@@ -77,7 +77,7 @@ public class TimedEventQueueTest extends TestCase
 		Thread t = new Thread() {
 			@Override
 			public void run() {
-				Timed evt;
+				Timer evt;
 				long t2;
 				
 				try {
