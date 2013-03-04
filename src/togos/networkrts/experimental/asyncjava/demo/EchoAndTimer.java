@@ -42,11 +42,13 @@ public class EchoAndTimer
 								if( data[0] == 'e' ) {
 									System.err.println("Quitting with exit code = 1!");
 									shell.stop(stdinPuller);
+									quit = true;
 									exitCode = 1;
 								}
 								if( data[0] == 'q' ) {
 									System.err.println("Quitting!");
 									shell.stop(stdinPuller);
+									quit = true;
 									exitCode = 0;
 								}
 								try {

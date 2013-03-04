@@ -4,16 +4,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.PriorityQueue;
 
+import togos.networkrts.experimental.asyncjava.Callback;
 import togos.networkrts.experimental.asyncjava.ProgramSegment;
 import togos.networkrts.experimental.asyncjava.ProgramShell;
 import togos.networkrts.experimental.asyncjava.Puller;
-import togos.networkrts.experimental.asyncjava.Callback;
 
 public class ProgramRunner implements Runnable, ProgramShell
 {
-	static class PullerState<DataType> {
+	static final class PullerState<DataType> {
 		public final Puller<DataType> puller;
 		public final Collection<Callback<DataType>> callbacks;
 		public Thread thread;
@@ -25,11 +25,26 @@ public class ProgramRunner implements Runnable, ProgramShell
 		}
 	}
 	
+	static final class SegmentTimer implements Comparable<SegmentTimer> {
+		final long timestamp;
+		final long order;
+		final ProgramSegment seg;
+		public SegmentTimer( long ts, long order, ProgramSegment seg ) {
+			this.timestamp = ts;
+			this.seg       = seg;
+			this.order     = order;
+		}
+		@Override public int compareTo(SegmentTimer o) {
+			return timestamp < o.timestamp ? -1 : timestamp > o.timestamp ? 1 :
+				order < o.order ? -1 : order > o.order ? 1 : 0;
+		}
+	}
+	
 	LinkedList<ProgramSegment> immediatelyScheduledSegments = new LinkedList<ProgramSegment>();
 	/** State information about active or not-yet-started pullers. */
 	HashMap<Puller,PullerState> pullerStates = new HashMap<Puller,PullerState>();
-	/** Queue of segments that should be run after immediatelyScheduledSegments is drained. */
-	ArrayBlockingQueue<ProgramSegment> ioTriggeredSegments = new ArrayBlockingQueue<ProgramSegment>(10); 
+	
+	PriorityQueue<SegmentTimer> timedSegments = new PriorityQueue<SegmentTimer>();
 	
 	Thread mainThread = null;
 	protected synchronized boolean isMainThread() {
@@ -118,7 +133,12 @@ public class ProgramRunner implements Runnable, ProgramShell
 	 * scheduled things are done.  This method may be called from any thread.
 	 */
 	public void scheduleAsync( ProgramSegment seg ) {
-		ioTriggeredSegments.add(seg);
+		try {
+			pushIncomingSegment(seg);
+		} catch( InterruptedException e ) {
+			e.printStackTrace();
+			Thread.currentThread().interrupt();
+		}
 	}
 	
 	public long getCurrentTime() {
@@ -131,31 +151,10 @@ public class ProgramRunner implements Runnable, ProgramShell
 		immediatelyScheduledSegments.add(0, seg);
 	}
 	
+	protected long order = 0;
 	@Override public void schedule( final long timestamp, final ProgramSegment seg ) {
 		assert isMainThread();
-		
-		if( timestamp <= getCurrentTime() ) {
-			scheduleAsync(seg);
-			return;
-		}
-		
-		// TODO: should have a single thread with a priority queue
-		new Thread() {
-			@Override
-			public void run() {
-				long cTime = System.currentTimeMillis();
-				if( timestamp > cTime ) {
-					try {
-						Thread.sleep(timestamp-cTime);
-					} catch( InterruptedException e ) {
-						System.err.println("Interrupted while waiting for scheduled event");
-						e.printStackTrace();
-						Thread.currentThread().interrupt();
-					}
-				}
-				scheduleAsync(seg);
-			}
-		}.start();
+		timedSegments.add( new SegmentTimer( timestamp, order++, seg ) );
 	}
 	
 	@Override public <DataType> void onData(Puller<DataType> input, Callback<DataType> trigger) {
@@ -163,15 +162,56 @@ public class ProgramRunner implements Runnable, ProgramShell
 		getEventTriggers(input).callbacks.add(trigger);
 	}
 	
+	protected ProgramSegment incomingSegment = null;
+	
+	protected synchronized void pushIncomingSegment( ProgramSegment seg ) throws InterruptedException {
+		while( incomingSegment != null ) wait();
+		incomingSegment = seg;
+		notifyAll();
+	}
+	protected synchronized ProgramSegment pullIncomingSegment( long until ) throws InterruptedException {
+		assert isMainThread();
+		long ct = getCurrentTime();
+		while( incomingSegment == null && ct < until ) {
+			wait( until - ct );
+			ct = System.currentTimeMillis();
+		}
+		ProgramSegment seg = incomingSegment;
+		incomingSegment = null;
+		notify(); // Since all others waiting should be pushers, only need to notify one.
+		return seg;
+	}
+	
 	@Override public void run() {
 		assert isMainThread();
-		while( immediatelyScheduledSegments.size() > 0 || activePullerCount > 0 || ioTriggeredSegments.size() > 0 ) {
+		while( immediatelyScheduledSegments.size() > 0 || timedSegments.size() > 0 || activePullerCount > 0 ) {
 			while( immediatelyScheduledSegments.size() > 0 ) {
 				immediatelyScheduledSegments.remove().run(this);
 			}
-			if( ioTriggeredSegments.size() > 0 ) {
-				ioTriggeredSegments.remove().run(this);
+			
+			long nextTimer;
+			SegmentTimer segTimer = timedSegments.peek();
+			nextTimer = (segTimer != null) ? segTimer.timestamp : Long.MAX_VALUE;
+			if( segTimer.timestamp <= getCurrentTime() ) {
+				timedSegments.remove();
+				System.err.println("Got a timed segment for "+segTimer.timestamp);
+				segTimer.seg.run(this);
+			} else if( activePullerCount > 0 )  {
+				ProgramSegment inSeg;
+				try {
+					inSeg = pullIncomingSegment( nextTimer );
+				} catch( InterruptedException e ) {
+					Thread.currentThread().interrupt();
+					e.printStackTrace();
+					return;
+				}
+				if( inSeg != null ) {
+					inSeg.run(this);
+				} else if( segTimer != null ) {
+					timedSegments.remove();
+					segTimer.seg.run(this);
+				}
 			}
-		}		
+		}
 	}
 }
