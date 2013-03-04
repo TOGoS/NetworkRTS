@@ -1,5 +1,7 @@
 Model for simulation with variable-length step intervals.
 
+There are a couple of obvious and subtly different approaches:
+
 == Event Loop A ==
 In which all events (scheduled and realtime) go through a TimedEventQueue.
  ________________
