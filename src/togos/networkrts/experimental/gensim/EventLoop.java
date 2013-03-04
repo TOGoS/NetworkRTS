@@ -1,6 +1,7 @@
 package togos.networkrts.experimental.gensim;
 
 import togos.networkrts.util.Timed;
+import togos.networkrts.experimental.gensim.EventBuffer;
 
 public class EventLoop
 {
@@ -21,10 +22,11 @@ public class EventLoop
 	
 	// Style B
 	public static <EventClass> void run( RealTimeEventSource<EventClass> es, Stepper<EventClass> stepper ) throws Exception {
+		EventBuffer<EventClass> buf = new EventBuffer<EventClass>( es.getCurrentTime() );
 		while( true ) {
-			EventClass evt = es.recv( stepper.getNextInternalUpdateTime() );
+			boolean eventOccured = es.recv( stepper.getNextInternalUpdateTime(), buf );
 			stepper.setCurrentTime(es.getCurrentTime());
-			if( evt != null ) stepper.handleEvent(evt);
+			if( eventOccured ) stepper.handleEvent(buf.data);
 		}
 	}
 }

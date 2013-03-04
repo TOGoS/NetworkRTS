@@ -148,3 +148,15 @@ Time advancement approaches
        - simulation's can manage internal events in whatever way it chooses
        - must add events differently from within the simulation thread (execute directly or add to internal queue)
          and from other threads (post to real time event source, even to add a timer to the simulator)
+
+
+
+An approach to immutable object updating:
+An object can be asked to update itself at any point during the simulation.
+What this means is it will be removed by the simulator, but has an opportunity to replace itself.
+It can also add other objects while it's doing this.
+This can be in response to an event (triggered by a collision in the simulator or an external input),
+or a timer that the object has asked to receive by adding itself with a nextUpdateTime.
+The simulator can skip tree nodes representing parts of the world with late nextUpdateTimes, only
+updating (removing + possibly re-adding) currently active objects.
+An object 

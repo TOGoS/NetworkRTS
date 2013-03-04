@@ -1,6 +1,13 @@
 Model for simulation with variable-length step intervals.
 
-There are a couple of obvious and subtly different approaches:
+There are a couple of obvious and subtly different approaches.
+
+Note to future self:
+The diagram for loop B looks overcomplicated compared to that for A.
+I think it's partly due to I've put more thought into it and so it's more fleshed out.
+There is an appeal to style B that I don't feel like explaining right now,
+so don't come back to this project and make a snap judgment that A > B.
+
 
 == Event Loop A ==
 In which all events (scheduled and realtime) go through a TimedEventQueue.
