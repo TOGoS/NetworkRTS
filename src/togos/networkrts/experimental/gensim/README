@@ -2,18 +2,14 @@ Model for simulation with variable-length step intervals.
 
 There are a couple of obvious and subtly different approaches.
 
-Note to future self:
-The diagram for loop B looks overcomplicated compared to that for A.
-I think it's partly due to I've put more thought into it and so it's more fleshed out.
-There is an appeal to style B that I don't feel like explaining right now,
-so don't come back to this project and make a snap judgment that A > B.
 
 
 == Event Loop A ==
-In which all events (scheduled and realtime) go through a TimedEventQueue.
+
+In this model, all events (scheduled and realtime) go through a TimedEventQueue. 
  ________________
 |                |
-|  EventHandler  |-------------+
+|  Simulatoion   |-------------+
 |________________|             | enqueued
    ^                           | events
    | time, events              |
@@ -23,8 +19,18 @@ In which all events (scheduled and realtime) go through a TimedEventQueue.
 |_____________|        |___________________|
 
 
+
 == Event Loop B ==
-In which the simulator tracks scheduled events internally.  
+
+In this model, immediate events and known future events (i.e. timers)
+do not need to go through the TimedEventQueue.  The simulation tells
+the event loop when it needs to be updated even if no event occurs.
+
+This has the advantages over A:
+- It is more straightforward to write the simulation in a purely functional
+  way, since it does not need to modify an external queue.
+- Though queues may be used inside the simulation, they do not need to be
+  thread safe.
 
 Design is similar to the that of the main loop in 'automatic.d' or whatever the I renamed that to most recently.
 
