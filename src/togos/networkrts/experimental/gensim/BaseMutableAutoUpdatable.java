@@ -4,19 +4,19 @@ import java.util.PriorityQueue;
 
 import togos.networkrts.util.Timer;
 
-public abstract class BaseMutableStepper<EventClass> implements Stepper<EventClass>
+public abstract class BaseMutableAutoUpdatable<EventClass> implements AutoEventUpdatable<EventClass>
 {
 	private long currentTime = Long.MIN_VALUE;
 	private PriorityQueue<Timer<EventClass>> timerQueue = new PriorityQueue();
 	
 	//// Stepper implementation
 	
-	@Override public long getNextInternalUpdateTime() {
+	@Override public long getNextAutomaticUpdateTime() {
 		Timer<EventClass> t = timerQueue.peek();
 		return t == null ? Long.MAX_VALUE : t.time;
 	}
 	
-	@Override public final BaseMutableStepper<EventClass> update( long targetTime, EventClass evt ) throws Exception {
+	@Override public final BaseMutableAutoUpdatable<EventClass> update( long targetTime, EventClass evt ) throws Exception {
 		if( targetTime < currentTime ) {
 			throw new RuntimeException("Tried to rewind time from "+currentTime+" to "+targetTime);
 		}

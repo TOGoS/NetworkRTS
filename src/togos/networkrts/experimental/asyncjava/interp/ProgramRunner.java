@@ -9,11 +9,11 @@ import togos.networkrts.experimental.asyncjava.Callback;
 import togos.networkrts.experimental.asyncjava.ProgramSegment;
 import togos.networkrts.experimental.asyncjava.ProgramShell;
 import togos.networkrts.experimental.asyncjava.Puller;
-import togos.networkrts.experimental.gensim.BaseMutableStepper;
+import togos.networkrts.experimental.gensim.BaseMutableAutoUpdatable;
 import togos.networkrts.experimental.gensim.EventLoop;
 import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
 
-public class ProgramRunner extends BaseMutableStepper<ProgramSegment> implements Runnable
+public class ProgramRunner extends BaseMutableAutoUpdatable<ProgramSegment> implements Runnable
 {
 	static final class PullerState<DataType> {
 		public final Puller<DataType> puller;
@@ -32,7 +32,7 @@ public class ProgramRunner extends BaseMutableStepper<ProgramSegment> implements
 	HashMap<Puller,PullerState> pullerStates = new HashMap<Puller,PullerState>();
 	QueuelessRealTimeEventSource<ProgramSegment> inputEventSource = new QueuelessRealTimeEventSource<ProgramSegment>() {
 		public boolean hasMoreEvents() {
-			return super.hasMoreEvents() && activePullerCount > 0 && getNextInternalUpdateTime() != TIME_INFINITY;
+			return super.hasMoreEvents() && activePullerCount > 0 && getNextAutomaticUpdateTime() != TIME_INFINITY;
 		}
 	};
 	ProgramShell shell = new ProgramShell() {
@@ -141,8 +141,8 @@ public class ProgramRunner extends BaseMutableStepper<ProgramSegment> implements
 		}
 	}
 	
-	@Override public long getNextInternalUpdateTime() {
-		return immediatelyScheduledSegments.size() > 0 ? getCurrentTime() : super.getNextInternalUpdateTime();
+	@Override public long getNextAutomaticUpdateTime() {
+		return immediatelyScheduledSegments.size() > 0 ? getCurrentTime() : super.getNextAutomaticUpdateTime();
 	}
 	
 	public void schedule( ProgramSegment seg ) {

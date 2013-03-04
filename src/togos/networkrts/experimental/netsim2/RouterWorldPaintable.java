@@ -11,7 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import togos.networkrts.awt.TimestampedPaintable;
-import togos.networkrts.experimental.gensim.TimedEventHandler;
+import togos.networkrts.experimental.gensim.EventUpdatable;
 import togos.networkrts.experimental.gensim.TimedEventQueue;
 import togos.networkrts.experimental.netsim2.RouterWorld.Router;
 import togos.networkrts.experimental.netsim2.RouterWorld.TransmitterType;
@@ -19,7 +19,7 @@ import togos.networkrts.experimental.shape.TCircle;
 import togos.networkrts.experimental.shape.TRectangle;
 import togos.networkrts.inet.AddressUtil;
 
-public class RouterWorldPaintable implements TimestampedPaintable, TimedEventHandler<Object>
+public class RouterWorldPaintable implements TimestampedPaintable, EventUpdatable<Object>
 {
 	protected RouterWorld world;
 	protected double cx, cy, scale = 1.0;

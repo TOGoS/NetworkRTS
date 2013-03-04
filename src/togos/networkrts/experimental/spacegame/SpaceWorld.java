@@ -3,9 +3,9 @@ package togos.networkrts.experimental.spacegame;
 import java.util.ArrayList;
 import java.util.List;
 
-import togos.networkrts.experimental.gensim.Stepper;
+import togos.networkrts.experimental.gensim.AutoEventUpdatable;
 
-public class SpaceWorld implements Stepper<SpaceWorld.SpaceWorldEvent>
+public class SpaceWorld implements AutoEventUpdatable<SpaceWorld.SpaceWorldEvent>
 {
 	public final int SIGNAL_NONE = 0;
 	public final int SIGNAL_TIME = 1;
@@ -29,7 +29,7 @@ public class SpaceWorld implements Stepper<SpaceWorld.SpaceWorldEvent>
 	List<SpaceWorldEvent> enqueuedEvents;
 	long currentTime = 0;
 	
-	@Override public long getNextInternalUpdateTime() {
+	@Override public long getNextAutomaticUpdateTime() {
 		long t = Long.MAX_VALUE;
 		for( SpaceObject o : objects ) {
 			if( o.autoUpdateTime < t ) t = o.autoUpdateTime;
@@ -73,7 +73,7 @@ public class SpaceWorld implements Stepper<SpaceWorld.SpaceWorldEvent>
 		}
 		
 		long nextUpdateTime;
-		while( (nextUpdateTime = getNextInternalUpdateTime()) <= targetTime ) {
+		while( (nextUpdateTime = getNextAutomaticUpdateTime()) <= targetTime ) {
 			currentTime = nextUpdateTime;
 			processTimedUpdates();
 			processEnqueuedEvents();

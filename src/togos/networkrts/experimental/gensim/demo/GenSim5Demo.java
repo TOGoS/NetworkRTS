@@ -2,7 +2,7 @@ package togos.networkrts.experimental.gensim.demo;
 
 import java.util.ArrayList;
 
-import togos.networkrts.experimental.gensim.BaseMutableStepper;
+import togos.networkrts.experimental.gensim.BaseMutableAutoUpdatable;
 import togos.networkrts.experimental.gensim.EventLoop;
 import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
 
@@ -55,7 +55,7 @@ public class GenSim5Demo
 		}
 	}
 	
-	static class DemoSimulation extends BaseMutableStepper<DemoEvent> {
+	static class DemoSimulation extends BaseMutableAutoUpdatable<DemoEvent> {
 		ArrayList<DemoActor> actors = new ArrayList();
 		
 		public void transmit( double sourceX, double sourceY, String message ) {

@@ -11,7 +11,7 @@ import java.util.Random;
 
 import togos.networkrts.awt.Apallit;
 import togos.networkrts.experimental.gensim.EventLoop;
-import togos.networkrts.experimental.gensim.TimedEventHandler;
+import togos.networkrts.experimental.gensim.EventUpdatable;
 import togos.networkrts.experimental.gensim.TimedEventQueue;
 import togos.networkrts.experimental.netsim2.RouterWorld.Router;
 import togos.networkrts.inet.AddressUtil;
@@ -50,8 +50,8 @@ public class RouterWorldApplet extends Apallit
 		addService( new InterruptableSingleThreadedService() {
 			@Override protected void _run() throws InterruptedException {
 				try {
-					EventLoop.run( rw.eventQueue, new TimedEventHandler<Object>() {
-						@Override public TimedEventHandler<Object> update( long time, Object evt ) throws Exception {
+					EventLoop.run( rw.eventQueue, new EventUpdatable<Object>() {
+						@Override public EventUpdatable<Object> update( long time, Object evt ) throws Exception {
 							rwp = rwp.update( time, evt );
 							rw  = rw.update( time, evt );
 							return this;

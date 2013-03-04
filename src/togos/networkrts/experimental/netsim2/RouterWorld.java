@@ -12,13 +12,13 @@ import togos.networkrts.experimental.entree2.QuadEntree;
 import togos.networkrts.experimental.entree2.QuadEntreeNode;
 import togos.networkrts.experimental.entree2.WorldObject;
 import togos.networkrts.experimental.entree2.WorldUpdateBuilder;
-import togos.networkrts.experimental.gensim.TimedEventHandler;
+import togos.networkrts.experimental.gensim.EventUpdatable;
 import togos.networkrts.experimental.gensim.TimedEventQueue;
 import togos.networkrts.experimental.shape.RectIntersector;
 import togos.networkrts.experimental.shape.TBoundless;
 import togos.networkrts.experimental.shape.TCircle;
 
-public class RouterWorld implements TimedEventHandler<Object>
+public class RouterWorld implements EventUpdatable<Object>
 {
 	public static final int CHANNEL_1_FLAG = 0x01;
 	public static final int CHANNEL_2_FLAG = 0x02;

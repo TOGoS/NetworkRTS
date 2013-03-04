@@ -8,10 +8,10 @@ import java.util.List;
 import togos.blob.ByteChunk;
 import togos.blob.SimpleByteChunk;
 import togos.networkrts.experimental.gensim.EventLoop;
-import togos.networkrts.experimental.gensim.TimedEventHandler;
+import togos.networkrts.experimental.gensim.EventUpdatable;
 import togos.networkrts.experimental.gensim.TimedEventQueue;
 
-public class Simulator implements TimedEventHandler<Simulator.SimulatorEvent>
+public class Simulator implements EventUpdatable<Simulator.SimulatorEvent>
 {
 	TimedEventQueue<SimulatorEvent> teq = new TimedEventQueue<SimulatorEvent>();
 	
