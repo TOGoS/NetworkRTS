@@ -27,7 +27,7 @@ public class SpaceWorld implements Stepper<SpaceWorld.SpaceWorldEvent>
 	
 	SpaceObject[] objects = new SpaceObject[0];
 	List<SpaceWorldEvent> enqueuedEvents;
-	long time = 0;
+	long currentTime = 0;
 	
 	@Override public long getNextInternalUpdateTime() {
 		long t = Long.MAX_VALUE;
@@ -41,7 +41,7 @@ public class SpaceWorld implements Stepper<SpaceWorld.SpaceWorldEvent>
 		ArrayList<SpaceObject> newObjects = new ArrayList();
 		for( SpaceObject o : objects ) {
 			if( o.entityId == evt.targetId ) {
-				o.behavior.receivedSignal(time, o, evt.code, evt.data, evt.offset, evt.length, newObjects, enqueuedEvents);
+				o.behavior.receivedSignal(currentTime, o, evt.code, evt.data, evt.offset, evt.length, newObjects, enqueuedEvents);
 			} else {
 				newObjects.add(o);
 			}
@@ -52,8 +52,8 @@ public class SpaceWorld implements Stepper<SpaceWorld.SpaceWorldEvent>
 	protected void processTimedUpdates() {
 		ArrayList<SpaceObject> newObjects = new ArrayList();
 		for( SpaceObject o : objects ) {
-			if( o.autoUpdateTime <= time ) {
-				o.behavior.receivedSignal(time, o, SIGNAL_TIME, null, 0, 0, newObjects, enqueuedEvents);
+			if( o.autoUpdateTime <= currentTime ) {
+				o.behavior.receivedSignal(currentTime, o, SIGNAL_TIME, null, 0, 0, newObjects, enqueuedEvents);
 			} else {
 				newObjects.add(o);
 			}
@@ -67,18 +67,21 @@ public class SpaceWorld implements Stepper<SpaceWorld.SpaceWorldEvent>
 		}
 	}
 	
-	@Override public void handleEvent(SpaceWorldEvent evt) throws Exception {
-		enqueuedEvents.add(evt);
-		processEnqueuedEvents();
-	}
-	
-	@Override public void setCurrentTime(long targetTime) throws Exception {
+	@Override public SpaceWorld update(long targetTime, SpaceWorldEvent evt) throws Exception {
+		if( targetTime < currentTime ) {
+			throw new RuntimeException("Tried to rewind time from "+currentTime+" to "+targetTime);
+		}
+		
 		long nextUpdateTime;
 		while( (nextUpdateTime = getNextInternalUpdateTime()) <= targetTime ) {
-			time = nextUpdateTime;
+			currentTime = nextUpdateTime;
 			processTimedUpdates();
 			processEnqueuedEvents();
 		}
-		time = targetTime;
+		currentTime = targetTime;
+
+		enqueuedEvents.add(evt);
+		processEnqueuedEvents();
+		return this;
 	}
 }

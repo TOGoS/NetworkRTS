@@ -60,7 +60,7 @@ public class GenSim5Demo
 	static class DemoSimulation implements Stepper<DemoEvent> {
 		PriorityQueue<Timed<DemoEvent>> timerQueue = new PriorityQueue();
 		ArrayList<DemoActor> actors = new ArrayList();
-		long currentTime = 0;
+		long currentTime = Long.MIN_VALUE;
 		
 		public void enqueueEvent( long targetTime, DemoEvent evt ) {
 			timerQueue.add( new Timed(targetTime, 0, evt) );
@@ -69,15 +69,6 @@ public class GenSim5Demo
 		public long getNextInternalUpdateTime() {
 			Timed timer = timerQueue.peek();
 			return timer == null ? Long.MAX_VALUE : timer.time;
-		}
-		
-		public void setCurrentTime( long t ) {
-			currentTime = t;
-			Timed<DemoEvent> timer;
-			while( (timer = timerQueue.peek()) != null && timer.time <= currentTime ) {
-				timerQueue.remove();
-				timer.payload.run(this);
-			}
 		}
 		
 		public void transmit( double sourceX, double sourceY, String message ) {
@@ -89,8 +80,20 @@ public class GenSim5Demo
 			}
 		}
 		
-		@Override public void handleEvent( DemoEvent evt ) {
-			evt.run(this);
+		@Override public DemoSimulation update( long time, DemoEvent evt ) {
+			if( time < currentTime ) {
+				throw new RuntimeException("Tried to rewind time from "+currentTime+" to "+time);
+			}
+			
+			Timed<DemoEvent> timer;
+			while( (timer = timerQueue.peek()) != null && timer.time <= currentTime ) {
+				timerQueue.remove();
+				timer.payload.run(this);
+			}
+			
+			currentTime = time;
+			if( evt != null ) evt.run(this);
+			return this;
 		}
 	}
 	

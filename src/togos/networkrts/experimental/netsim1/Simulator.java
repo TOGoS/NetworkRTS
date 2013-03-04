@@ -197,12 +197,14 @@ public class Simulator implements TimedEventHandler<Simulator.SimulatorEvent>
 		});
 	}
 	
-	@Override public void setCurrentTime( long time ) {
+	@Override public Simulator update( long time, SimulatorEvent evt ) {
+		if( time < currentTime ) {
+			throw new RuntimeException("Tried to rewind time from "+currentTime+" to "+time);
+		}
+		
 		currentTime = time;
-	}
-	
-	@Override public void handleEvent( SimulatorEvent evt ) {
-		evt.run( this );
+		if( evt != null ) evt.run(this);
+		return this;
 	}
 	
 	public static void main( String[] args ) throws Exception {

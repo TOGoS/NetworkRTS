@@ -19,7 +19,7 @@ public interface RealTimeEventSource<EventClass>
 	 *   buf.timestamp set to the time at which the event occured, and true returned.
 	 * - Otherwise, buf.timestamp should be set to returnBy and false returned.
 	 * 
-	 * After this returns buf.timestamp must be between its old value and returnBy (inclusive). 
+	 * After this returns buf.time must be between its old value and returnBy (inclusive). 
 	 */
 	public boolean recv( long returnBy, EventBuffer buf ) throws IOException, InterruptedException;
 	/**

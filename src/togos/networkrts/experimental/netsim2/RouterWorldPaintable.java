@@ -37,14 +37,11 @@ public class RouterWorldPaintable implements TimestampedPaintable, TimedEventHan
 		this.world = world;
 	}
 	
-	@Override public void setCurrentTime( long time ) throws Exception {
-		// Ignored; we will repaint in real time.
-	}
-	
-	@Override public synchronized void handleEvent( Object event ) throws Exception {
+	@Override public synchronized RouterWorldPaintable update( long timestamp, Object event ) throws Exception {
 		if( event instanceof LiveEvent ) {
 			activeEvents.add( (LiveEvent)event );
 		}
+		return this;
 	}
 	
 	protected synchronized void cleanActiveEvents( long timestamp ) {

@@ -520,13 +520,9 @@ public class RouterWorld implements TimedEventHandler<Object>
 		}
 	}
 	
-	long currentTime = Long.MIN_VALUE;
+	protected long currentTime = Long.MIN_VALUE;
 	
-	@Override public void setCurrentTime( long time ) {
-		currentTime = time;
-	}
-	
-	@Override public void handleEvent( final Object evt ) throws Exception {
+	protected void handleEvent( final Object evt ) throws Exception {
 		if( evt instanceof WirelessTransmissionEvent ) {
 			final WirelessTransmissionEvent wtEvt = (WirelessTransmissionEvent)evt;
 			if( wtEvt.data instanceof Frame ) {
@@ -611,6 +607,12 @@ public class RouterWorld implements TimedEventHandler<Object>
 				giveAddress( dest, adp.address, adp.prefixLength );
 			}
 		}
+	}
+	
+	@Override public RouterWorld update( final long targetTime, final Object evt ) throws Exception {
+		currentTime = targetTime;
+		if( evt != null ) handleEvent( evt );
+		return this;
 	}
 
 	public void giveAddress( Router r, byte[] address, int prefixLength ) throws Exception {

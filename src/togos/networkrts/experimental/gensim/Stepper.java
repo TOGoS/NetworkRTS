@@ -6,4 +6,5 @@ package togos.networkrts.experimental.gensim;
 public interface Stepper<EventClass> extends TimedEventHandler<EventClass>
 {
 	public long getNextInternalUpdateTime();
+	public Stepper<EventClass> update( long time, EventClass evt ) throws Exception;
 }

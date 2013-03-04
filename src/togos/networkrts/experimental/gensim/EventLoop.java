@@ -9,14 +9,13 @@ public class EventLoop
 	
 	// Style A
 	public static <EventClass> void run( TimedEventQueue<EventClass> teq, TimedEventHandler<EventClass> eventHandler ) throws Exception {
-		long prevTime = Long.MIN_VALUE;
+		long curTime = Long.MIN_VALUE;
 		while( !Thread.interrupted() ) {
 			Timed<EventClass> evt = teq.take();
 			// Real-time events may come in marked for the past;
-			// in that case, do not rewind time:
-			if( evt.time > prevTime ) eventHandler.setCurrentTime( evt.time );
-			eventHandler.handleEvent( evt.payload );
-			prevTime = evt.time;
+			// in that case, do not rewind time
+			if( evt.time > curTime ) curTime = evt.time; 
+			eventHandler.update( curTime, evt.payload );
 		}
 	}
 	
@@ -25,8 +24,7 @@ public class EventLoop
 		EventBuffer<EventClass> buf = new EventBuffer<EventClass>( es.getCurrentTime() );
 		while( true ) {
 			boolean eventOccured = es.recv( stepper.getNextInternalUpdateTime(), buf );
-			stepper.setCurrentTime(es.getCurrentTime());
-			if( eventOccured ) stepper.handleEvent(buf.data);
+			stepper = stepper.update(buf.time, eventOccured ? buf.data : null);
 		}
 	}
 }

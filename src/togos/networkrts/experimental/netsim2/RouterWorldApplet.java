@@ -51,13 +51,10 @@ public class RouterWorldApplet extends Apallit
 			@Override protected void _run() throws InterruptedException {
 				try {
 					EventLoop.run( rw.eventQueue, new TimedEventHandler<Object>() {
-						@Override public void setCurrentTime( long time ) throws Exception {
-							rwp.setCurrentTime(time);
-							rw.setCurrentTime(time);
-						}
-						@Override public void handleEvent( Object evt ) throws Exception {
-							rwp.handleEvent( evt );
-							rw.handleEvent( evt );
+						@Override public TimedEventHandler<Object> update( long time, Object evt ) throws Exception {
+							rwp = rwp.update( time, evt );
+							rw  = rw.update( time, evt );
+							return this;
 						}
 						
 					} );
@@ -158,7 +155,7 @@ public class RouterWorldApplet extends Apallit
 			}
 		});
 		
-		rw.setCurrentTime(System.currentTimeMillis());
+		rw.currentTime = System.currentTimeMillis();
 		rw.beginAddressAllocation();
 	}
 	
