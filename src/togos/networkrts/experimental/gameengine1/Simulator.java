@@ -104,6 +104,11 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		public Entity onCollision( long time, Entity self, Entity other, EntityShell shell );
 	}
 	
+	static final EntityBehavior NULL_BEHAVIOR = new EntityBehavior() {
+		@Override public Entity onMove( long time, Entity self, EntityShell shell ) { return self; }
+		@Override public Entity onCollision( long time, Entity self, Entity other, EntityShell shell ) { return self; }
+	};
+	
 	/** Axis-aligned bounding box */
 	static class AABB {
 		final double minX, minY, minZ, maxX, maxY, maxZ;
@@ -149,15 +154,15 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 	static class EntityIndex implements SpatialIndex<Entity>
 	{
 		private final HashSet<Entity> allEntities = new HashSet<Entity>();
-		private int movingEntityCount = 0;
+		private final HashSet<Entity> movingEntities = new HashSet<Entity>();
 		
 		public boolean hasMovingEntities() {
-			return movingEntityCount > 0;
+			return movingEntities.size() > 0;
 		}
 		
 		public void add(Entity e) {
 			allEntities.add(e);
-			if( e.isMoving ) ++movingEntityCount;
+			if( e.isMoving ) movingEntities.add(e);
 		}
 		
 		@Override public void forEachItemIntersecting(AABB bounds, Visitor<Entity> callback) {
@@ -183,7 +188,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 	}
 	
 	EntityIndex entityIndex = new EntityIndex();
-	public long physicsInterval = 50;
+	public long physicsInterval = 10;
 	HashSet<Runnable> worldUpdateListeners = new HashSet<Runnable>();
 	
 	protected long getNextPhysicsUpdateTime() {
@@ -196,8 +201,10 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 	
 	@Override
 	protected void passTime(final long targetTime) {
+		long sysTime = System.currentTimeMillis();
 		System.err.println( (targetTime - currentTime) + " milliseconds passed to "+targetTime );
-		System.err.println( "Moving entities: "+entityIndex.movingEntityCount );
+		System.err.println( "Moving entities: "+entityIndex.movingEntities.size() );
+		System.err.println( "Lag: "+(sysTime - targetTime));
 		entityIndex = entityIndex.updateEntities( new EntityUpdater() {
 			protected double damp( double v, double min ) {
 				return Math.abs(v) < min ? 0 : v;
@@ -206,7 +213,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			@Override public Entity update( Entity e, EntityShell shell ) {
 				e = e.withUpdatedPosition(targetTime);
 				if( e != null && e.y <= e.solidRadius && e.vy <= 0 ) {
-					if( Math.abs(e.vy) < 20 ) {
+					if( Math.abs(e.vy) < gravity/10 ) {
 						e = e.withPosition(
 							e.time,
 							e.x, e.solidRadius, e.z,
@@ -252,13 +259,35 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		currentTime = targetTime;
 		for( Runnable r : worldUpdateListeners ) r.run();
 	}
-
+	
+	final static double gravity = 400;
+	
 	@Override
 	protected void handleEvent(Object evt) {
-		// TODO: bounce
+		entityIndex = entityIndex.updateEntities(new EntityUpdater() {
+			@Override
+			public Entity update( Entity e, EntityShell shell ) {
+				if( e.solidRadius >= 2 && Math.random() < 0.1 ) {
+					// Asplode!
+					for( int i=0; i<4; ++i ) {
+						shell.add( new Entity(
+							null, e.parent, e.time,
+							e.x, e.y, e.z,
+							e.vx + Math.random()*200-100, e.vy + Math.random()*400-200, e.vz + Math.random()*200-100,
+							e.ax, -gravity, e.az,
+							0, e.solidRadius/2, e.mass/4, e.color, CoolEntityBehavior.INSTANCE
+						) );
+					}
+					return null;
+				} else {
+					return e;
+				}
+			}
+		});
 	}
 	
 	static class CoolEntityBehavior implements EntityBehavior {
+		static final CoolEntityBehavior INSTANCE = new CoolEntityBehavior(0);
 		final long lastCollisionTime;
 		
 		public CoolEntityBehavior( long lastCollisionTime ) {
@@ -295,15 +324,14 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		final Simulator sim = new Simulator();
 		final QueuelessRealTimeEventSource<Object> eventSource = new QueuelessRealTimeEventSource<Object>();
 		
-		CoolEntityBehavior beh = new CoolEntityBehavior(0);
-		for( int i=0; i<100; ++i ) {
+		for( int i=0; i<200; ++i ) {
 			Entity e = new Entity(
 				i == 0 ? "tag" : null, null, eventSource.getCurrentTime(),
 				Math.random()*200-100, Math.random()*200, 0,
 				Math.random()*20-10, Math.random()*200-10, 0,
-				0, -100, 0,
+				0, -gravity, 0,
 				10, 10,
-				1, i == 0 ? Color.GREEN : Color.WHITE, beh
+				1, i == 0 ? Color.GREEN : Color.WHITE, CoolEntityBehavior.INSTANCE
 			);
 			sim.entityIndex.add(e);
 		}
