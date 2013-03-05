@@ -6,7 +6,7 @@ import togos.networkrts.util.Timer;
 
 public abstract class BaseMutableAutoUpdatable<EventClass> implements AutoEventUpdatable<EventClass>
 {
-	private long currentTime = Long.MIN_VALUE;
+	protected long currentTime = Long.MIN_VALUE;
 	private PriorityQueue<Timer<EventClass>> timerQueue = new PriorityQueue();
 	
 	//// Stepper implementation
@@ -24,7 +24,7 @@ public abstract class BaseMutableAutoUpdatable<EventClass> implements AutoEventU
 		Timer<EventClass> timer;
 		while( (timer = timerQueue.peek()) != null && timer.time <= currentTime ) {
 			timerQueue.remove();
-			_update( timer.time, timer.payload );
+			_update( timer.time > currentTime ? timer.time : currentTime, timer.payload );
 		}
 		
 		_update( targetTime, evt );
@@ -32,8 +32,8 @@ public abstract class BaseMutableAutoUpdatable<EventClass> implements AutoEventU
 	}
 	
 	private final void _update( long targetTime, EventClass evt ) {
-		passTime( currentTime, targetTime );
-		this.currentTime = targetTime;
+		passTime( targetTime );
+		assert currentTime == targetTime;
 		if( evt != null ) handleEvent( evt );
 	}
 	
@@ -54,10 +54,16 @@ public abstract class BaseMutableAutoUpdatable<EventClass> implements AutoEventU
 	//// Override these
 	
 	/**
-	 * Simulate time passing between the given times.
-	 * The value of currentTime while this executes is undefined.
+	 * Simulate time passing from currentTime to targetTime.
+	 * This method may modify currentTime during execution and must
+	 * return with currentTime = targetTime.
+	 * 
+	 * This is always called at least once per update(...) even
+	 * if no time actually passed.
 	 */
-	protected void passTime( long currentTime, long targetTime ) { }
+	protected void passTime( long targetTime ) {
+		this.currentTime = targetTime;
+	}
 	
 	/**
 	 * Simulate the given event occurring at currentTime.

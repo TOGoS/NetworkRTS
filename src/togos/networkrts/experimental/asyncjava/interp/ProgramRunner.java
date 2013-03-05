@@ -163,8 +163,9 @@ public class ProgramRunner extends BaseMutableAutoUpdatable<ProgramSegment> impl
 		}
 	}
 	
-	@Override protected void passTime(long currentTime, long targetTime) {
+	@Override protected void passTime(long targetTime) {
 		runImmediateSegments();
+		super.passTime(targetTime);
 	}
 	
 	@Override protected void handleEvent(ProgramSegment evt) {
