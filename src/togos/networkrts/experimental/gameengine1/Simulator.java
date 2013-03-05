@@ -5,10 +5,13 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Graphics;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.util.HashSet;
+import java.util.Iterator;
 
 import togos.networkrts.experimental.gensim.BaseMutableAutoUpdatable;
 import togos.networkrts.experimental.gensim.EventLoop;
@@ -84,6 +87,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 	
 	static class Space
 	{
+		final HashSet<Entity> allEntities = new HashSet();
 		final HashSet<Entity> movingEntities = new HashSet();
 		final SpatialIndex<Entity> solidIndex = new DumbSpatialIndex();
 		
@@ -93,6 +97,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		}
 		
 		public void addEntity( Entity e ) {
+			allEntities.add( e );
 			solidIndex.add( e.updateBoundingBox() );
 			updateEntity( e );
 		}
@@ -137,6 +142,12 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 				collisionCheckEntity = e;
 				solidIndex.findIntersection( e.boundingBox, collisionCallback );
 			}
+			for( Iterator<Entity> i=movingEntities.iterator(); i.hasNext(); ) {
+				if( !i.next().isMoving() ) {
+					System.err.println("Stopped entity; removing; "+movingEntities.size()+" left");
+					i.remove();
+				}
+			}
 		}
 	}
 	
@@ -172,18 +183,32 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		}
 	}
 	
+	public long physicsInterval = 80;
 	Space space = new Space();
 	HashSet<Runnable> worldUpdateListeners = new HashSet<Runnable>();
 	
+	protected long getNextPhysicsUpdateTime() {
+		return space.movingEntities.size() > 0 ? currentTime + physicsInterval : TIME_INFINITY;
+	}
+	
+	@Override public long getNextAutomaticUpdateTime() {
+		return Math.min(getNextPhysicsUpdateTime(), super.getNextAutomaticUpdateTime());
+	}
+
 	@Override
 	protected void passTime(long targetTime) {
+		System.err.println( (targetTime - currentTime) + " milliseconds passed to "+targetTime );
 		space.passTime( (targetTime - currentTime)/1000.0, targetTime );
 		currentTime = targetTime;
 		for( Runnable r : worldUpdateListeners ) r.run();
 	}
-	
-	@Override public long getNextAutomaticUpdateTime() {
-		return currentTime + 50;
+
+	@Override
+	protected void handleEvent(Object evt) {
+		for( Entity e : space.allEntities ) {
+			e.vy += Math.random()*100;
+			e.ay = -100;
+		}
 	}
 	
 	public static void main( String[] args ) throws Exception {
@@ -201,10 +226,24 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			sim.space.addEntity( e );
 			e.behavior = new EntityBehavior() {
 				long lastCollision = Long.MIN_VALUE;
+				protected double damp( double val, double damp, double min ) {
+					val *= damp;
+					return Math.abs(val) < min ? 0 : val;
+				}
+				
 				@Override public void onMove(long time, Entity self) {
-					if( self.y < 0 && self.vy < 0 ) {
+					self.vx = damp( self.vx, 0.99, 1 );
+					self.vy = damp( self.vy, 0.99, 1 );
+					self.vz = damp( self.vz, 0.99, 1 );
+					//System.err.println(self.vy);
+					if( self.y < self.solidRadius*1.1 && Math.abs(self.vy) < 8 ) {
+						//System.err.println("Stopped");
+						self.vy = 0;
+						self.ay = 0;
+					}
+					if( self.y < self.solidRadius && self.vy < 0 ) {
 						// System.err.println("Bounce! " + self.x);
-						self.vy = -self.vy;
+						self.vy = -self.vy*0.8;
 					}
 					if( time - lastCollision > 1000 ) {
 						self.color = Color.WHITE;
@@ -216,6 +255,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 				}
 			};
 		}
+		final QueuelessRealTimeEventSource<Object> eventSource = new QueuelessRealTimeEventSource<Object>();
 		
 		final Frame frame = new Frame();
 		final Canvas canv = new Canvas() {
@@ -235,9 +275,9 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 				Graphics g = buf.getGraphics();
 				g.setColor(Color.BLACK);
 				g.fillRect(0, 0, getWidth(), getHeight());
-				for( Entity e : sim.space.movingEntities ) {
+				for( Entity e : sim.space.allEntities ) {
 					g.setColor( e.color );
-					g.fillOval( (int)(e.x-e.solidRadius) + getWidth()/2, getHeight()-(int)(e.y-e.solidRadius), (int)(e.solidRadius*2), (int)(e.solidRadius*2) );
+					g.fillOval( (int)(e.x-e.solidRadius) + getWidth()/2, (int)(getHeight()-e.y-e.solidRadius), (int)(e.solidRadius*2), (int)(e.solidRadius*2) );
 				}
 				
 				_g.drawImage( buf, 0, 0, null ); 
@@ -256,14 +296,25 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			}
 		});
 		frame.setVisible(true);
-		
+		canv.addKeyListener( new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				try {
+					eventSource.post(new Object());
+				} catch( InterruptedException e1 ) {
+					Thread.currentThread().interrupt();
+					e1.printStackTrace();
+				}
+			}
+		});
+		canv.requestFocus();
+
 		sim.worldUpdateListeners.add(new Runnable() {
 			@Override public void run() {
 				canv.repaint();
 			}
 		});
 		
-		RealTimeEventSource<Object> eventSource = new QueuelessRealTimeEventSource<Object>();
 		sim.currentTime = eventSource.getCurrentTime();
 		EventLoop.run(eventSource, sim);
 	}
