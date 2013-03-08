@@ -26,7 +26,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		public final double x, y, z;
 		public final double vx, vy, vz;
 		public final double ax, ay, az;
-		public final double solidRadius;
+		public final double radius;
 		public final double mass;
 		public final Color color;
 		public final EntityBehavior behavior;
@@ -40,7 +40,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			double x, double y, double z,
 			double vx, double vy, double vz,
 			double ax, double ay, double az,
-			double solidRadius,
+			double radius,
 			double mass, Color color, EntityBehavior behavior
 		) {
 			this.tag = tag;
@@ -49,15 +49,15 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			this.x = x; this.y = y; this.z = z;
 			this.vx = vx; this.vy = vy; this.vz = vz;
 			this.ax = ax; this.ay = ay; this.az = az;
-			this.solidRadius = solidRadius;
+			this.radius = radius;
 			this.mass = mass; this.color = color;
 			this.behavior = behavior;
 			this.boundingBox = new AABB(
-				x-solidRadius, y-solidRadius, z-solidRadius,
-				x+solidRadius, y+solidRadius, z+solidRadius
+				x-radius, y-radius, z-radius,
+				x+radius, y+radius, z+radius
 			);
 			this.isMoving = vx != 0 || vy != 0 || vz != 0 || ax != 0 || ay != 0 || az != 0;
-			this.isSolid = solidRadius > 0;
+			this.isSolid = radius > 0;
 		}
 		
 		public Entity withUpdatedPosition( long targetTime ) {
@@ -83,7 +83,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			return new Entity(
 				tag, parent, time,
 				x, y, z, vx, vy, vz, ax, ay, az,
-				solidRadius, mass, color, behavior
+				radius, mass, color, behavior
 			);
 		}
 	}
@@ -147,7 +147,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		
 		double dx = e1.x-e2.x, dy = e1.y-e2.y, dz = e1.z-e2.z;
 		double distSquared = dx*dx + dy*dy + dz*dz;
-		double radSum = e1.solidRadius + e2.solidRadius;
+		double radSum = e1.radius + e2.radius;
 		return distSquared < radSum*radSum;
 	}
 	
@@ -212,11 +212,11 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			
 			@Override public Entity update( Entity e, EntityShell shell ) {
 				e = e.withUpdatedPosition(targetTime);
-				if( e != null && e.y <= e.solidRadius && e.vy <= 0 ) {
+				if( e != null && e.y <= e.radius && e.vy <= 0 ) {
 					if( Math.abs(e.vy) < gravity/10 ) {
 						e = e.withPosition(
 							e.time,
-							e.x, e.solidRadius, e.z,
+							e.x, e.radius, e.z,
 							damp(e.vx * 0.9, 0.1), 0, e.vz,
 							e.ax, 0, e.az
 						);
@@ -267,7 +267,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		entityIndex = entityIndex.updateEntities(new EntityUpdater() {
 			@Override
 			public Entity update( Entity e, EntityShell shell ) {
-				if( e.solidRadius >= 2 && Math.random() < 0.1 ) {
+				if( e.radius >= 2 && Math.random() < 0.1 ) {
 					// Asplode!
 					for( int i=0; i<4; ++i ) {
 						shell.add( new Entity(
@@ -275,7 +275,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 							e.x, e.y, e.z,
 							e.vx + Math.random()*200-100, e.vy + Math.random()*400-200, e.vz + Math.random()*200-100,
 							e.ax, -gravity, e.az,
-							e.solidRadius/2, e.mass/4, e.color, CoolEntityBehavior.INSTANCE
+							e.radius/2, e.mass/4, e.color, CoolEntityBehavior.INSTANCE
 						) );
 					}
 					return null;
@@ -298,7 +298,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			return new Entity(
 				e.tag, e.parent, e.time,
 				e.x, e.y, e.z, e.vx, e.vy, e.vz, e.ax, e.ay, e.az,
-				e.solidRadius, e.mass, c, b
+				e.radius, e.mass, c, b
 			);
 		}
 		
@@ -355,7 +355,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 				g.fillRect(0, 0, getWidth(), getHeight());
 				for( Entity e : sim.entityIndex.allEntities ) {
 					g.setColor( e.color );
-					g.fillOval( (int)(e.x-e.solidRadius) + getWidth()/2, (int)(getHeight()-e.y-e.solidRadius), (int)(e.solidRadius*2), (int)(e.solidRadius*2) );
+					g.fillOval( (int)(e.x-e.radius) + getWidth()/2, (int)(getHeight()-e.y-e.radius), (int)(e.radius*2), (int)(e.radius*2) );
 				}
 				
 				_g.drawImage( buf, 0, 0, null ); 
