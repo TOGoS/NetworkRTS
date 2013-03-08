@@ -21,7 +21,6 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 	static class Entity
 	{
 		public final Object tag;
-		public final Entity parent;
 		public final long time;
 		public final double x, y, z;
 		public final double vx, vy, vz;
@@ -36,7 +35,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		public final boolean isSolid;
 		
 		public Entity(
-			Object tag, Entity parent, long time,
+			Object tag, long time,
 			double x, double y, double z,
 			double vx, double vy, double vz,
 			double ax, double ay, double az,
@@ -44,7 +43,6 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			double mass, Color color, EntityBehavior behavior
 		) {
 			this.tag = tag;
-			this.parent = parent;
 			this.time = time;
 			this.x = x; this.y = y; this.z = z;
 			this.vx = vx; this.vy = vy; this.vz = vz;
@@ -81,7 +79,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			double ax, double ay, double az
 		) {
 			return new Entity(
-				tag, parent, time,
+				tag, time,
 				x, y, z, vx, vy, vz, ax, ay, az,
 				radius, mass, color, behavior
 			);
@@ -271,7 +269,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 					// Asplode!
 					for( int i=0; i<4; ++i ) {
 						shell.add( new Entity(
-							null, e.parent, e.time,
+							null, e.time,
 							e.x, e.y, e.z,
 							e.vx + Math.random()*200-100, e.vy + Math.random()*400-200, e.vz + Math.random()*200-100,
 							e.ax, -gravity, e.az,
@@ -296,7 +294,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		
 		protected Entity withColorAndBehavior( Entity e, Color c, EntityBehavior b ) {
 			return new Entity(
-				e.tag, e.parent, e.time,
+				e.tag, e.time,
 				e.x, e.y, e.z, e.vx, e.vy, e.vz, e.ax, e.ay, e.az,
 				e.radius, e.mass, c, b
 			);
@@ -326,7 +324,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		
 		for( int i=0; i<200; ++i ) {
 			Entity e = new Entity(
-				i == 0 ? "tag" : null, null, eventSource.getCurrentTime(),
+				i == 0 ? "tag" : null, eventSource.getCurrentTime(),
 				Math.random()*200-100, Math.random()*200, 0,
 				Math.random()*20-10, Math.random()*200-10, 0,
 				0, -gravity, 0,
