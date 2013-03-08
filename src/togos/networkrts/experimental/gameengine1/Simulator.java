@@ -10,6 +10,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.HashSet;
 
 import togos.networkrts.experimental.gensim.BaseMutableAutoUpdatable;
@@ -20,6 +21,9 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 {
 	static class Entity
 	{
+		public static final long FLAG_EXISTING = 0x00000001;
+		public static final long FLAG_MOVING = 0x00000002;
+		
 		public final Object tag;
 		public final long time;
 		public final double x, y, z;
@@ -31,8 +35,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		public final EntityBehavior behavior;
 		
 		public final AABB boundingBox;
-		public final boolean isMoving;
-		public final boolean isSolid;
+		public final long flags;
 		
 		public Entity(
 			Object tag, long time,
@@ -54,8 +57,9 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 				x-radius, y-radius, z-radius,
 				x+radius, y+radius, z+radius
 			);
-			this.isMoving = vx != 0 || vy != 0 || vz != 0 || ax != 0 || ay != 0 || az != 0;
-			this.isSolid = radius > 0;
+			long _flags = FLAG_EXISTING;
+			if( vx != 0 || vy != 0 || vz != 0 || ax != 0 || ay != 0 || az != 0 ) _flags |= FLAG_MOVING;
+			flags = _flags;
 		}
 		
 		public Entity withUpdatedPosition( long targetTime ) {
@@ -93,6 +97,12 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 	
 	interface EntityUpdater
 	{
+		/**
+		 * Return the entity to replace the given one with, or null to replace it with nothing.
+		 * Additional entities may be added via the shell.
+		 * It is generally more efficient to return the same entity if it is unchanged than
+		 * to return null and push it to the shell.
+		 */
 		public Entity update( Entity e, EntityShell shell );
 	}
 	
@@ -121,6 +131,16 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			return new AABB( x-rad, y-rad, z-rad, x+rad, y+rad, z+rad );
 		}
 		
+		public final boolean contains( AABB other ) {
+			if( other.minX < minX ) return false;
+			if( other.minY < minY ) return false;
+			if( other.minZ < minZ ) return false;
+			if( other.maxX > maxX ) return false;
+			if( other.maxY > maxY ) return false;
+			if( other.maxZ > maxZ ) return false;
+			return true;
+		}
+		
 		public final boolean intersects( AABB other ) {
 			if( maxX < other.minX ) return false;
 			if( maxY < other.minY ) return false;
@@ -136,10 +156,6 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		public void visit( Type v );
 	}
 	
-	interface SpatialIndex<Item> {
-		public void forEachItemIntersecting( AABB bounds, Visitor<Item> callback );
-	}	
-	
 	protected static final boolean solidCollision( Entity e1, Entity e2 ) {
 		assert e1 != e2;
 		
@@ -149,38 +165,151 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		return distSquared < radSum*radSum;
 	}
 	
-	static class EntityIndex implements SpatialIndex<Entity>
+	static class EntityIndex
 	{
-		private final HashSet<Entity> allEntities = new HashSet<Entity>();
-		private final HashSet<Entity> movingEntities = new HashSet<Entity>();
+		static class EntityTreeNode extends AABB {
+			private ArrayList<Entity> localEntities = new ArrayList<Entity>();
+			private EntityTreeNode subNodeA = null;
+			private EntityTreeNode subNodeB = null;
+			protected long flags = 0; // Flags of all entities within, including subnodes
+			protected long totalEntityCount = 0;
+			
+			public EntityTreeNode( double minX, double minY, double minZ, double maxX, double maxY, double maxZ ) {
+				super( minX, minY, minZ, maxX, maxY, maxZ );
+			}
+			public EntityTreeNode() {
+				this(
+					Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
+					Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY
+				);
+			}
+			
+			private void subDivide() {
+				ArrayList<Entity> oldEntities = localEntities;
+				double
+					bMinX = maxX, bMinY = maxY, bMinZ = maxZ,
+					bMaxX = minX, bMaxY = minY, bMaxZ = minZ;
+				for( Entity e : oldEntities ) {
+					bMinX = Math.min(bMinX, e.boundingBox.minX);
+					bMinY = Math.min(bMinY, e.boundingBox.minY);
+					bMinZ = Math.min(bMinZ, e.boundingBox.minZ);
+					bMaxX = Math.max(bMaxX, e.boundingBox.maxX);
+					bMaxY = Math.max(bMaxY, e.boundingBox.maxY);
+					bMaxZ = Math.max(bMaxZ, e.boundingBox.maxZ);
+				}
+				
+				char maxDim = 'x';
+				if( bMaxY-bMinY > bMaxX-bMinX ) maxDim = 'y';
+				if( bMaxZ-bMinZ > bMaxY-bMinY ) maxDim = 'z';
+				
+				switch( maxDim ) {
+				case 'x':
+					double divX = bMinX+(bMaxX-bMinX)/2;
+					subNodeA = new EntityTreeNode( minX, minY, minZ, divX, maxY, maxZ );
+					subNodeB = new EntityTreeNode( divX, minY, minZ, maxX, maxY, maxZ );
+					break;
+				case 'y':
+					double divY = bMinY+(bMaxY-bMinY)/2;
+					subNodeA = new EntityTreeNode( minX, minY, minZ, maxX, divY, maxZ );
+					subNodeB = new EntityTreeNode( minX, divY, minZ, maxX, maxY, maxZ );
+					break;
+				case 'z':
+					double divZ = bMinZ+(bMaxZ-bMinZ)/2;
+					subNodeA = new EntityTreeNode( minX, minY, minZ, maxX, maxY, divZ );
+					subNodeB = new EntityTreeNode( minX, minY, divZ, maxX, maxY, maxZ );
+					break;
+				}
+				
+				localEntities = new ArrayList<Entity>();
+				for( Entity e : oldEntities ) {
+					if( !subNodeA.add(e) ) if( !subNodeB.add(e) ) localEntities.add(e);
+				}
+			}
+			
+			public boolean add(Entity e) {
+				if( !contains(e.boundingBox) ) return false;
+				
+				flags |= e.flags;
+				totalEntityCount += 1;
+				
+				if( this.subNodeA != null ) {
+					// Already subdivided
+					return subNodeA.add(e) || subNodeB.add(e) || localEntities.add(e);
+				} else if( localEntities.size() < 32 ) {
+					return localEntities.add(e);
+				} else {
+					localEntities.add(e);
+					subDivide();
+					return true;
+				}
+			}
+			
+			public void forEachEntity( long requireFlags, Visitor<Entity> callback ) {
+				if( (flags & requireFlags) == 0 ) return;
+				
+				for( Entity e : localEntities ) {
+					if( (e.flags & requireFlags) != 0 ) callback.visit(e);
+				}
+				if( this.subNodeA != null ) {
+					subNodeA.forEachEntity( requireFlags, callback );
+					subNodeB.forEachEntity( requireFlags, callback );
+				}
+			}
+			
+			public void forEachEntityIntersecting( AABB bounds, Visitor<Entity> callback ) {
+				if( !intersects(bounds) ) return;
+				
+				for( Entity e : localEntities ) {
+					if( e.boundingBox.intersects(bounds) ) callback.visit(e);
+				}
+				if( this.subNodeA != null ) {
+					subNodeA.forEachEntityIntersecting(bounds, callback);
+					subNodeB.forEachEntityIntersecting(bounds, callback);
+				}
+			}
+			
+			/*
+			 * I suppose if we are treating trees as immutable once constructed (with add()),
+			 * that this should return a new TreeNode if there are any changes (including additions)
+			public EntityTreeNode update( long requireFlags, EntityUpdater u, EntityShell shell ) {
+				if( (flags & requireFlags) == 0 ) return this;
+				
+				for( Entity e : localEntities ) {
+					if( u.update(e);
+				}
+			}
+			*/
+		}
 		
+		final EntityTreeNode entityTree = new EntityTreeNode();
+		
+		// TODO: Remove this, just provide flags.
 		public boolean hasMovingEntities() {
-			return movingEntities.size() > 0;
+			return (entityTree.flags & Entity.FLAG_MOVING) != 0;
 		}
 		
 		public void add(Entity e) {
-			allEntities.add(e);
-			if( e.isMoving ) movingEntities.add(e);
+			entityTree.add(e);
 		}
 		
-		@Override public void forEachItemIntersecting(AABB bounds, Visitor<Entity> callback) {
-			for( Entity e : allEntities ) {
-				if( e.boundingBox.intersects(bounds) ) callback.visit(e);
-			}
+		public void forEachEntityIntersecting(AABB bounds, Visitor<Entity> callback) {
+			entityTree.forEachEntityIntersecting(bounds, callback);
 		}
 		
-		public EntityIndex updateEntities( EntityUpdater u ) {
+		public EntityIndex updateEntities( final EntityUpdater u ) {
 			final EntityIndex newIndex = new EntityIndex();
 			final EntityShell shell = new EntityShell() {
 				@Override public void add( Entity e ) {
 					newIndex.add(e);
 				}
 			};
-			for( Entity e : allEntities ) {
-				if( (e = u.update(e, shell)) != null ) {
-					newIndex.add(e);
+			entityTree.forEachEntity( Entity.FLAG_EXISTING, new Visitor<Entity>() {
+				@Override public void visit(Entity e) {
+					if( (e = u.update(e, shell)) != null ) {
+						newIndex.add(e);
+					}
 				}
-			}
+			});
 			return newIndex;
 		}
 	}
@@ -201,7 +330,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 	protected void passTime(final long targetTime) {
 		long sysTime = System.currentTimeMillis();
 		System.err.println( (targetTime - currentTime) + " milliseconds passed to "+targetTime );
-		System.err.println( "Moving entities: "+entityIndex.movingEntities.size() );
+		System.err.println( entityIndex.entityTree.totalEntityCount + " entities" +(entityIndex.hasMovingEntities() ? ", some moving" : "") );
 		System.err.println( "Lag: "+(sysTime - targetTime));
 		entityIndex = entityIndex.updateEntities( new EntityUpdater() {
 			protected double damp( double v, double min ) {
@@ -249,7 +378,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			public Entity update( Entity e, EntityShell shell ) {
 				collisionCheckEntity = e;
 				collisionTargetEntity = null;
-				entityIndex.forEachItemIntersecting( e.boundingBox, collisionChecker );
+				entityIndex.forEachEntityIntersecting( e.boundingBox, collisionChecker );
 				return collisionTargetEntity == null ? e : 
 					e.behavior.onCollision( targetTime, e, collisionTargetEntity, shell );
 			}
@@ -348,13 +477,16 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			public void paint(Graphics _g) {
 				BufferedImage buf = getBuffer(getWidth(), getHeight());
 				
-				Graphics g = buf.getGraphics();
+				final Graphics g = buf.getGraphics();
 				g.setColor(Color.BLACK);
 				g.fillRect(0, 0, getWidth(), getHeight());
-				for( Entity e : sim.entityIndex.allEntities ) {
-					g.setColor( e.color );
-					g.fillOval( (int)(e.x-e.radius) + getWidth()/2, (int)(getHeight()-e.y-e.radius), (int)(e.radius*2), (int)(e.radius*2) );
-				}
+				AABB screenBounds = new AABB(-getWidth()/2, 0, Double.NEGATIVE_INFINITY, getWidth()/2, getHeight(), Double.POSITIVE_INFINITY );
+				sim.entityIndex.forEachEntityIntersecting(screenBounds, new Visitor<Entity>() {
+					public void visit(Entity e) {
+						g.setColor( e.color );
+						g.fillOval( (int)(e.x-e.radius) + getWidth()/2, (int)(getHeight()-e.y-e.radius), (int)(e.radius*2), (int)(e.radius*2) );
+					};
+				});
 				
 				_g.drawImage( buf, 0, 0, null ); 
 			};
