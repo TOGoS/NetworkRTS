@@ -21,9 +21,6 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 {
 	static class Entity
 	{
-		public static final long FLAG_EXISTING = 0x00000001;
-		public static final long FLAG_MOVING = 0x00000002;
-		
 		public final Object tag;
 		public final long time;
 		public final double x, y, z;
@@ -42,8 +39,8 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			double x, double y, double z,
 			double vx, double vy, double vz,
 			double ax, double ay, double az,
-			double radius,
-			double mass, Color color, EntityBehavior behavior
+			double radius,	double mass, Color color,
+			long flags, EntityBehavior behavior
 		) {
 			this.tag = tag;
 			this.time = time;
@@ -57,9 +54,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 				x-radius, y-radius, z-radius,
 				x+radius, y+radius, z+radius
 			);
-			long _flags = FLAG_EXISTING;
-			if( vx != 0 || vy != 0 || vz != 0 || ax != 0 || ay != 0 || az != 0 ) _flags |= FLAG_MOVING;
-			flags = _flags;
+			this.flags = flags;
 		}
 		
 		public Entity withUpdatedPosition( long targetTime ) {
@@ -85,7 +80,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			return new Entity(
 				tag, time,
 				x, y, z, vx, vy, vz, ax, ay, az,
-				radius, mass, color, behavior
+				radius, mass, color, flags, behavior
 			);
 		}
 	}
@@ -125,6 +120,10 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			minX = x0;  maxX = x1;
 			minY = y0;  maxY = y1;
 			minZ = z0;  maxZ = z1;
+		}
+		
+		public AABB(AABB o) {
+			this( o.minX, o.minY, o.minZ, o.maxX, o.maxY, o.maxZ );
 		}
 		
 		public final AABB centered( double x, double y, double z, double rad ) {
@@ -174,8 +173,20 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			protected long flags = 0; // Flags of all entities within, including subnodes
 			protected long totalEntityCount = 0;
 			
-			public EntityTreeNode( double minX, double minY, double minZ, double maxX, double maxY, double maxZ ) {
+			public EntityTreeNode( double minX, double minY, double minZ, double maxX, double maxY, double maxZ, EntityTreeNode subNodeA, EntityTreeNode subNodeB ) {
 				super( minX, minY, minZ, maxX, maxY, maxZ );
+				this.subNodeA = subNodeA;
+				this.subNodeB = subNodeB;
+				if( hasSubNodes() ) {
+					this.totalEntityCount = subNodeA.totalEntityCount + subNodeB.totalEntityCount;
+					this.flags = subNodeA.flags | subNodeB.flags;
+				}
+			}
+			public EntityTreeNode( double minX, double minY, double minZ, double maxX, double maxY, double maxZ ) {
+				this( minX, minY, minZ, maxX, maxY, maxZ, null, null );
+			}
+			public EntityTreeNode(AABB copyOf) {
+				super(copyOf);
 			}
 			public EntityTreeNode() {
 				this(
@@ -222,35 +233,81 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 				
 				localEntities = new ArrayList<Entity>();
 				for( Entity e : oldEntities ) {
-					if( !subNodeA.add(e) ) if( !subNodeB.add(e) ) localEntities.add(e);
+					if( subNodeA.contains(e.boundingBox) ) {
+						subNodeA = subNodeA.with(e);
+					} else if( subNodeB.contains(e.boundingBox) ) {
+						subNodeB = subNodeB.with(e);
+					} else {
+						localEntities.add(e);
+					}
 				}
 			}
 			
-			public boolean add(Entity e) {
-				if( !contains(e.boundingBox) ) return false;
+			protected boolean hasSubNodes() {
+				return subNodeA != null;
+			}
+			
+			private boolean frozen;
+			protected EntityTreeNode freeze() {
+				if( frozen ) return this;
+				if( hasSubNodes() ) {
+					subNodeA = subNodeA.freeze();
+					subNodeB = subNodeB.freeze();
+				}
+				this.frozen = true;
+				return this;
+			}
+			protected EntityTreeNode thaw() {
+				if( !frozen ) return this;
+				
+				EntityTreeNode thawed = new EntityTreeNode();
+				thawed.subNodeA = subNodeA;
+				thawed.subNodeB = subNodeB;
+				thawed.localEntities = new ArrayList<Entity>(localEntities);
+				thawed.flags = flags;
+				thawed.totalEntityCount = totalEntityCount;
+				return thawed;
+			}
+			
+			// Note: This subdivision algorithm sucks.
+			public void add(Entity e) {
+				assert !frozen;
+				assert contains(e.boundingBox);
 				
 				flags |= e.flags;
 				totalEntityCount += 1;
 				
-				if( this.subNodeA != null ) {
+				if( hasSubNodes() ) {
 					// Already subdivided
-					return subNodeA.add(e) || subNodeB.add(e) || localEntities.add(e);
-				} else if( localEntities.size() < 32 ) {
-					return localEntities.add(e);
+					if( subNodeA.contains(e.boundingBox) ) {
+						subNodeA = subNodeA.with(e);
+					} else if( subNodeB.contains(e.boundingBox) ) {
+						subNodeB = subNodeB.with(e);
+					} else {
+						localEntities.add(e);
+					}
+				} else if( localEntities.size() < 128 ) {
+					localEntities.add(e);
 				} else {
 					localEntities.add(e);
 					subDivide();
-					return true;
 				}
 			}
 			
+			public EntityTreeNode with(Entity e) {
+				assert contains(e.boundingBox);
+				EntityTreeNode n = thaw();
+				n.add(e);
+				return n;
+			}
+			
 			public void forEachEntity( long requireFlags, Visitor<Entity> callback ) {
-				if( (flags & requireFlags) == 0 ) return;
+				if( (flags & requireFlags) != requireFlags ) return;
 				
 				for( Entity e : localEntities ) {
-					if( (e.flags & requireFlags) != 0 ) callback.visit(e);
+					if( (e.flags & requireFlags) == requireFlags ) callback.visit(e);
 				}
-				if( this.subNodeA != null ) {
+				if( hasSubNodes() ) {
 					subNodeA.forEachEntity( requireFlags, callback );
 					subNodeB.forEachEntity( requireFlags, callback );
 				}
@@ -262,40 +319,75 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 				for( Entity e : localEntities ) {
 					if( e.boundingBox.intersects(bounds) ) callback.visit(e);
 				}
-				if( this.subNodeA != null ) {
+				if( hasSubNodes() ) {
 					subNodeA.forEachEntityIntersecting(bounds, callback);
 					subNodeB.forEachEntityIntersecting(bounds, callback);
 				}
 			}
 			
-			/*
-			 * I suppose if we are treating trees as immutable once constructed (with add()),
-			 * that this should return a new TreeNode if there are any changes (including additions)
+			/**
+			 * Updates this entity tree node in-place.
+			 * 
+			 * Shell must NOT modify the entity tree immediately.
+			 * It should push new entities into a list for
+			 * re-adding after update of the entire tree has returned.
+			 * 
+			 * Returns null if the entire node would be updated.
+			 */
 			public EntityTreeNode update( long requireFlags, EntityUpdater u, EntityShell shell ) {
-				if( (flags & requireFlags) == 0 ) return this;
+				if( (flags & requireFlags) != requireFlags ) return this;
 				
 				for( Entity e : localEntities ) {
-					if( u.update(e);
+					Entity updated = (e.flags & requireFlags) == requireFlags ? u.update(e, shell) : e;
+					if( updated != null ) shell.add( updated );
 				}
+				
+				if( !hasSubNodes() ) return null;
+				
+				EntityTreeNode newNodeA = subNodeA.update(requireFlags, u, shell);
+				EntityTreeNode newNodeB = subNodeB.update(requireFlags, u, shell);
+				
+				if( newNodeA == null && newNodeB == null ) return null;
+				
+				if( newNodeA == null ) newNodeA = new EntityTreeNode((AABB)subNodeA); 
+				if( newNodeB == null ) newNodeB = new EntityTreeNode((AABB)subNodeB);
+				
+				return new EntityTreeNode(
+					minX, minY, minZ,
+					maxX, maxY, maxZ,
+					newNodeA, newNodeB
+				);
 			}
-			*/
 		}
 		
-		final EntityTreeNode entityTree = new EntityTreeNode();
+		final EntityTreeNode entityTree;
 		
-		// TODO: Remove this, just provide flags.
-		public boolean hasMovingEntities() {
-			return (entityTree.flags & Entity.FLAG_MOVING) != 0;
+		protected EntityIndex( EntityTreeNode tree ) {
+			this.entityTree = tree;
+		}
+		public EntityIndex() {
+			this(new EntityTreeNode());
+		}
+		
+		protected EntityIndex thaw() {
+			return new EntityIndex(entityTree.thaw());
 		}
 		
 		public void add(Entity e) {
 			entityTree.add(e);
 		}
 		
+		public EntityIndex with(Entity e) {
+			EntityIndex newIndex = thaw();
+			newIndex.add(e);
+			return newIndex;
+		}
+		
 		public void forEachEntityIntersecting(AABB bounds, Visitor<Entity> callback) {
 			entityTree.forEachEntityIntersecting(bounds, callback);
 		}
 		
+		/*
 		public EntityIndex updateEntities( final EntityUpdater u ) {
 			final EntityIndex newIndex = new EntityIndex();
 			final EntityShell shell = new EntityShell() {
@@ -312,14 +404,36 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			});
 			return newIndex;
 		}
+		*/
+		
+		public EntityIndex updateEntities( long requireFlags, final EntityUpdater u ) {
+			final ArrayList<Entity> newEntityList = new ArrayList<Entity>();
+			newEntityList.clear();
+			EntityShell shell = new EntityShell() {
+				@Override public void add(Entity e) {
+					newEntityList.add(e);
+				}
+			};
+			EntityTreeNode newEntityTree = entityTree.update(requireFlags, u, shell);
+			if( newEntityTree == null ) newEntityTree = new EntityTreeNode();
+			for( Entity e : newEntityList ) {
+				newEntityTree.add(e);
+			}
+			return new EntityIndex(newEntityTree.freeze());
+		}
 	}
 	
 	EntityIndex entityIndex = new EntityIndex();
 	public long physicsInterval = 10;
 	HashSet<Runnable> worldUpdateListeners = new HashSet<Runnable>();
 	
+	static final long DYNAMIC_ENTITY_FLAG = 1;
+	static final boolean isEntityMoving( Entity e ) {
+		return e.vx != 0 || e.vy != 0 || e.vz != 0 || e.ax != 0 || e.ay != 0 || e.az != 0;
+	}
+	
 	protected long getNextPhysicsUpdateTime() {
-		return entityIndex.hasMovingEntities() ? currentTime + physicsInterval : TIME_INFINITY;
+		return (entityIndex.entityTree.flags & DYNAMIC_ENTITY_FLAG) == DYNAMIC_ENTITY_FLAG ? currentTime + physicsInterval : TIME_INFINITY;
 	}
 	
 	@Override public long getNextAutomaticUpdateTime() {
@@ -330,9 +444,8 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 	protected void passTime(final long targetTime) {
 		long sysTime = System.currentTimeMillis();
 		System.err.println( (targetTime - currentTime) + " milliseconds passed to "+targetTime );
-		System.err.println( entityIndex.entityTree.totalEntityCount + " entities" +(entityIndex.hasMovingEntities() ? ", some moving" : "") );
 		System.err.println( "Lag: "+(sysTime - targetTime));
-		entityIndex = entityIndex.updateEntities( new EntityUpdater() {
+		entityIndex = entityIndex.updateEntities( DYNAMIC_ENTITY_FLAG, new EntityUpdater() {
 			protected double damp( double v, double min ) {
 				return Math.abs(v) < min ? 0 : v;
 			}
@@ -362,7 +475,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 				return e;
 			}
 		} );
-		entityIndex = entityIndex.updateEntities( new EntityUpdater() {
+		entityIndex = entityIndex.updateEntities( DYNAMIC_ENTITY_FLAG, new EntityUpdater() {
 			Entity collisionCheckEntity;
 			Entity collisionTargetEntity;
 			Visitor<Entity> collisionChecker = new Visitor<Entity>() {
@@ -391,7 +504,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 	
 	@Override
 	protected void handleEvent(Object evt) {
-		entityIndex = entityIndex.updateEntities(new EntityUpdater() {
+		entityIndex = entityIndex.updateEntities(DYNAMIC_ENTITY_FLAG, new EntityUpdater() {
 			@Override
 			public Entity update( Entity e, EntityShell shell ) {
 				if( e.radius >= 2 && Math.random() < 0.1 ) {
@@ -402,7 +515,8 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 							e.x, e.y, e.z,
 							e.vx + Math.random()*200-100, e.vy + Math.random()*400-200, e.vz + Math.random()*200-100,
 							e.ax, -gravity, e.az,
-							e.radius/2, e.mass/4, e.color, CoolEntityBehavior.INSTANCE
+							e.radius/2, e.mass/4, e.color,
+							DYNAMIC_ENTITY_FLAG, CoolEntityBehavior.INSTANCE
 						) );
 					}
 					return null;
@@ -425,7 +539,8 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			return new Entity(
 				e.tag, e.time,
 				e.x, e.y, e.z, e.vx, e.vy, e.vz, e.ax, e.ay, e.az,
-				e.radius, e.mass, c, b
+				e.radius, e.mass, c,
+				DYNAMIC_ENTITY_FLAG, b
 			);
 		}
 		
@@ -440,10 +555,20 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		@Override public Entity onCollision( long time, Entity self, Entity other, EntityShell shell ) {
 			assert self != null;
 			assert other != null;
-			if( self.tag == "tag" ) {
-				System.err.println("Collision!");
-			}
-			return withColorAndBehavior( self, self.tag == "tag" ? Color.ORANGE : Color.RED, new CoolEntityBehavior(time) );
+			double dx = self.x - other.x, dy = self.y - other.y, dz = self.z - other.z;
+			double distSquared = dx*dx + dy*dy + dz*dz;
+			double dist = Math.sqrt(distSquared);
+			double rad = self.radius+other.radius;
+			double overlap = rad-dist;
+			return new Entity(
+				self.tag, time,
+				self.x + overlap*dx/dist, self.y + overlap*dy/dist, self.z + overlap*dz/dist,
+				self.vx, self.vy, self.vz,
+				self.ax, self.ay, self.az,
+				self.radius, self.mass,
+				self.tag == "tag" ? Color.ORANGE : Color.RED,
+				self.flags, new CoolEntityBehavior(time)
+			);
 		}
 	};
 	
@@ -457,7 +582,19 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 				Math.random()*200-100, Math.random()*200, 0,
 				Math.random()*20-10, Math.random()*200-10, 0,
 				0, -gravity, 0,
-				10, 1, i == 0 ? Color.GREEN : Color.WHITE, CoolEntityBehavior.INSTANCE
+				10, 1, i == 0 ? Color.GREEN : Color.WHITE,
+				DYNAMIC_ENTITY_FLAG, CoolEntityBehavior.INSTANCE
+			);
+			sim.entityIndex.add(e);
+		}
+		for( int i=0; i<1600; ++i ) {
+			Entity e = new Entity(
+				i == 0 ? "tag" : null, eventSource.getCurrentTime(),
+				Math.random()*4000-1000, Math.random()*1000, 0,
+				0, 0, 0,
+				0, 0, 0,
+				20, 1000, Color.BLUE,
+				0, NULL_BEHAVIOR
 			);
 			sim.entityIndex.add(e);
 		}
