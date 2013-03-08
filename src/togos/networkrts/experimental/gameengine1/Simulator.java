@@ -23,9 +23,10 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		public final Object tag;
 		public final Entity parent;
 		public final long time;
-		public final double x, y, z, spaceRadius, solidRadius;
+		public final double x, y, z;
 		public final double vx, vy, vz;
 		public final double ax, ay, az;
+		public final double solidRadius;
 		public final double mass;
 		public final Color color;
 		public final EntityBehavior behavior;
@@ -39,7 +40,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			double x, double y, double z,
 			double vx, double vy, double vz,
 			double ax, double ay, double az,
-			double spaceRadius, double solidRadius,
+			double solidRadius,
 			double mass, Color color, EntityBehavior behavior
 		) {
 			this.tag = tag;
@@ -48,7 +49,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			this.x = x; this.y = y; this.z = z;
 			this.vx = vx; this.vy = vy; this.vz = vz;
 			this.ax = ax; this.ay = ay; this.az = az;
-			this.spaceRadius = spaceRadius; this.solidRadius = solidRadius;
+			this.solidRadius = solidRadius;
 			this.mass = mass; this.color = color;
 			this.behavior = behavior;
 			this.boundingBox = new AABB(
@@ -82,8 +83,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			return new Entity(
 				tag, parent, time,
 				x, y, z, vx, vy, vz, ax, ay, az,
-				spaceRadius, solidRadius,
-				mass, color, behavior
+				solidRadius, mass, color, behavior
 			);
 		}
 	}
@@ -275,7 +275,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 							e.x, e.y, e.z,
 							e.vx + Math.random()*200-100, e.vy + Math.random()*400-200, e.vz + Math.random()*200-100,
 							e.ax, -gravity, e.az,
-							0, e.solidRadius/2, e.mass/4, e.color, CoolEntityBehavior.INSTANCE
+							e.solidRadius/2, e.mass/4, e.color, CoolEntityBehavior.INSTANCE
 						) );
 					}
 					return null;
@@ -298,7 +298,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			return new Entity(
 				e.tag, e.parent, e.time,
 				e.x, e.y, e.z, e.vx, e.vy, e.vz, e.ax, e.ay, e.az,
-				e.spaceRadius, e.solidRadius, e.mass, c, b
+				e.solidRadius, e.mass, c, b
 			);
 		}
 		
@@ -330,8 +330,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 				Math.random()*200-100, Math.random()*200, 0,
 				Math.random()*20-10, Math.random()*200-10, 0,
 				0, -gravity, 0,
-				10, 10,
-				1, i == 0 ? Color.GREEN : Color.WHITE, CoolEntityBehavior.INSTANCE
+				10, 1, i == 0 ? Color.GREEN : Color.WHITE, CoolEntityBehavior.INSTANCE
 			);
 			sim.entityIndex.add(e);
 		}
