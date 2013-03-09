@@ -283,13 +283,13 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<Object>
 			);
 			sim.entityIndex.add(e);
 		}
-		for( int i=0; i<1600; ++i ) {
+		for( int i=0; i<800; ++i ) {
 			Bouncer e = new Bouncer(
-				i == 0 ? "tag" : null, eventSource.getCurrentTime(),
+				null, eventSource.getCurrentTime(),
 				Math.random()*8000-2000, Math.random()*2000, 0,
 				0, 0, 0,
 				0, 0, 0,
-				20, 1000, Color.BLUE,
+				10+Math.random()*100, 1000, Color.BLUE,
 				0, NULL_BEHAVIOR
 			);
 			sim.entityIndex.add(e);

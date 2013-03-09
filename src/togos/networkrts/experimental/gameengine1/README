@@ -1,0 +1,8 @@
+gameengine1 = utilities for managing objects (entities) in continuous 3D cartesian space.
+
+Features:
+- world is defined in terms of a set of entities with bounding boxes
+- entities may be of any size
+- entities may be subclassed to store game-specific attributes
+- entire object set is stored in memory
+- entities and indexes are immutable [after initialization]
