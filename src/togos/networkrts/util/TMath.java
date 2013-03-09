@@ -15,6 +15,8 @@ public final class TMath
 	 * Approximates Math.sin( input * Math.PI * 2 / 0x1000000 ) * 32767 * 65536
 	 * for applications where precision doesn't matter and is ~2 orders of
 	 * magnitude faster.
+	 *
+	 * 24_32 refers to 24 bytes of input (unsigned), 32 of output (signed)
 	 */
 	public static final int periodic24_32( int input ) {
 		final int idx1 = (input >> 16)&0xFF;
