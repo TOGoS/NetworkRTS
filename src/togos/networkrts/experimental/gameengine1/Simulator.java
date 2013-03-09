@@ -117,6 +117,9 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		final double minX, minY, minZ, maxX, maxY, maxZ;
 		
 		public AABB( double x0, double y0, double z0, double x1, double y1, double z1 ) {
+			assert x0 < x1;
+			assert y0 < y1;
+			assert z0 < z1;
 			minX = x0;  maxX = x1;
 			minY = y0;  maxY = y1;
 			minZ = z0;  maxZ = z1;
@@ -148,6 +151,16 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			if( minY > other.maxY ) return false;
 			if( minZ > other.maxZ ) return false;
 			return true;
+		}
+		
+		protected static boolean isFinite( double v ) {
+			return !Double.isNaN(v) && !Double.isInfinite(v);
+		}
+		
+		public boolean isFinite() {
+			return
+				isFinite(minX) && isFinite(minY) && isFinite(minZ) &&
+				isFinite(maxX) && isFinite(maxY) && isFinite(maxZ);
 		}
 	}
 	
@@ -195,12 +208,14 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 				);
 			}
 			
-			private void subDivide() {
+			private EntityTreeNode subDivide() {
+				//System.err.println("Subdividing "+minX+","+minY+","+minZ+" "+maxX+","+maxY+","+maxZ);
 				ArrayList<Entity> oldEntities = localEntities;
 				double
 					bMinX = maxX, bMinY = maxY, bMinZ = maxZ,
 					bMaxX = minX, bMaxY = minY, bMaxZ = minZ;
 				for( Entity e : oldEntities ) {
+					assert e.boundingBox.isFinite();
 					bMinX = Math.min(bMinX, e.boundingBox.minX);
 					bMinY = Math.min(bMinY, e.boundingBox.minY);
 					bMinZ = Math.min(bMinZ, e.boundingBox.minZ);
@@ -234,13 +249,16 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 				localEntities = new ArrayList<Entity>();
 				for( Entity e : oldEntities ) {
 					if( subNodeA.contains(e.boundingBox) ) {
-						subNodeA = subNodeA.with(e);
+						subNodeA.add(e);
 					} else if( subNodeB.contains(e.boundingBox) ) {
-						subNodeB = subNodeB.with(e);
+						subNodeB.add(e);
 					} else {
 						localEntities.add(e);
 					}
 				}
+				subNodeA.freeze();
+				subNodeB.freeze();
+				return this;
 			}
 			
 			protected boolean hasSubNodes() {
@@ -250,9 +268,12 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 			private boolean frozen;
 			protected EntityTreeNode freeze() {
 				if( frozen ) return this;
+				
 				if( hasSubNodes() ) {
 					subNodeA = subNodeA.freeze();
 					subNodeB = subNodeB.freeze();
+				} else if( localEntities.size() > 16 ) {
+					subDivide();
 				}
 				this.frozen = true;
 				return this;
@@ -286,11 +307,8 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 					} else {
 						localEntities.add(e);
 					}
-				} else if( localEntities.size() < 128 ) {
-					localEntities.add(e);
 				} else {
 					localEntities.add(e);
-					subDivide();
 				}
 			}
 			
@@ -513,7 +531,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 						shell.add( new Entity(
 							null, e.time,
 							e.x, e.y, e.z,
-							e.vx + Math.random()*200-100, e.vy + Math.random()*400-200, e.vz + Math.random()*200-100,
+							e.vx + Math.random()*200-100, e.vy + Math.random()*400-200, 0, //e.vz + Math.random()*200-100,
 							e.ax, -gravity, e.az,
 							e.radius/2, e.mass/4, e.color,
 							DYNAMIC_ENTITY_FLAG, CoolEntityBehavior.INSTANCE
@@ -553,17 +571,35 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		}
 		
 		@Override public Entity onCollision( long time, Entity self, Entity other, EntityShell shell ) {
+			
+			/*
+			 * An unrealistic bouncing algorithm.
+			 * Doesn't take relative velocity or momentum into account.
+			 * Just reflects velocity vectors.
+			 */
+			
 			assert self != null;
 			assert other != null;
 			double dx = self.x - other.x, dy = self.y - other.y, dz = self.z - other.z;
 			double distSquared = dx*dx + dy*dy + dz*dz;
+			if( distSquared == 0 ) return self;
+			
 			double dist = Math.sqrt(distSquared);
+			double nx = dx/dist, ny = dy/dist, nz = dz/dist; // Normalized distance
+			
+			double dotProduct = nx*self.vx + ny*self.vy + nz*self.vz;
+			double
+				rx = 2*dotProduct*nx - self.vx,
+				ry = 2*dotProduct*ny - self.vy,
+				rz = 2*dotProduct*nz - self.vz;
+			
 			double rad = self.radius+other.radius;
 			double overlap = rad-dist;
+			assert overlap >= 0;
 			return new Entity(
 				self.tag, time,
-				self.x + overlap*dx/dist, self.y + overlap*dy/dist, self.z + overlap*dz/dist,
-				self.vx, self.vy, self.vz,
+				self.x + overlap*nx, self.y + overlap*ny, self.z + overlap*nz,
+				-rx*0.9, -ry*0.9, -rz*0.9,
 				self.ax, self.ay, self.az,
 				self.radius, self.mass,
 				self.tag == "tag" ? Color.ORANGE : Color.RED,
@@ -579,7 +615,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		for( int i=0; i<200; ++i ) {
 			Entity e = new Entity(
 				i == 0 ? "tag" : null, eventSource.getCurrentTime(),
-				Math.random()*200-100, Math.random()*200, 0,
+				Math.random()*500-250, Math.random()*1000, 0,
 				Math.random()*20-10, Math.random()*200-10, 0,
 				0, -gravity, 0,
 				10, 1, i == 0 ? Color.GREEN : Color.WHITE,
@@ -590,7 +626,7 @@ public class Simulator extends BaseMutableAutoUpdatable<Object>
 		for( int i=0; i<1600; ++i ) {
 			Entity e = new Entity(
 				i == 0 ? "tag" : null, eventSource.getCurrentTime(),
-				Math.random()*4000-1000, Math.random()*1000, 0,
+				Math.random()*8000-2000, Math.random()*2000, 0,
 				0, 0, 0,
 				0, 0, 0,
 				20, 1000, Color.BLUE,
