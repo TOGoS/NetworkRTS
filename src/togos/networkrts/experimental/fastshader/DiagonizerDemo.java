@@ -2,6 +2,7 @@ package togos.networkrts.experimental.fastshader;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.Random;
 
 import javax.imageio.ImageIO;
 
@@ -9,8 +10,8 @@ import togos.noise.function.SimplexNoise;
 
 public class DiagonizerDemo
 {
-	final int width = 1440;
-	final int height = 900;
+	final int width = 2048;
+	final int height = 1024;
 	final int CYCLE_SIZE = 16;
 	
 	final int[] colorBuffer = new int[width*height];
@@ -123,7 +124,7 @@ public class DiagonizerDemo
 			// allow an amount inversely proportional to the distance from minZ
 			// This reduces stripeyness and makes things look slightly more natural.
 			// Smaller multipliers cause a subsurface scattering-like effect.
-			float brighten = (z[pIdx] - minZ) * 0.2f;
+			float brighten = (z[pIdx] - minZ) * 0.5f;
 			float shade = dotProduct( c, v ) * 0.5f + 1 + ((brighten < 0 ) ? brighten : 0);
 			if( shade < 0 ) shade = 0;
 			
@@ -190,29 +191,34 @@ public class DiagonizerDemo
 	public static void main( String[] args ) throws Exception {
 		DiagonizerDemo d = new DiagonizerDemo();
 		
+		Random rand = new Random();
 		SimplexNoise sn = new SimplexNoise();
 		
 		System.err.println("Generating height field...");
+		float z = rand.nextFloat()*2048;
 		for( int y=0; y<d.height; ++y ) {
 			for( int x=0; x<d.width; ++x ) {
 				int pIdx = y*d.width + x;
 				
 				float hz = 
-					(float)Math.abs(sn.apply( (float)x / 100, 0, (float)y / 100 )) * 25 +
-					sn.apply( (float)x / 200, 0, (float)y / 200 ) * 100;
+					(float)Math.abs(sn.apply( (float)x / 100, z, (float)y / 100 )) * 25 +
+					sn.apply( (float)x / 200, z * 1.5f, (float)y / 200 ) * 50 +
+					sn.apply( (float)x / 400, z * 2.5f, (float)y / 400 ) * 100;
 				float ha = hz -
-					(float)Math.abs(sn.apply( (float)x / 25, 0, (float)y / 25 ) * 10);
-				float hb = hz + 1 - Math.abs((sn.apply( (float)x / 100, 90, (float)y / 100 )) * 45);
+					(float)Math.abs(sn.apply( (float)x / 25, z, (float)y / 25 ) * 10);
+				float hb = hz + 2 - Math.abs((sn.apply( (float)x / 100, z + 90, (float)y / 100 )) * 90);
 					//(sn.apply( (float)x / 300, 0, (float)y / 300 )) * 200;
 				
+				float dirtLightness = (0.5f + sn.apply( x * 0.5f, y * 0.55f, z ));
+				
 				if( ha > hb ) {
-					d.diffuseR[pIdx] = 1;
-					d.diffuseG[pIdx] = 1;
-					d.diffuseB[pIdx] = 1;
+					d.diffuseR[pIdx] = dirtLightness * 1.0f;
+					d.diffuseG[pIdx] = dirtLightness * 0.8f;
+					d.diffuseB[pIdx] = dirtLightness * 0.6f;
 					d.z[pIdx] = ha;
 				} else {
 					d.diffuseR[pIdx] = 0.5f;
-					d.diffuseG[pIdx] = 1.0f;
+					d.diffuseG[pIdx] = 0.6f + sn.apply( x * 0.2f, y * 0.2f, z ) * 0.5f;
 					d.diffuseB[pIdx] = 0.5f;
 					d.z[pIdx] = hb;
 				}
@@ -220,7 +226,7 @@ public class DiagonizerDemo
 		}
 		
 		d.clearOutput();
-		d.initLight(  2, 1, -0.4f, 1.0f, 0.7f, 0.4f );
+		d.initLight(  4, 1, -0.4f, 1.0f, 1.0f, 0.7f );
 		d.light();
 		/*
 		d.initLight(  1, 3, -0.7f, 0.9f, 0.7f, 0.5f );
@@ -235,6 +241,9 @@ public class DiagonizerDemo
 		d.light();
 		*/
 		d.initLight( -1, 2, -0.4f, 0.4f, 0.7f, 1.0f );
+		d.light();
+
+		d.initLight( 0, 1, -1.0f, 0.2f, 0.4f, 0.2f );
 		d.light();
 		
 		System.err.println("Converting to 32-bit ARGB");
