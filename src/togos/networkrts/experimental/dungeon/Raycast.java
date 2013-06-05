@@ -2,8 +2,7 @@ package togos.networkrts.experimental.dungeon;
 
 public class Raycast
 {
-
-	static void project( final Room r, final float x, final float y, BlockField dest, int destX, int destY ) {
+	static void raycastXY( final Room r, final float x, final float y, final int z, BlockField dest, int destX, int destY ) {
 		dest.clear();
 		
 		CellCursor cursor = new CellCursor();
@@ -15,9 +14,9 @@ public class Raycast
 			float dx = (float)Math.cos(angle);
 			float dy = (float)Math.sin(angle);
 			float ox = x - (float)Math.floor(x), oy = y - (float)Math.floor(y); 
-			cursor.set( r, x, y );
+			cursor.set( r, x, y, z );
 			float visibility = 1;
-			for( int j=100; j>=0 && visibility > 0; cursor.move(dx,dy), ox += dx, oy += dy, --j ) {
+			for( int j=100; j>=0 && visibility > 0; cursor.move(dx,dy,0), ox += dx, oy += dy, --j ) {
 				//int cellX = (int)Math.floor(cx), cellY = (int)Math.floor(cy);
 				Block[] stack = cursor.getStack();
 				if( stack == null ) break;
@@ -28,7 +27,10 @@ public class Raycast
 				if( destCX < 0 || destCX >= dest.w ) break;
 				if( destCY < 0 || destCY >= dest.h ) break;
 				
-				dest.setStack( destCX, destCY, stack );
+				for( int zz=0; zz<dest.d && zz<cursor.room.blockField.d; ++zz ) {
+					dest.setStack( destCX, destCY, zz, cursor.getStackAtZ(zz) );
+				}
+				
 				for( Block b : stack ) visibility -= b.opacity;
 			}
 		}

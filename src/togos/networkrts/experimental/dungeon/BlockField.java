@@ -2,14 +2,14 @@ package togos.networkrts.experimental.dungeon;
 
 class BlockField
 {
-	final int w, h;
+	final int w, h, d;
 	Block[][] blockStacks;
 	int[] light;
 	
-	public BlockField( int w, int h ) {
-		this.w = w; this.h = h;
-		this.blockStacks = new Block[w*h][];
-		this.light = new int[w*h];
+	public BlockField( int w, int h, int d ) {
+		this.w = w; this.h = h; this.d = d;
+		this.blockStacks = new Block[w*h*d][];
+		this.light = new int[w*h*d];
 	}
 	
 	public void fill( Block[] stack ) {
@@ -18,30 +18,32 @@ class BlockField
 		}
 	}
 	
-	public void clear() { fill(null); }
+	public void clear() { fill(Block.EMPTY_STACK); }
 	
-	protected final int stackIndex( int x, int y ) {
-		return w*NumUtil.tmod(y,h)+NumUtil.tmod(x,w);
+	protected final int stackIndex( int x, int y, int z ) {
+		return w*h*NumUtil.tmod(z,d)+w*NumUtil.tmod(y,h)+NumUtil.tmod(x,w);
 	}
 	
-	public void setStack( int x, int y, Block[] stack ) {
+	public void setStack( int x, int y, int z, Block[] stack ) {
 		if( x < 0 || x >= w || y < 0 || y >= h ) return;
-		blockStacks[stackIndex(x,y)] = stack;
+		blockStacks[stackIndex(x,y,z)] = stack;
 	}
 	
-	public Block[] getStack( int x, int y ) {
+	public Block[] getStack( int x, int y, int z ) {
 		if( x < 0 || x >= w || y < 0 || y >= h ) return null;
-		return blockStacks[stackIndex(x,y)];
+		return blockStacks[stackIndex(x,y,z)];
 	}
 	
-	public void addBlock( int x, int y, Block b ) {
+	public void addBlock( int x, int y, int z, Block b ) {
 		if( x < 0 || x >= w || y < 0 || y >= h ) return;
-		int index = stackIndex(x,y);
+		int index = stackIndex(x,y,z);
 		Block[] stack = blockStacks[index];
-		if( stack == null || stack.length == 0 ) {
+		if( stack.length == 0 ) {
+			// Simply replace the stack pointer! 
 			blockStacks[index] = b.stack;
 			return;
 		}
+		// Otherwise we need to build a new stack :(
 		for( int j=0; j<stack.length; ++j ) {
 			if( stack[j] == b ) return;
 		}
@@ -51,9 +53,9 @@ class BlockField
 		blockStacks[index] = newStack;
 	}
 	
-	public void removeBlock( int x, int y, Block b ) {
+	public void removeBlock( int x, int y, int z, Block b ) {
 		if( x < 0 || x >= w || y < 0 || y >= h ) return;
-		int index = stackIndex(x,y);
+		int index = stackIndex(x,y,z);
 		Block[] stack = blockStacks[index];
 		if( stack == null ) return;
 		if( stack.length == 0 ) return;

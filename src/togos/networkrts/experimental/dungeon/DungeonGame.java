@@ -12,7 +12,6 @@ import java.awt.event.WindowEvent;
 import java.awt.image.VolatileImage;
 import java.util.Random;
 
-
 public class DungeonGame
 {
 	static class RegionCanvas extends Canvas {
@@ -27,11 +26,20 @@ public class DungeonGame
 			int tileSize = 16;
 			for( int y=0; y<region.h; ++y ) {
 				for( int x=0; x<region.w; ++x ) {
-					Block[] stack = region.getStack( x, y );
-					if( stack == null ) continue;
-					for( Block b : stack ) {
-						g.setColor(b.color);
-						g.fillRect( getWidth()/2 + (x-cx) * tileSize, getHeight()/2 + (y-cy) * tileSize, tileSize, tileSize );
+					int highestOpaqueLayer = region.d-1;
+					findOpaque: for( int z=region.d-1; z>=0; --z ) {
+						Block[] stack = region.getStack( x, y, z );
+						for( Block b : stack ) {
+							if( b.opacity == 1 ) break findOpaque;
+						}
+						--highestOpaqueLayer; 
+					}
+					for( int z=highestOpaqueLayer; z<region.d; ++z ) {
+						Block[] stack = region.getStack( x, y, z );
+						for( Block b : stack ) {
+							g.setColor(b.color);
+							g.fillRect( getWidth()/2 + (x-cx) * tileSize, getHeight()/2 + (y-cy) * tileSize, tileSize, tileSize );
+						}
 					}
 				}
 			}
@@ -61,22 +69,43 @@ public class DungeonGame
 	public static void main( String[] args ) {
 		final CellCursor gs = new CellCursor();
 		final CellCursor tempCursor = new CellCursor();
-				
-		Block[][] tileMap = new Block[][] { Block.FLOOR.stack, Block.WALL.stack };
+		
+		Block[][] tileMap = new Block[][] { Block.EMPTY_STACK, Block.WALL.stack, Block.GRATING.stack, Block.FLOOR.stack };
 		
 		int[][] shapes = new int[][] {
 			new int[] {
+				3, 3, 3, 3, 3, 3,
+				3, 3, 3, 3, 3, 3,
+				3, 3, 3, 3, 3, 3,
+				3, 3, 3, 3, 3, 3,
+				3, 3, 3, 3, 3, 3,
+				3, 3, 3, 3, 3, 3,
+				
 				1, 1, 1, 1, 1, 1,
 				1, 0, 0, 0, 0, 1,
 				1, 0, 0, 0, 0, 1,
 				1, 0, 0, 0, 0, 1,
 				1, 0, 0, 0, 0, 1,
 				1, 1, 1, 1, 1, 1,
+				
+				1, 1, 1, 1, 1, 1,
+				1, 0, 0, 0, 0, 1,
+				1, 0, 0, 0, 0, 1,
+				1, 0, 0, 0, 0, 1,
+				1, 0, 0, 0, 0, 1,
+				1, 1, 1, 1, 1, 1,
+				
+				1, 2, 2, 2, 2, 1,
+				2, 0, 0, 0, 0, 2,
+				2, 0, 0, 0, 0, 2,
+				2, 0, 0, 0, 0, 2,
+				2, 0, 0, 0, 0, 2,
+				1, 2, 2, 2, 2, 1,
 			},
 		};
 		
 		DungeonBuilder db = new DungeonBuilder();
-		Room r0 = db.makeRoom( 6, 6, tileMap, shapes[0] );
+		Room r0 = db.makeRoom( 6, 6, 4, tileMap, shapes[0] );
 		db.north();
 		db.north();
 		db.east();
@@ -108,11 +137,11 @@ public class DungeonGame
 		}
 		db.eastTo(r2);
 		
-		gs.set( r0, 2.5f, 2.5f );
+		gs.set( r0, 2.5f, 2.5f, 2.5f );
 		gs.addBlock( Block.PLAYER );
 		
-		final BlockField projection = new BlockField( 55, 55 );
-		Raycast.project( gs.room, gs.x, gs.y, projection, projection.w/2, projection.h/2 );
+		final BlockField projection = new BlockField( 55, 55, 4 );
+		Raycast.raycastXY( gs.room, gs.x, gs.y, (int)gs.z, projection, projection.w/2, projection.h/2 );
 		
 		final RegionCanvas regionCanvas = new RegionCanvas();
 		regionCanvas.region = projection;
@@ -125,10 +154,10 @@ public class DungeonGame
 			@Override public void keyPressed( KeyEvent kevt ) {
 				tempCursor.set(gs);
 				switch( kevt.getKeyCode() ) {
-				case( KeyEvent.VK_UP    ): tempCursor.move( 0, -1 ); break;
-				case( KeyEvent.VK_DOWN  ): tempCursor.move( 0, +1 ); break;
-				case( KeyEvent.VK_LEFT  ): tempCursor.move( -1, 0 ); break;
-				case( KeyEvent.VK_RIGHT ): tempCursor.move( +1, 0 ); break;
+				case( KeyEvent.VK_UP    ): tempCursor.move( 0, -1, 0 ); break;
+				case( KeyEvent.VK_DOWN  ): tempCursor.move( 0, +1, 0 ); break;
+				case( KeyEvent.VK_LEFT  ): tempCursor.move( -1, 0, 0 ); break;
+				case( KeyEvent.VK_RIGHT ): tempCursor.move( +1, 0, 0 ); break;
 				default:
 					System.err.println(kevt.getKeyCode());
 				}
@@ -140,7 +169,7 @@ public class DungeonGame
 					gs.removeBlock( Block.PLAYER );
 					gs.set(tempCursor);
 					gs.addBlock( Block.PLAYER );
-					Raycast.project( gs.room, gs.x, gs.y, projection, projection.w/2, projection.h/2 );
+					Raycast.raycastXY( gs.room, gs.x, gs.y, (int)gs.z, projection, projection.w/2, projection.h/2 );
 					regionCanvas.cx = projection.w/2;
 					regionCanvas.cy = projection.h/2;
 					regionCanvas.repaint();

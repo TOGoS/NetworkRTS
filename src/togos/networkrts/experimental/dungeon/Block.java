@@ -22,5 +22,6 @@ class Block {
 	public static final Block FLOOR = new Block( 100, Color.GRAY, 0, false );
 	public static final Block GRASS = new Block( 101, Color.GREEN, 0, false );
 	public static final Block WALL = new Block( 102, Color.WHITE, 1, true );
+	public static final Block GRATING = new Block( 102, Color.GREEN, 1, true );
 	public static final Block PLAYER = new Block( 103, Color.YELLOW, 0, true );
 }

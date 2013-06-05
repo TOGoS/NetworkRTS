@@ -3,22 +3,22 @@ package togos.networkrts.experimental.dungeon;
 
 class CellCursor {
 	Room room;
-	float x, y;
+	float x, y, z;
 	
 	public CellCursor() { }
 	
-	public void set( Room room, float x, float y ) {
+	public void set( Room room, float x, float y, float z ) {
 		this.room = room;
-		this.x = x; this.y = y;
+		this.x = x; this.y = y; this.z = z;
 	}
 	
-	public void set( CellCursor c ) { set( c.room, c.x, c.y ); }
+	public void set( CellCursor c ) { set( c.room, c.x, c.y, c.z ); }
 		
-	public void move( float dx, float dy ) {
-		x += dx; y += dy;
-		if( room != null && !room.contains(x,y) ) {
+	public void move( float dx, float dy, float dz ) {
+		x += dx; y += dy; z += dz;
+		if( room != null && !room.contains(x,y,z) ) {
 			for( Room.Neighbor n : room.neighbors ) {
-				if( n.contains(x,y) ) {
+				if( n.contains(x,y,z) ) {
 					this.room = n.room;
 					this.x -= n.x;
 					this.y -= n.y;
@@ -36,16 +36,21 @@ class CellCursor {
 	
 	public Block[] getStack() {
 		if( room == null ) return null;
-		return room.blockField.getStack( floor(x), floor(y) );
+		return room.blockField.getStack( floor(x), floor(y), floor(z) );
 	}
 
 	public void addBlock( Block block ) {
 		if( room == null ) return;
-		room.blockField.addBlock( floor(x), floor(y), block );
+		room.blockField.addBlock( floor(x), floor(y), floor(z), block );
 	}
 	
 	public void removeBlock( Block block ) {
 		if( room == null ) return;
-		room.blockField.removeBlock( floor(x), floor(y), block );
+		room.blockField.removeBlock( floor(x), floor(y), floor(z), block );
+	}
+	
+	public Block[] getStackAtZ(int zz) {
+		if( room == null ) return null;
+		return room.blockField.getStack( floor(x), floor(y), zz );
 	}
 }
