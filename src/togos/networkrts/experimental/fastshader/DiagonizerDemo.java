@@ -171,19 +171,52 @@ public class DiagonizerDemo
 		return color( 255, r, g, b );
 	}
 	
-	int component( double v ) {
+	int component( float v ) {
 		v *= 255;
 		return v < 0 ? 0 : v > 255 ? 255 : (int)v;
 	}
 	
+	/**
+	 * Approximately equivalent to (but much faster than) Math.pow( v, 1/2.2 )
+	 */
+	static final float fastGamma( float v ) {
+		v *= 20;
+		switch( (int)(v) ) {
+		case 0: return 0.0f + (v - 0f) * 0.256225724166006f;
+		case 1: return 0.256225724166006f + (v - 1f) * 0.0948934492555071f;
+		case 2: return 0.351119173421513f + (v - 2f) * 0.0710592432996416f;
+		case 3: return 0.422178416721155f + (v - 3f) * 0.0589780883311317f;
+		case 4: return 0.481156505052286f + (v - 4f) * 0.0513640396676949f;
+		case 5: return 0.532520544719981f + (v - 5f) * 0.0460120643614358f;
+		case 6: return 0.578532609081417f + (v - 6f) * 0.0419908459921748f;
+		case 7: return 0.620523455073592f + (v - 7f) * 0.038829835429302f;
+		case 8: return 0.659353290502894f + (v - 8f) * 0.0362623278169302f;
+		case 9: return 0.695615618319824f + (v - 9f) * 0.034124434520899f;
+		case 10: return 0.729740052840723f + (v - 10f) * 0.0323091983675802f;
+		case 11: return 0.762049251208303f + (v - 11f) * 0.030743479339119f;
+		case 12: return 0.792792730547422f + (v - 12f) * 0.0293753589380957f;
+		case 13: return 0.822168089485518f + (v - 13f) * 0.0281668382165122f;
+		case 14: return 0.85033492770203f + (v - 14f) * 0.0270893870233362f;
+		case 15: return 0.877424314725366f + (v - 15f) * 0.026121116193728f;
+		case 16: return 0.903545430919094f + (v - 16f) * 0.0252449169649703f;
+		case 17: return 0.928790347884065f + (v - 17f) * 0.024447199667204f;
+		case 18: return 0.953237547551269f + (v - 18f) * 0.0237170162902004f;
+		case 19: return 0.976954563841469f + (v - 19f) * 0.0230454361585308f;
+		default: return v; // Out of range, so doesn't matter other than being < 0 or > 1
+		}
+	}
+	
+	float exposure = 0.5f;
+	float adjustComponent( float v ) {
+		return fastGamma( v * exposure );
+	}
+	
 	void toRgb() {
-		float exposure = 0.5f;
-		float gamma = 2.2f;
 		for( int i=width*height-1; i>=0; --i ) {
 			colorBuffer[i] = color( 
-				component( Math.pow( outputR[i] * exposure, gamma ) ),
-				component( Math.pow( outputG[i] * exposure, gamma ) ),
-				component( Math.pow( outputB[i] * exposure, gamma ) )
+				component( adjustComponent(outputR[i]) ),
+				component( adjustComponent(outputG[i]) ),
+				component( adjustComponent(outputB[i]) )
 			);
 		}
 	}
@@ -226,28 +259,20 @@ public class DiagonizerDemo
 		}
 		
 		d.clearOutput();
+		
+		// Sun
 		d.initLight(  4, 1, -0.4f, 1.0f, 1.0f, 0.7f );
 		d.light();
-		/*
-		d.initLight(  1, 3, -0.7f, 0.9f, 0.7f, 0.5f );
-		d.light();
-		d.initLight(  1, 2, -0.6f, 0.8f, 0.7f, 0.6f );
-		d.light();
-		d.initLight(  1, 1, -0.5f, 0.7f, 0.7f, 0.7f );
-		d.light();
-		d.initLight(  2, 1, -0.5f, 0.6f, 0.7f, 0.8f );
-		d.light();
-		d.initLight(  3, 1, -0.5f, 0.5f, 0.7f, 0.9f );
-		d.light();
-		*/
-		d.initLight( -1, 2, -0.4f, 0.4f, 0.7f, 1.0f );
-		d.light();
-
-		d.initLight( 0, 1, -1.0f, 0.2f, 0.4f, 0.2f );
+		
+		// Ambient sky light
+		d.initLight( 0, 1, -1.0f, 0.08f, 0.08f, 0.1f );
 		d.light();
 		
 		System.err.println("Converting to 32-bit ARGB");
+		long conversionBeginTime = System.currentTimeMillis();
 		d.toRgb();
+		long conversionEndTime = System.currentTimeMillis();
+		System.err.println("Conversion took "+(conversionEndTime-conversionBeginTime)+" milliseconds");
 		BufferedImage bi = new BufferedImage(d.width, d.height, BufferedImage.TYPE_INT_ARGB);
 		bi.setRGB(0, 0, d.width, d.height, d.colorBuffer, 0, d.width);
 		ImageIO.write(bi, "png", new File("test.png"));
