@@ -18,7 +18,7 @@ public class DungeonGame
 		private static final long serialVersionUID = -6047879639768380415L;
 		
 		BlockField region;
-		int cx, cy;
+		float cx, cy;
 		
 		VolatileImage buffer;
 		
@@ -38,7 +38,7 @@ public class DungeonGame
 						Block[] stack = region.getStack( x, y, z );
 						for( Block b : stack ) {
 							g.setColor(b.color);
-							g.fillRect( getWidth()/2 + (x-cx) * tileSize, getHeight()/2 + (y-cy) * tileSize, tileSize, tileSize );
+							g.fillRect( (int)(getWidth()/2f + (x-cx) * tileSize), (int)(getHeight()/2f + (y-cy) * tileSize), tileSize, tileSize );
 						}
 					}
 				}
@@ -63,6 +63,35 @@ public class DungeonGame
 		@Override
 		public void update( Graphics g ) {
 			paint(g);
+		}
+	}
+	
+	class Player {
+		public Room room;
+		public float x, y, z;
+		public int facingX = 0, facingY = 0;
+		public int walkingX = 0, walkingY = 0;
+	}
+	
+	static class ViewManager {
+		BlockField projection;
+		public ViewManager( int w, int h, int d ) {
+			projection = new BlockField( w, h, d );
+		}
+		
+		float offX, offY;
+		
+		public void projectFrom( Room r, float x, float y, float z ) {
+			Raycast.raycastXY( r, x, y, (int)z, projection, projection.w/2, projection.h/2 );
+			this.offX = x - (int)x;
+			this.offY = y - (int)y;
+		}
+		
+		public void updateCanvas(RegionCanvas regionCanvas) {
+			regionCanvas.region = projection;
+			regionCanvas.cx = projection.w/2 + offX;
+			regionCanvas.cy = projection.h/2 + offY;
+			regionCanvas.repaint();
 		}
 	}
 	
@@ -137,17 +166,13 @@ public class DungeonGame
 		}
 		db.eastTo(r2);
 		
-		gs.set( r0, 2.5f, 2.5f, 2.5f );
+		gs.set( r0, 2.51f, 2.51f, 2.51f );
 		gs.addBlock( Block.PLAYER );
 		
-		final BlockField projection = new BlockField( 55, 55, 4 );
-		Raycast.raycastXY( gs.room, gs.x, gs.y, (int)gs.z, projection, projection.w/2, projection.h/2 );
+		final ViewManager vm = new ViewManager(64, 64, 8);
+		vm.projectFrom(gs.room, gs.x, gs.y, gs.z);
 		
 		final RegionCanvas regionCanvas = new RegionCanvas();
-		regionCanvas.region = projection;
-		regionCanvas.cx = projection.w/2;
-		regionCanvas.cy = projection.h/2;
-		
 		regionCanvas.setPreferredSize( new Dimension(640,480) );
 		regionCanvas.setBackground( Color.BLACK );
 		regionCanvas.addKeyListener( new KeyListener() {
@@ -169,10 +194,8 @@ public class DungeonGame
 					gs.removeBlock( Block.PLAYER );
 					gs.set(tempCursor);
 					gs.addBlock( Block.PLAYER );
-					Raycast.raycastXY( gs.room, gs.x, gs.y, (int)gs.z, projection, projection.w/2, projection.h/2 );
-					regionCanvas.cx = projection.w/2;
-					regionCanvas.cy = projection.h/2;
-					regionCanvas.repaint();
+					vm.projectFrom(gs.room, gs.x, gs.y, gs.z);
+					vm.updateCanvas(regionCanvas);
 				}
 			}
 			@Override public void keyReleased( KeyEvent kevt ) {
@@ -180,6 +203,9 @@ public class DungeonGame
 			@Override public void keyTyped( KeyEvent kevt ) {
 			}
 		});
+		
+		vm.projectFrom(gs.room, gs.x, gs.y, gs.z);
+		vm.updateCanvas(regionCanvas);
 		
 		final Frame window = new Frame("Robot Client");
 		window.add(regionCanvas);
