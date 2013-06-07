@@ -66,11 +66,21 @@ public class DungeonGame
 		}
 	}
 	
-	class Player {
-		public Room room;
-		public float x, y, z;
+	static class Player extends CellCursor {
 		public int facingX = 0, facingY = 0;
 		public int walkingX = 0, walkingY = 0;
+		
+		public void startWalking(int x, int y, int z) {
+			this.facingX = x;
+			this.facingY = y;
+			this.walkingX = x;
+			this.walkingY = y;
+		}
+		
+		public void stopWalking() {
+			this.walkingX = 0;
+			this.walkingY = 0;
+		}
 	}
 	
 	static class ViewManager {
@@ -93,12 +103,38 @@ public class DungeonGame
 			regionCanvas.cy = projection.h/2 + offY;
 			regionCanvas.repaint();
 		}
+		
+		public void projectFrom(CellCursor pos) {
+			projectFrom(pos.room, pos.x, pos.y, (int)pos.z);
+		}
+	}
+	
+	static class Simulator {
+		Player player;
+		
+		final CellCursor tempCursor = new CellCursor();
+		
+		public synchronized boolean tick( long cTime ) {
+			boolean updated = false;
+			if( player.walkingX != 0 || player.walkingY != 0 ) {
+				tempCursor.set(player);
+				tempCursor.move( player.walkingX, player.walkingY, 0 );
+				boolean blocked = false;
+				for( Block b : tempCursor.getAStack() ) {
+					if( b.blocking ) blocked = true;
+				}
+				if( !blocked ) {
+					player.removeBlock( Block.PLAYER );
+					player.set(tempCursor);
+					player.addBlock(Block.PLAYER);
+					updated = true;
+				}
+			}
+			return updated;
+		}
 	}
 	
 	public static void main( String[] args ) {
-		final CellCursor gs = new CellCursor();
-		final CellCursor tempCursor = new CellCursor();
-		
 		Block[][] tileMap = new Block[][] { Block.EMPTY_STACK, Block.WALL.stack, Block.GRATING.stack, Block.FLOOR.stack };
 		
 		int[][] shapes = new int[][] {
@@ -166,45 +202,46 @@ public class DungeonGame
 		}
 		db.eastTo(r2);
 		
-		gs.set( r0, 2.51f, 2.51f, 2.51f );
-		gs.addBlock( Block.PLAYER );
+		final Player player = new Player();
+		player.set( r0, 2.51f, 2.51f, 2.51f );
+		player.addBlock( Block.PLAYER );
+
+		final Simulator sim = new Simulator();
+		sim.player = player;
 		
 		final ViewManager vm = new ViewManager(64, 64, 8);
-		vm.projectFrom(gs.room, gs.x, gs.y, gs.z);
-		
 		final RegionCanvas regionCanvas = new RegionCanvas();
 		regionCanvas.setPreferredSize( new Dimension(640,480) );
 		regionCanvas.setBackground( Color.BLACK );
 		regionCanvas.addKeyListener( new KeyListener() {
+			// TODO: Replace with nicer walking direction state management
 			@Override public void keyPressed( KeyEvent kevt ) {
-				tempCursor.set(gs);
 				switch( kevt.getKeyCode() ) {
-				case( KeyEvent.VK_UP    ): tempCursor.move( 0, -1, 0 ); break;
-				case( KeyEvent.VK_DOWN  ): tempCursor.move( 0, +1, 0 ); break;
-				case( KeyEvent.VK_LEFT  ): tempCursor.move( -1, 0, 0 ); break;
-				case( KeyEvent.VK_RIGHT ): tempCursor.move( +1, 0, 0 ); break;
+				case( KeyEvent.VK_UP    ): player.startWalking( 0, -1, 0 ); break;
+				case( KeyEvent.VK_DOWN  ): player.startWalking( 0, +1, 0 ); break;
+				case( KeyEvent.VK_LEFT  ): player.startWalking( -1, 0, 0 ); break;
+				case( KeyEvent.VK_RIGHT ): player.startWalking( +1, 0, 0 ); break;
 				default:
 					System.err.println(kevt.getKeyCode());
 				}
-				boolean blocked = false;
-				for( Block b : tempCursor.getAStack() ) {
-					if( b.blocking ) blocked = true;
-				}
-				if( !blocked ) {
-					gs.removeBlock( Block.PLAYER );
-					gs.set(tempCursor);
-					gs.addBlock( Block.PLAYER );
-					vm.projectFrom(gs.room, gs.x, gs.y, gs.z);
+				if( sim.tick(System.currentTimeMillis()) ) {
+					vm.projectFrom(player);
 					vm.updateCanvas(regionCanvas);
 				}
 			}
 			@Override public void keyReleased( KeyEvent kevt ) {
+				switch( kevt.getKeyCode() ) {
+				case( KeyEvent.VK_UP    ): player.stopWalking(); break;
+				case( KeyEvent.VK_DOWN  ): player.stopWalking(); break;
+				case( KeyEvent.VK_LEFT  ): player.stopWalking(); break;
+				case( KeyEvent.VK_RIGHT ): player.stopWalking(); break;
+				}
 			}
 			@Override public void keyTyped( KeyEvent kevt ) {
 			}
 		});
 		
-		vm.projectFrom(gs.room, gs.x, gs.y, gs.z);
+		vm.projectFrom(player);
 		vm.updateCanvas(regionCanvas);
 		
 		final Frame window = new Frame("Robot Client");
@@ -213,10 +250,22 @@ public class DungeonGame
 		window.addWindowListener( new WindowAdapter() {
 			@Override
 			public void windowClosing( WindowEvent e ) {
-				window.dispose();
+				System.exit(0);
 			}
 		});
 		window.setVisible(true);
 		regionCanvas.requestFocus();
+		
+		while( true ) {
+			if( sim.tick(System.currentTimeMillis()) ) {
+				vm.projectFrom(player);
+				vm.updateCanvas(regionCanvas);
+			}
+			try {
+				Thread.sleep(50);
+			} catch (InterruptedException e1) {
+				System.exit(0);
+			}
+		}
 	}
 }
