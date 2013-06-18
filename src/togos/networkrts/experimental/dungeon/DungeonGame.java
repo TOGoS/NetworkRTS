@@ -195,7 +195,9 @@ public class DungeonGame
 		@Override
 		public AutoEventUpdatable<Command> update( long time, Command evt ) throws Exception {
 			// Only works as long as there's only one active entity:
-			nextAutoUpdateTime = AutoEventUpdatable.TIME_INFINITY;
+			if( time >= nextAutoUpdateTime ) {
+				nextAutoUpdateTime = AutoEventUpdatable.TIME_INFINITY;
+			}
 			
 			currentTime = time;
 			if( evt != null ) {
@@ -298,7 +300,6 @@ public class DungeonGame
 			
 			protected void updateWalking() {
 				Command cmd = new Command();
-				System.err.println("u/d/l/r "+walkUp+"/"+walkDown+"/"+walkLeft+"/"+walkRight);
 				cmd.walkX = (walkLeft && !walkRight) ? -1 : (walkRight && !walkLeft) ? 1 : 0;
 				cmd.walkY = (walkUp   && !walkDown ) ? -1 : (walkDown  && !walkUp  ) ? 1 : 0;
 				try {
