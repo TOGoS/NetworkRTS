@@ -12,17 +12,50 @@ import java.awt.event.WindowEvent;
 import java.awt.image.VolatileImage;
 import java.util.Random;
 
+import togos.networkrts.experimental.gensim.AutoEventUpdatable;
+import togos.networkrts.experimental.gensim.EventLoop;
+import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
+
 public class DungeonGame
 {
+	/**
+	 * Can be used to coordinate updates between threads,
+	 * where later updates can override earlier ones that have
+	 * not yet been processed.
+	 */
+	static class Trigger<T> {
+		T value = null;
+		public synchronized void set( T v ) {
+			value = v;
+			notifyAll();
+		}
+		public synchronized T waitAndReset() throws InterruptedException {
+			while( value == null ) wait();
+			T v = value;
+			value = null;
+			return v;
+		}
+	}
+	
+	static final class Impulse {
+		private Impulse() { }
+		public static final Impulse INSTANCE = new Impulse();
+	}
+	
 	static class RegionCanvas extends Canvas {
 		private static final long serialVersionUID = -6047879639768380415L;
 		
+		// TODO: I'd rather the canvas be dumber and not need to know the
+		// region or the offset.  Instead, have another thread render
+		// the scene and the canvas just blit it.
 		BlockField region;
 		float cx, cy;
 		
 		VolatileImage buffer;
 		
 		protected void paintBuffer( Graphics g ) {
+			if( region == null ) return;
+			
 			int tileSize = 16;
 			for( int y=0; y<region.h; ++y ) {
 				for( int x=0; x<region.w; ++x ) {
@@ -109,12 +142,20 @@ public class DungeonGame
 		}
 	}
 	
-	static class Simulator {
+	static class Command {
+		public int walkX, walkY;
+	}
+	
+	static class Simulator implements AutoEventUpdatable<Command> {
 		Player player;
+		long currentTime = 0;
+		long nextPlayerWalkTime = 0;
+		long nextAutoUpdateTime = 0;
+		Trigger<Impulse> updated = new Trigger<Impulse>();
 		
 		final CellCursor tempCursor = new CellCursor();
 		
-		public synchronized boolean tick( long cTime ) {
+		public synchronized void walkPlayer() {
 			boolean updated = false;
 			if( player.walkingX != 0 || player.walkingY != 0 ) {
 				tempCursor.set(player);
@@ -130,7 +171,41 @@ public class DungeonGame
 					updated = true;
 				}
 			}
-			return updated;
+			if( updated ) {
+				nextPlayerWalkTime = currentTime + 100;
+				nextAutoUpdateTime = Math.min(nextAutoUpdateTime, nextPlayerWalkTime);
+				this.updated.set(Impulse.INSTANCE);
+			}
+		}
+		
+		@Override public long getNextAutomaticUpdateTime() {
+			return nextAutoUpdateTime;
+		}
+		
+		/**
+		 * Adjust all timestamps to make 'time' the current time
+		 * without any time actually passing in the simulation.
+		 */
+		public void skipToTime( long time ) {
+			nextPlayerWalkTime += (time - currentTime);
+			nextAutoUpdateTime += (time - currentTime);
+			currentTime = time;
+		}
+		
+		@Override
+		public AutoEventUpdatable<Command> update( long time, Command evt ) throws Exception {
+			// Only works as long as there's only one active entity:
+			nextAutoUpdateTime = AutoEventUpdatable.TIME_INFINITY;
+			
+			currentTime = time;
+			if( evt != null ) {
+				player.walkingX = evt.walkX;
+				player.walkingY = evt.walkY;
+			}
+			if( time >= nextPlayerWalkTime ) {
+				walkPlayer();
+			}
+			return this;
 		}
 	}
 	
@@ -205,44 +280,91 @@ public class DungeonGame
 		final Player player = new Player();
 		player.set( r0, 2.51f, 2.51f, 2.51f );
 		player.addBlock( Block.PLAYER );
-
+		
 		final Simulator sim = new Simulator();
 		sim.player = player;
+		
+		final QueuelessRealTimeEventSource<Command> evtReg = new QueuelessRealTimeEventSource<Command>();
 		
 		final ViewManager vm = new ViewManager(64, 64, 8);
 		final RegionCanvas regionCanvas = new RegionCanvas();
 		regionCanvas.setPreferredSize( new Dimension(640,480) );
 		regionCanvas.setBackground( Color.BLACK );
 		regionCanvas.addKeyListener( new KeyListener() {
-			// TODO: Replace with nicer walking direction state management
+			boolean walkLeft  = false;
+			boolean walkRight = false;
+			boolean walkUp    = false;
+			boolean walkDown  = false;
+			
+			protected void updateWalking() {
+				Command cmd = new Command();
+				System.err.println("u/d/l/r "+walkUp+"/"+walkDown+"/"+walkLeft+"/"+walkRight);
+				cmd.walkX = (walkLeft && !walkRight) ? -1 : (walkRight && !walkLeft) ? 1 : 0;
+				cmd.walkY = (walkUp   && !walkDown ) ? -1 : (walkDown  && !walkUp  ) ? 1 : 0;
+				try {
+					evtReg.post(cmd);
+				} catch( InterruptedException e ) {
+					Thread.currentThread().interrupt();
+					return;
+				}
+			}
+			
 			@Override public void keyPressed( KeyEvent kevt ) {
 				switch( kevt.getKeyCode() ) {
-				case( KeyEvent.VK_UP    ): player.startWalking( 0, -1, 0 ); break;
-				case( KeyEvent.VK_DOWN  ): player.startWalking( 0, +1, 0 ); break;
-				case( KeyEvent.VK_LEFT  ): player.startWalking( -1, 0, 0 ); break;
-				case( KeyEvent.VK_RIGHT ): player.startWalking( +1, 0, 0 ); break;
+				case( KeyEvent.VK_UP    ): walkUp    = true; break;
+				case( KeyEvent.VK_DOWN  ): walkDown  = true; break;
+				case( KeyEvent.VK_LEFT  ): walkLeft  = true; break;
+				case( KeyEvent.VK_RIGHT ): walkRight = true; break;
 				default:
 					System.err.println(kevt.getKeyCode());
 				}
-				if( sim.tick(System.currentTimeMillis()) ) {
-					vm.projectFrom(player);
-					vm.updateCanvas(regionCanvas);
-				}
+				updateWalking();
 			}
+			
 			@Override public void keyReleased( KeyEvent kevt ) {
 				switch( kevt.getKeyCode() ) {
-				case( KeyEvent.VK_UP    ): player.stopWalking(); break;
-				case( KeyEvent.VK_DOWN  ): player.stopWalking(); break;
-				case( KeyEvent.VK_LEFT  ): player.stopWalking(); break;
-				case( KeyEvent.VK_RIGHT ): player.stopWalking(); break;
+				case( KeyEvent.VK_UP    ): walkUp    = false; break;
+				case( KeyEvent.VK_DOWN  ): walkDown  = false; break;
+				case( KeyEvent.VK_LEFT  ): walkLeft  = false; break;
+				case( KeyEvent.VK_RIGHT ): walkRight = false; break;
 				}
+				updateWalking();
 			}
+			
 			@Override public void keyTyped( KeyEvent kevt ) {
 			}
 		});
 		
-		vm.projectFrom(player);
-		vm.updateCanvas(regionCanvas);
+		new Thread("Simulator") {
+			public void run() {
+				sim.skipToTime( evtReg.getCurrentTime() );
+				try {
+					EventLoop.run( evtReg, sim );
+				} catch( InterruptedException e ) {
+					Thread.currentThread().interrupt();
+					return;
+				} catch( Exception e ) {
+					throw new RuntimeException(e);
+				}
+			}
+		}.start();
+		
+		new Thread("Player view projector") {
+			public void run() {
+				while( true ) {
+					try {
+						sim.updated.waitAndReset();
+					} catch( InterruptedException e ) {
+						Thread.currentThread().interrupt();
+						return;
+					}
+					vm.projectFrom(player);
+					vm.updateCanvas(regionCanvas);
+				}
+			}
+		}.start();
+		
+		sim.updated.set(Impulse.INSTANCE);
 		
 		final Frame window = new Frame("Robot Client");
 		window.add(regionCanvas);
@@ -255,17 +377,5 @@ public class DungeonGame
 		});
 		window.setVisible(true);
 		regionCanvas.requestFocus();
-		
-		while( true ) {
-			if( sim.tick(System.currentTimeMillis()) ) {
-				vm.projectFrom(player);
-				vm.updateCanvas(regionCanvas);
-			}
-			try {
-				Thread.sleep(50);
-			} catch (InterruptedException e1) {
-				System.exit(0);
-			}
-		}
 	}
 }

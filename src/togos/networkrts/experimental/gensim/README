@@ -9,7 +9,7 @@ There are a couple of obvious and subtly different approaches.
 In this model, all events (scheduled and realtime) go through a TimedEventQueue. 
  ________________
 |                |
-|  Simulatoion   |-------------+
+|  Simulation    |-------------+
 |________________|             | enqueued
    ^                           | events
    | time, events              |
