@@ -155,23 +155,38 @@ public class DungeonGame
 		
 		final CellCursor tempCursor = new CellCursor();
 		
-		public synchronized void walkPlayer() {
-			boolean updated = false;
-			if( player.walkingX != 0 || player.walkingY != 0 ) {
-				tempCursor.set(player);
-				tempCursor.move( player.walkingX, player.walkingY, 0 );
-				boolean blocked = false;
-				for( Block b : tempCursor.getAStack() ) {
-					if( b.blocking ) blocked = true;
-				}
-				if( !blocked ) {
-					player.removeBlock( Block.PLAYER );
-					player.set(tempCursor);
-					player.addBlock(Block.PLAYER);
-					updated = true;
-				}
+		protected boolean attemptMove( Player p, int dx, int dy, int dz ) {
+			tempCursor.set(player);
+			tempCursor.move( dx, dy, dz );
+			boolean blocked = false;
+			for( Block b : tempCursor.getAStack() ) {
+				if( b.blocking ) blocked = true;
 			}
-			if( updated ) {
+			if( !blocked ) {
+				player.removeBlock( Block.PLAYER );
+				player.set(tempCursor);
+				player.addBlock(Block.PLAYER);
+				return true;
+			} else {
+				return false;
+			}
+		}
+		
+		public synchronized void walkPlayer() {
+			boolean movedX = false, movedY = false;
+			boolean blockedX = false;
+			if( player.walkingX != 0 ) {
+				movedX = attemptMove( player, player.walkingX, 0, 0 );
+				blockedX = !movedX;
+			}
+			if( player.walkingY != 0 ) {
+				movedY = attemptMove( player, 0, player.walkingY, 0 );
+			}
+			if( blockedX && movedY ) {
+				// Then try moving X-wise again!
+				movedX = attemptMove( player, player.walkingX, 0, 0 );
+			}
+			if( movedX || movedY ) {
 				nextPlayerWalkTime = currentTime + 100;
 				nextAutoUpdateTime = Math.min(nextAutoUpdateTime, nextPlayerWalkTime);
 				this.updated.set(Impulse.INSTANCE);
