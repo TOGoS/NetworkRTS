@@ -99,9 +99,11 @@ public class DungeonGame
 		}
 	}
 	
-	static class Player extends CellCursor {
+	static class WalkingCharacter extends CellCursor {
 		public int facingX = 0, facingY = 0;
 		public int walkingX = 0, walkingY = 0;
+		public long walkReadyTime = 0;
+		public long walkStepInterval = 100;
 		
 		public void startWalking(int x, int y, int z) {
 			this.facingX = x;
@@ -147,15 +149,14 @@ public class DungeonGame
 	}
 	
 	static class Simulator implements AutoEventUpdatable<Command> {
-		Player player;
+		WalkingCharacter player;
 		long currentTime = 0;
-		long nextPlayerWalkTime = 0;
 		long nextAutoUpdateTime = 0;
 		Trigger<Impulse> updated = new Trigger<Impulse>();
 		
 		final CellCursor tempCursor = new CellCursor();
 		
-		protected boolean attemptMove( Player p, int dx, int dy, int dz ) {
+		protected boolean attemptMove( WalkingCharacter p, int dx, int dy, int dz ) {
 			tempCursor.set(player);
 			tempCursor.move( dx, dy, dz );
 			boolean blocked = false;
@@ -187,8 +188,8 @@ public class DungeonGame
 				movedX = attemptMove( player, player.walkingX, 0, 0 );
 			}
 			if( movedX || movedY ) {
-				nextPlayerWalkTime = currentTime + 100;
-				nextAutoUpdateTime = Math.min(nextAutoUpdateTime, nextPlayerWalkTime);
+				player.walkReadyTime = currentTime + player.walkStepInterval;
+				nextAutoUpdateTime = Math.min(nextAutoUpdateTime, player.walkReadyTime);
 				this.updated.set(Impulse.INSTANCE);
 			}
 		}
@@ -202,7 +203,7 @@ public class DungeonGame
 		 * without any time actually passing in the simulation.
 		 */
 		public void skipToTime( long time ) {
-			nextPlayerWalkTime += (time - currentTime);
+			player.walkReadyTime += (time - currentTime);
 			nextAutoUpdateTime += (time - currentTime);
 			currentTime = time;
 		}
@@ -219,7 +220,7 @@ public class DungeonGame
 				player.walkingX = evt.walkX;
 				player.walkingY = evt.walkY;
 			}
-			if( time >= nextPlayerWalkTime ) {
+			if( time >= player.walkReadyTime ) {
 				walkPlayer();
 			}
 			return this;
@@ -294,7 +295,7 @@ public class DungeonGame
 		}
 		db.eastTo(r2);
 		
-		final Player player = new Player();
+		final WalkingCharacter player = new WalkingCharacter();
 		player.set( r0, 2.51f, 2.51f, 2.51f );
 		player.addBlock( Block.PLAYER );
 		
