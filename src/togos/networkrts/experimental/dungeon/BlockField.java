@@ -6,10 +6,11 @@ class BlockField
 	Block[][] blockStacks;
 	int[] light;
 	
-	public BlockField( int w, int h, int d ) {
+	public BlockField( int w, int h, int d, Block[] fill ) {
 		this.w = w; this.h = h; this.d = d;
 		this.blockStacks = new Block[w*h*d][];
 		this.light = new int[w*h*d];
+		fill( fill );
 	}
 	
 	public void fill( Block[] stack ) {

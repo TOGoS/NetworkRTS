@@ -12,6 +12,7 @@ import java.awt.event.WindowEvent;
 import java.awt.image.VolatileImage;
 import java.util.Random;
 
+import togos.networkrts.experimental.dungeon.Room.Neighbor;
 import togos.networkrts.experimental.gensim.AutoEventUpdatable;
 import togos.networkrts.experimental.gensim.EventLoop;
 import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
@@ -121,7 +122,7 @@ public class DungeonGame
 	static class ViewManager {
 		BlockField projection;
 		public ViewManager( int w, int h, int d ) {
-			projection = new BlockField( w, h, d );
+			projection = new BlockField( w, h, d, Block.EMPTY_STACK );
 		}
 		
 		float offX, offY;
@@ -240,60 +241,35 @@ public class DungeonGame
 				3, 3, 3, 3, 3, 3,
 				
 				1, 1, 1, 1, 1, 1,
-				1, 0, 0, 0, 0, 1,
-				1, 0, 0, 0, 0, 1,
-				1, 0, 0, 0, 0, 1,
-				1, 0, 0, 0, 0, 1,
+				0, 0, 0, 0, 0, 1,
+				0, 0, 0, 0, 0, 1,
+				1, 0, 0, 0, 0, 0,
+				1, 0, 0, 0, 0, 0,
 				1, 1, 1, 1, 1, 1,
 				
 				1, 1, 1, 1, 1, 1,
-				1, 0, 0, 0, 0, 1,
-				1, 0, 0, 0, 0, 1,
-				1, 0, 0, 0, 0, 1,
-				1, 0, 0, 0, 0, 1,
+				0, 0, 0, 0, 0, 1,
+				0, 0, 0, 0, 0, 1,
+				1, 0, 0, 0, 0, 0,
+				1, 0, 0, 0, 0, 0,
 				1, 1, 1, 1, 1, 1,
 				
-				1, 2, 2, 2, 2, 1,
-				2, 0, 0, 0, 0, 2,
-				2, 0, 0, 0, 0, 2,
-				2, 0, 0, 0, 0, 2,
-				2, 0, 0, 0, 0, 2,
-				1, 2, 2, 2, 2, 1,
+				1, 0, 0, 0, 0, 1,
+				0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0,
+				1, 2, 2, 0, 0, 0,
+				1, 2, 2, 0, 0, 0,
+				1, 1, 1, 1, 0, 1,
 			},
 		};
 		
-		DungeonBuilder db = new DungeonBuilder();
-		Room r0 = db.makeRoom( 6, 6, 4, tileMap, shapes[0] );
-		db.north();
-		db.north();
-		db.east();
-		db.south();
-		Room r1 = db.west();
-		db.west();
-		db.north();
-		db.north();
-		db.westTo(r0);
-		db.currentRoom = r0;
-		db.east();
-		db.east();
-		db.north();
-		db.currentRoom = r1;
-		db.south();
-		Room r2 = db.south();
-		db.west();
-		
-		Random rand = new Random();
-		int dir = 2;
-		for( int i=0; i<50 || dir == 0; ++i ) {
-			dir = NumUtil.tmod(dir + rand.nextInt(3) - 1, 4);
-			switch( dir ) {
-			case( 0 ): db.east(); break;
-			case( 1 ): db.south(); break;
-			case( 2 ): db.west(); break;
-			case( 3 ): db.north(); break;
-			}
+		Room r0 = new Room(6, 6, 4, Block.EMPTY_STACK);
+		for( int i=0; i<shapes[0].length; ++i ) {
+			r0.blockField.blockStacks[i] = tileMap[shapes[0][i]];
 		}
-		db.eastTo(r2);
+		
+		r0.neighbors.add(new Neighbor(r0, 6, 2, 0));
+		r0.neighbors.add(new Neighbor(r0, -6, -2, 0));
 		
 		final WalkingCharacter player = new WalkingCharacter();
 		player.set( r0, 2.51f, 2.51f, 2.51f );

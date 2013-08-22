@@ -22,8 +22,8 @@ class Room {
 	public BlockField blockField;
 	public final List<Room.Neighbor> neighbors = new ArrayList();
 	
-	public Room( int w, int h, int d ) {
-		this.blockField = new BlockField(w,h,d);
+	public Room( int w, int h, int d, Block[] fill ) {
+		this.blockField = new BlockField(w, h, d, fill);
 	}
 	
 	public boolean contains( float x, float y, float z ) {
