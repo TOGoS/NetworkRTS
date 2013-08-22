@@ -24,4 +24,5 @@ class Block {
 	public static final Block WALL = new Block( 102, Color.WHITE, 1, true );
 	public static final Block GRATING = new Block( 102, Color.GREEN, 1, true );
 	public static final Block PLAYER = new Block( 103, Color.YELLOW, 0, true );
+	public static final Block BOT = new Block( 104, Color.RED, 0, true );
 }

@@ -10,7 +10,8 @@ import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.VolatileImage;
-import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
 
 import togos.networkrts.experimental.dungeon.Room.Neighbor;
 import togos.networkrts.experimental.gensim.AutoEventUpdatable;
@@ -100,11 +101,22 @@ public class DungeonGame
 		}
 	}
 	
-	static class WalkingCharacter extends CellCursor {
+	static class WalkingCharacter extends CellCursor implements AutoEventUpdatable<WalkCommand> {
 		public int facingX = 0, facingY = 0;
 		public int walkingX = 0, walkingY = 0;
 		public long walkReadyTime = 0;
-		public long walkStepInterval = 100;
+		public long walkStepInterval = 100; // Interval between steps
+		public long blockDelay = 10; // Delay after being blocked
+		public Block block;
+		
+		public WalkingCharacter( Block block ) {
+			this.block = block;
+		}
+		
+		public void putAt( Room r, float x, float y, float z) {
+			set(r, x, y, z);
+			addBlock(block);
+		}
 		
 		public void startWalking(int x, int y, int z) {
 			this.facingX = x;
@@ -116,6 +128,18 @@ public class DungeonGame
 		public void stopWalking() {
 			this.walkingX = 0;
 			this.walkingY = 0;
+		}
+
+		@Override public long getNextAutomaticUpdateTime() {
+			if( walkingX == 0 && walkingY == 0 ) {
+				return TIME_INFINITY;
+			}
+			return walkReadyTime;
+		}
+
+		@Override public AutoEventUpdatable<WalkCommand> update(long time, WalkCommand evt) throws Exception {
+			startWalking( evt.walkX, evt.walkY, 0 );
+			return this;
 		}
 	}
 	
@@ -145,84 +169,78 @@ public class DungeonGame
 		}
 	}
 	
-	static class Command {
+	static class WalkCommand {
 		public int walkX, walkY;
 	}
 	
-	static class Simulator implements AutoEventUpdatable<Command> {
-		WalkingCharacter player;
+	static class Simulator implements AutoEventUpdatable<WalkCommand> {
+		WalkingCharacter commandee;
+		List<WalkingCharacter> characters = new ArrayList<WalkingCharacter>();
 		long currentTime = 0;
-		long nextAutoUpdateTime = 0;
 		Trigger<Impulse> updated = new Trigger<Impulse>();
 		
 		final CellCursor tempCursor = new CellCursor();
 		
-		protected boolean attemptMove( WalkingCharacter p, int dx, int dy, int dz ) {
-			tempCursor.set(player);
+		protected boolean attemptMove( WalkingCharacter c, int dx, int dy, int dz ) {
+			tempCursor.set(c);
 			tempCursor.move( dx, dy, dz );
 			boolean blocked = false;
 			for( Block b : tempCursor.getAStack() ) {
 				if( b.blocking ) blocked = true;
 			}
 			if( !blocked ) {
-				player.removeBlock( Block.PLAYER );
-				player.set(tempCursor);
-				player.addBlock(Block.PLAYER);
+				c.removeBlock(c.block);
+				c.set(tempCursor);
+				c.addBlock(c.block);
 				return true;
 			} else {
 				return false;
 			}
 		}
 		
-		public synchronized void walkPlayer() {
+		public synchronized void doCharacterPhysics( WalkingCharacter c ) {
+			if( c.walkReadyTime > currentTime ) return;
+			
 			boolean movedX = false, movedY = false;
 			boolean blockedX = false;
-			if( player.walkingX != 0 ) {
-				movedX = attemptMove( player, player.walkingX, 0, 0 );
+			if( c.walkingX != 0 ) {
+				movedX = attemptMove( c, c.walkingX, 0, 0 );
 				blockedX = !movedX;
 			}
-			if( player.walkingY != 0 ) {
-				movedY = attemptMove( player, 0, player.walkingY, 0 );
+			if( c.walkingY != 0 ) {
+				movedY = attemptMove( c, 0, c.walkingY, 0 );
 			}
 			if( blockedX && movedY ) {
 				// Then try moving X-wise again!
-				movedX = attemptMove( player, player.walkingX, 0, 0 );
+				movedX = attemptMove( c, c.walkingX, 0, 0 );
 			}
 			if( movedX || movedY ) {
-				player.walkReadyTime = currentTime + player.walkStepInterval;
-				nextAutoUpdateTime = Math.min(nextAutoUpdateTime, player.walkReadyTime);
+				c.walkReadyTime = currentTime + c.walkStepInterval;
 				this.updated.set(Impulse.INSTANCE);
+			} else {
+				c.walkReadyTime = currentTime + c.blockDelay;
 			}
 		}
 		
 		@Override public long getNextAutomaticUpdateTime() {
+			long nextAutoUpdateTime = TIME_INFINITY;
+			for( AutoEventUpdatable<?> c : characters ) {
+				nextAutoUpdateTime = Math.min(nextAutoUpdateTime, c.getNextAutomaticUpdateTime());
+			}
+			if( nextAutoUpdateTime <= currentTime ) {
+				nextAutoUpdateTime = currentTime + 1;
+			}
 			return nextAutoUpdateTime;
 		}
 		
-		/**
-		 * Adjust all timestamps to make 'time' the current time
-		 * without any time actually passing in the simulation.
-		 */
-		public void skipToTime( long time ) {
-			player.walkReadyTime += (time - currentTime);
-			nextAutoUpdateTime += (time - currentTime);
-			currentTime = time;
-		}
-		
 		@Override
-		public AutoEventUpdatable<Command> update( long time, Command evt ) throws Exception {
-			// Only works as long as there's only one active entity:
-			if( time >= nextAutoUpdateTime ) {
-				nextAutoUpdateTime = AutoEventUpdatable.TIME_INFINITY;
-			}
-			
+		public AutoEventUpdatable<WalkCommand> update( long time, WalkCommand evt ) throws Exception {
 			currentTime = time;
 			if( evt != null ) {
-				player.walkingX = evt.walkX;
-				player.walkingY = evt.walkY;
+				commandee.update(time, evt);
 			}
-			if( time >= player.walkReadyTime ) {
-				walkPlayer();
+			for( WalkingCharacter c : characters ) {
+				doCharacterPhysics( c );
 			}
 			return this;
 		}
@@ -257,9 +275,9 @@ public class DungeonGame
 				1, 0, 0, 0, 0, 1,
 				0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 0, 0,
-				1, 2, 2, 0, 0, 0,
-				1, 2, 2, 0, 0, 0,
-				1, 1, 1, 1, 0, 1,
+				0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0,
+				1, 0, 0, 0, 0, 1,
 			},
 		};
 		
@@ -271,14 +289,30 @@ public class DungeonGame
 		r0.neighbors.add(new Neighbor(r0, 6, 2, 0));
 		r0.neighbors.add(new Neighbor(r0, -6, -2, 0));
 		
-		final WalkingCharacter player = new WalkingCharacter();
-		player.set( r0, 2.51f, 2.51f, 2.51f );
-		player.addBlock( Block.PLAYER );
+		final QueuelessRealTimeEventSource<WalkCommand> evtReg = new QueuelessRealTimeEventSource<WalkCommand>();
+		
+		final WalkingCharacter player = new WalkingCharacter( Block.PLAYER );
+		player.walkReadyTime = evtReg.getCurrentTime();
+		player.putAt( r0, 2.51f, 2.51f, 2.51f );
 		
 		final Simulator sim = new Simulator();
-		sim.player = player;
+		sim.commandee = player;
+		sim.characters.add(player);
 		
-		final QueuelessRealTimeEventSource<Command> evtReg = new QueuelessRealTimeEventSource<Command>();
+		final WalkingCharacter bot = new WalkingCharacter( Block.BOT );
+		bot.putAt( r0, 3.51f, 3.51f, 2.51f);
+		bot.startWalking( 1, 1, 0);
+		sim.characters.add(bot);
+		
+		final WalkingCharacter bot2 = new WalkingCharacter( Block.BOT );
+		bot2.putAt( r0, 4.51f, 3.51f, 2.51f);
+		bot2.startWalking( 1, 1, 0);
+		sim.characters.add(bot2);
+
+		final WalkingCharacter bot3 = new WalkingCharacter( Block.BOT );
+		bot3.putAt( r0, 1.51f, 3.51f, 2.51f);
+		bot3.startWalking( 1, 1, 0);
+		sim.characters.add(bot3);
 		
 		final ViewManager vm = new ViewManager(64, 64, 8);
 		final RegionCanvas regionCanvas = new RegionCanvas();
@@ -291,7 +325,7 @@ public class DungeonGame
 			boolean walkDown  = false;
 			
 			protected void updateWalking() {
-				Command cmd = new Command();
+				WalkCommand cmd = new WalkCommand();
 				cmd.walkX = (walkLeft && !walkRight) ? -1 : (walkRight && !walkLeft) ? 1 : 0;
 				cmd.walkY = (walkUp   && !walkDown ) ? -1 : (walkDown  && !walkUp  ) ? 1 : 0;
 				try {
@@ -330,7 +364,6 @@ public class DungeonGame
 		
 		new Thread("Simulator") {
 			public void run() {
-				sim.skipToTime( evtReg.getCurrentTime() );
 				try {
 					EventLoop.run( evtReg, sim );
 				} catch( InterruptedException e ) {
