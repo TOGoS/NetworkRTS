@@ -25,4 +25,5 @@ class Block {
 	public static final Block GRATING = new Block( 102, Color.GREEN, 1, true );
 	public static final Block PLAYER = new Block( 103, Color.YELLOW, 0, true );
 	public static final Block BOT = new Block( 104, Color.RED, 0, true );
+	public static final Block FOLIAGE = new Block( 105, new Color(0,0.5f,0), 0.4f, false );
 }

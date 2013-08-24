@@ -12,6 +12,7 @@ import java.awt.event.WindowEvent;
 import java.awt.image.VolatileImage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import togos.networkrts.experimental.dungeon.Room.Neighbor;
 import togos.networkrts.experimental.gensim.AutoEventUpdatable;
@@ -58,22 +59,24 @@ public class DungeonGame
 		protected void paintBuffer( Graphics g ) {
 			if( region == null ) return;
 			
-			int tileSize = 16;
-			for( int y=0; y<region.h; ++y ) {
-				for( int x=0; x<region.w; ++x ) {
-					int highestOpaqueLayer = region.d-1;
-					findOpaque: for( int z=region.d-1; z>=0; --z ) {
-						Block[] stack = region.getStack( x, y, z );
-						for( Block b : stack ) {
-							if( b.opacity == 1 ) break findOpaque;
+			synchronized(region) {
+				int tileSize = 16;
+				for( int y=0; y<region.h; ++y ) {
+					for( int x=0; x<region.w; ++x ) {
+						int highestOpaqueLayer = region.d-1;
+						findOpaque: for( int z=region.d-1; z>=0; --z ) {
+							Block[] stack = region.getStack( x, y, z );
+							for( Block b : stack ) {
+								if( b.opacity == 1 ) break findOpaque;
+							}
+							--highestOpaqueLayer; 
 						}
-						--highestOpaqueLayer; 
-					}
-					for( int z=highestOpaqueLayer; z<region.d; ++z ) {
-						Block[] stack = region.getStack( x, y, z );
-						for( Block b : stack ) {
-							g.setColor(b.color);
-							g.fillRect( (int)(getWidth()/2f + (x-cx) * tileSize), (int)(getHeight()/2f + (y-cy) * tileSize), tileSize, tileSize );
+						for( int z=highestOpaqueLayer; z<region.d; ++z ) {
+							Block[] stack = region.getStack( x, y, z );
+							for( Block b : stack ) {
+								g.setColor(b.color);
+								g.fillRect( (int)(getWidth()/2f + (x-cx) * tileSize), (int)(getHeight()/2f + (y-cy) * tileSize), tileSize, tileSize );
+							}
 						}
 					}
 				}
@@ -246,73 +249,73 @@ public class DungeonGame
 		}
 	}
 	
-	public static void main( String[] args ) {
-		Block[][] tileMap = new Block[][] { Block.EMPTY_STACK, Block.WALL.stack, Block.GRATING.stack, Block.FLOOR.stack };
-		
-		int[][] shapes = new int[][] {
-			new int[] {
-				3, 3, 3, 3, 3, 3,
-				3, 3, 3, 3, 3, 3,
-				3, 3, 3, 3, 3, 3,
-				3, 3, 3, 3, 3, 3,
-				3, 3, 3, 3, 3, 3,
-				3, 3, 3, 3, 3, 3,
-				
-				1, 1, 1, 1, 1, 1,
-				0, 0, 0, 0, 0, 1,
-				0, 0, 0, 0, 0, 1,
-				1, 0, 0, 0, 0, 0,
-				1, 0, 0, 0, 0, 0,
-				1, 1, 1, 1, 1, 1,
-				
-				1, 1, 1, 1, 1, 1,
-				0, 0, 0, 0, 0, 1,
-				0, 0, 0, 0, 0, 1,
-				1, 0, 0, 0, 0, 0,
-				1, 0, 0, 0, 0, 0,
-				1, 1, 1, 1, 1, 1,
-				
-				1, 0, 0, 0, 0, 1,
-				0, 0, 0, 0, 0, 0,
-				0, 0, 0, 0, 0, 0,
-				0, 0, 0, 0, 0, 0,
-				0, 0, 0, 0, 0, 0,
-				1, 0, 0, 0, 0, 1,
-			},
-		};
-		
-		Room r0 = new Room(6, 6, 4, Block.EMPTY_STACK);
-		for( int i=0; i<shapes[0].length; ++i ) {
-			r0.blockField.blockStacks[i] = tileMap[shapes[0][i]];
+	public static Simulator initSim( long initialTime ) {
+		Room r0 = new Room(64, 64, 4, Block.EMPTY_STACK);
+		for( int y=r0.getHeight()-1; y>=0; --y )
+		for( int x=r0.getWidth()-1; x>=0; --x ) {
+			r0.blockField.setStack(x, y, 0, Block.GRASS.stack);
 		}
 		
-		r0.neighbors.add(new Neighbor(r0, 6, 2, 0));
-		r0.neighbors.add(new Neighbor(r0, -6, -2, 0));
+		CellCursor c = new CellCursor();
+		CellCursor c1 = new CellCursor();
+		Random rand = new Random();
+		for( int i=0; i<100; ++i ) {
+			c.set(r0, rand.nextInt(64), rand.nextInt(64), 1);
+			int r = rand.nextInt(3);
+			for( int dy=0; dy<=1+r; ++dy )
+			for( int dx=0; dx<=1+r; ++dx ) {
+				c1.set(c);
+				c1.move(dx, dy, 0);
+				c1.setStack( Block.FOLIAGE.stack );
+			}
+		}
+		for( int i=0; i<20; ++i ) {
+			c.set(r0, rand.nextInt(64), rand.nextInt(64), 1);
+			for( int dy=-1; dy<=1; ++dy )
+			for( int dx=-1; dx<=1; ++dx ) {
+				c1.set(c);
+				c1.move(dx, dy, 0);
+				c1.setStack( Block.WALL.stack );
+			}
+		}
 		
-		final QueuelessRealTimeEventSource<WalkCommand> evtReg = new QueuelessRealTimeEventSource<WalkCommand>();
+		r0.neighbors.add(new Neighbor(r0,  64,  32, 0));
+		r0.neighbors.add(new Neighbor(r0, -64, -32, 0));
+		r0.neighbors.add(new Neighbor(r0,  64, -32, 0));
+		r0.neighbors.add(new Neighbor(r0, -64,  32, 0));
+		r0.neighbors.add(new Neighbor(r0,   0, -64, 0));
+		r0.neighbors.add(new Neighbor(r0,   0,  64, 0));
 		
 		final WalkingCharacter player = new WalkingCharacter( Block.PLAYER );
-		player.walkReadyTime = evtReg.getCurrentTime();
-		player.putAt( r0, 2.51f, 2.51f, 2.51f );
+		player.walkReadyTime = initialTime;
+		player.putAt( r0, 2.51f, 2.51f, 1.51f );
 		
 		final Simulator sim = new Simulator();
 		sim.commandee = player;
 		sim.characters.add(player);
 		
 		final WalkingCharacter bot = new WalkingCharacter( Block.BOT );
-		bot.putAt( r0, 3.51f, 3.51f, 2.51f);
+		bot.putAt( r0, 3.51f, 3.51f, 1.51f);
 		bot.startWalking( 1, 1, 0);
 		sim.characters.add(bot);
 		
 		final WalkingCharacter bot2 = new WalkingCharacter( Block.BOT );
-		bot2.putAt( r0, 4.51f, 3.51f, 2.51f);
+		bot2.putAt( r0, 4.51f, 3.51f, 1.51f);
 		bot2.startWalking( 1, 1, 0);
 		sim.characters.add(bot2);
-
+		
 		final WalkingCharacter bot3 = new WalkingCharacter( Block.BOT );
-		bot3.putAt( r0, 1.51f, 3.51f, 2.51f);
+		bot3.putAt( r0, 1.51f, 3.51f, 1.51f);
 		bot3.startWalking( 1, 1, 0);
 		sim.characters.add(bot3);
+
+		return sim;
+	}
+	
+	public static void main( String[] args ) {
+		final QueuelessRealTimeEventSource<WalkCommand> evtReg = new QueuelessRealTimeEventSource<WalkCommand>();
+		
+		final Simulator sim = initSim( evtReg.getCurrentTime() );
 		
 		final ViewManager vm = new ViewManager(64, 64, 8);
 		final RegionCanvas regionCanvas = new RegionCanvas();
@@ -384,7 +387,7 @@ public class DungeonGame
 						Thread.currentThread().interrupt();
 						return;
 					}
-					vm.projectFrom(player);
+					synchronized(vm.projection) { vm.projectFrom(sim.commandee); }
 					vm.updateCanvas(regionCanvas);
 				}
 			}

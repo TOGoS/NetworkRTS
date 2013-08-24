@@ -44,6 +44,11 @@ class CellCursor {
 		room.blockField.addBlock( floor(x), floor(y), floor(z), block );
 	}
 	
+	public void setStack( Block[] stack ) {
+		if( room == null ) return;
+		room.blockField.setStack( floor(x), floor(y), floor(z), stack );
+	}
+	
 	public void removeBlock( Block block ) {
 		if( room == null ) return;
 		room.blockField.removeBlock( floor(x), floor(y), floor(z), block );
