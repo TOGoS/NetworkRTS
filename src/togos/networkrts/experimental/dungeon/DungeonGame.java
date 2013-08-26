@@ -54,32 +54,14 @@ public class DungeonGame
 		BlockField region;
 		float cx, cy;
 		
+		BlockFieldRenderer renderer = new BlockFieldRenderer();
 		VolatileImage buffer;
 		
 		protected void paintBuffer( Graphics g ) {
 			if( region == null ) return;
 			
 			synchronized(region) {
-				int tileSize = 16;
-				for( int y=0; y<region.h; ++y ) {
-					for( int x=0; x<region.w; ++x ) {
-						int highestOpaqueLayer = region.d-1;
-						findOpaque: for( int z=region.d-1; z>=0; --z ) {
-							Block[] stack = region.getStack( x, y, z );
-							for( Block b : stack ) {
-								if( b.opacity == 1 ) break findOpaque;
-							}
-							--highestOpaqueLayer; 
-						}
-						for( int z=highestOpaqueLayer; z<region.d; ++z ) {
-							Block[] stack = region.getStack( x, y, z );
-							for( Block b : stack ) {
-								g.setColor(b.color);
-								g.fillRect( (int)(getWidth()/2f + (x-cx) * tileSize), (int)(getHeight()/2f + (y-cy) * tileSize), tileSize, tileSize );
-							}
-						}
-					}
-				}
+				renderer.render(region, cx, cy, g, 0, 0, getWidth(), getHeight());
 			}
 		}
 		
