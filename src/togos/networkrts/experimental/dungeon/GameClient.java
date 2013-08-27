@@ -13,13 +13,19 @@ import java.awt.image.BufferedImage;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import togos.networkrts.experimental.dungeon.DungeonGame.ObjectEthernetFrame;
 import togos.networkrts.experimental.dungeon.DungeonGame.Simulator;
+import togos.networkrts.experimental.dungeon.DungeonGame.Transmitter;
+import togos.networkrts.experimental.dungeon.DungeonGame.VisibilityCache;
 import togos.networkrts.experimental.dungeon.DungeonGame.WalkCommand;
 import togos.networkrts.experimental.gensim.EventLoop;
 import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
 
 public class GameClient
 {
+	/**
+	 * A thread that halts the entire process when any exception is thrown.
+	 */
 	static abstract class CoreThread extends Thread {
 		public CoreThread( String name ) {
 			super(name);
@@ -113,8 +119,9 @@ public class GameClient
 	public static void main( String[] args ) {
 		//// Client-server communication ////
 		
-		final BlockingQueue<WalkCommand> commandQueue = new LinkedBlockingQueue<WalkCommand>();
+		final BlockingQueue<ObjectEthernetFrame<?>> commandQueue = new LinkedBlockingQueue<ObjectEthernetFrame<?>>();
 		final BlockingQueue<Projection> projectionQueue = new LinkedBlockingQueue<Projection>();
+		final long playerEthernetAddress = 0x123456l;
 		
 		//// Client stuff ////
 		
@@ -139,7 +146,7 @@ public class GameClient
 				cmd.walkX = (walkLeft && !walkRight) ? -1 : (walkRight && !walkLeft) ? 1 : 0;
 				cmd.walkY = (walkUp   && !walkDown ) ? -1 : (walkDown  && !walkUp  ) ? 1 : 0;
 				try {
-					commandQueue.put(cmd);
+					commandQueue.put(new ObjectEthernetFrame<WalkCommand>(0, playerEthernetAddress, cmd));
 				} catch( InterruptedException e ) {
 					Thread.currentThread().interrupt();
 					throw new RuntimeException(e);
@@ -212,8 +219,21 @@ public class GameClient
 		
 		//// Server stuff ////
 		
-		final QueuelessRealTimeEventSource<WalkCommand> evtReg = new QueuelessRealTimeEventSource<WalkCommand>();
+		final QueuelessRealTimeEventSource<ObjectEthernetFrame<?>> evtReg = new QueuelessRealTimeEventSource<ObjectEthernetFrame<?>>();
 		final Simulator sim = DungeonGame.initSim(evtReg.getCurrentTime());
+		
+		sim.commandee.ethernetAddress = playerEthernetAddress;
+		sim.commandee.visibilityCache = new VisibilityCache(32, 32, 8);
+		sim.commandee.projectionTransmitter = new Transmitter<Projection>() {
+			@Override public void send(Projection projection) {
+				try {
+					projectionQueue.put(projection.clone());
+				} catch( InterruptedException e ) {
+					e.printStackTrace();
+					System.exit(1);
+				}
+			}
+		};
 		
 		new CoreThread("Simulation runner") {
 			public void _run() throws Exception {
@@ -225,19 +245,6 @@ public class GameClient
 			public void _run() throws InterruptedException {
 				while(true) {
 					evtReg.post(commandQueue.take());
-				}
-			}
-		}.start();
-		
-		final Projection projection = new Projection(64, 64, 8);
-		new CoreThread("Player view projector") {
-			public void _run() throws InterruptedException {
-				while( true ) {
-					synchronized(projection.blockField) {
-						projection.projectFrom(sim.commandee);
-						projectionQueue.put(projection);
-					}
-					sim.updated.waitAndReset();
 				}
 			}
 		}.start();

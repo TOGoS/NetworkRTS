@@ -12,28 +12,15 @@ import togos.networkrts.experimental.gensim.AutoEventUpdatable;
 
 public class DungeonGame
 {
-	/**
-	 * Can be used to coordinate updates between threads,
-	 * where later updates can override earlier ones that have
-	 * not yet been processed.
-	 */
-	static class Trigger<T> {
-		T value = null;
-		public synchronized void set( T v ) {
-			value = v;
-			notifyAll();
+	static class ObjectEthernetFrame<T> {
+		public final long srcAddress, destAddress;
+		public final T payload;
+		
+		public ObjectEthernetFrame( long srcAddress, long destAddress, T payload ) {
+			this.srcAddress = srcAddress;
+			this.destAddress = destAddress;
+			this.payload = payload;
 		}
-		public synchronized T waitAndReset() throws InterruptedException {
-			while( value == null ) wait();
-			T v = value;
-			value = null;
-			return v;
-		}
-	}
-	
-	static final class Impulse {
-		private Impulse() { }
-		public static final Impulse INSTANCE = new Impulse();
 	}
 	
 	static class RegionCanvas extends Canvas {
@@ -77,13 +64,60 @@ public class DungeonGame
 		}
 	}
 	
-	static class WalkingCharacter extends CellCursor implements AutoEventUpdatable<WalkCommand> {
+	/**
+	 * Tracks most recent projection,
+	 * whether that projection is still valid,
+	 * and handles adding and removing itself from rooms' watcher lists.
+	 */
+	static class VisibilityCache implements RoomWatcher {
+		public boolean valid = false;
+		public final Projection projection;
+		
+		public VisibilityCache( int w, int h, int d ) {
+			projection = new Projection( w, h, d );
+		}
+		
+		public void clear() {
+			for( Room r : projection.roomsIncluded ) {
+				r.watchers.remove(this);
+			}
+			projection.clear();
+			valid = false;
+		}
+		
+		public void rescan( CellCursor pos ) {
+			clear();
+			projection.projectFrom(pos);
+			for( Room r : projection.roomsIncluded ) {
+				r.watchers.add(this);
+			}
+			valid = true;
+		}
+		
+		@Override public void roomUpdated(Room r) {
+			valid = false;
+			// May need some way to notify simulator
+			// that entity's update time has changed
+		}
+	}
+	
+	interface Transmitter<T> {
+		public void send(T t);
+	}
+	
+	static class WalkingCharacter extends CellCursor implements AutoEventUpdatable<ObjectEthernetFrame<?>> {
 		public int facingX = 0, facingY = 0;
 		public int walkingX = 0, walkingY = 0;
 		public long walkReadyTime = 0;
 		public long walkStepInterval = 100; // Interval between steps
 		public long blockDelay = 10; // Delay after being blocked
 		public Block block;
+		public long ethernetAddress = 0;
+		
+		public VisibilityCache visibilityCache; // = new VisibilityCache();
+		public Transmitter<Projection> projectionTransmitter;
+		
+		public boolean watching; // TODO: Need to store a set of visible rooms, and probably store callbacks on said rooms
 		
 		public WalkingCharacter( Block block ) {
 			this.block = block;
@@ -105,16 +139,28 @@ public class DungeonGame
 			this.walkingX = 0;
 			this.walkingY = 0;
 		}
-
+		
 		@Override public long getNextAutomaticUpdateTime() {
+			if( visibilityCache != null && !visibilityCache.valid ) {
+				return TIME_IMMEDIATE;
+			}
 			if( walkingX == 0 && walkingY == 0 ) {
 				return TIME_INFINITY;
 			}
 			return walkReadyTime;
 		}
-
-		@Override public AutoEventUpdatable<WalkCommand> update(long time, WalkCommand evt) throws Exception {
-			startWalking( evt.walkX, evt.walkY, 0 );
+		
+		@Override public WalkingCharacter update(long time, ObjectEthernetFrame<?> evt) throws Exception {
+			if( visibilityCache != null && !visibilityCache.valid ) {
+				visibilityCache.rescan(this);
+				if( projectionTransmitter != null ) {
+					projectionTransmitter.send( visibilityCache.projection );
+				}
+			}
+			if( evt != null && evt.payload instanceof WalkCommand ) {
+				WalkCommand wc = (WalkCommand)evt.payload;
+				startWalking( wc.walkX, wc.walkY, 0 );
+			}
 			return this;
 		}
 	}
@@ -123,15 +169,15 @@ public class DungeonGame
 		public int walkX, walkY;
 	}
 	
-	static class Simulator implements AutoEventUpdatable<WalkCommand> {
+	static class Simulator implements AutoEventUpdatable<ObjectEthernetFrame<?>> {
 		WalkingCharacter commandee;
 		List<WalkingCharacter> characters = new ArrayList<WalkingCharacter>();
 		long currentTime = 0;
-		Trigger<Impulse> updated = new Trigger<Impulse>();
 		
 		final CellCursor tempCursor = new CellCursor();
 		
 		protected boolean attemptMove( WalkingCharacter c, int dx, int dy, int dz ) {
+			Room oldRoom = c.room;
 			tempCursor.set(c);
 			tempCursor.move( dx, dy, dz );
 			boolean blocked = false;
@@ -142,6 +188,8 @@ public class DungeonGame
 				c.removeBlock(c.block);
 				c.set(tempCursor);
 				c.addBlock(c.block);
+				oldRoom.updated();
+				if( c.room != oldRoom ) c.room.updated();
 				return true;
 			} else {
 				return false;
@@ -166,7 +214,6 @@ public class DungeonGame
 			}
 			if( movedX || movedY ) {
 				c.walkReadyTime = currentTime + c.walkStepInterval;
-				this.updated.set(Impulse.INSTANCE);
 			} else {
 				c.walkReadyTime = currentTime + c.blockDelay;
 			}
@@ -178,20 +225,28 @@ public class DungeonGame
 				nextAutoUpdateTime = Math.min(nextAutoUpdateTime, c.getNextAutomaticUpdateTime());
 			}
 			if( nextAutoUpdateTime <= currentTime ) {
-				nextAutoUpdateTime = currentTime + 1;
+				nextAutoUpdateTime = currentTime;
 			}
 			return nextAutoUpdateTime;
 		}
 		
 		@Override
-		public AutoEventUpdatable<WalkCommand> update( long time, WalkCommand evt ) throws Exception {
+		public Simulator update( long time, ObjectEthernetFrame<?> evt ) throws Exception {
 			currentTime = time;
-			if( evt != null ) {
-				commandee.update(time, evt);
-			}
-			for( WalkingCharacter c : characters ) {
-				doCharacterPhysics( c );
-			}
+			
+			do {
+				for( WalkingCharacter character : characters ) {
+					if( evt != null && evt.destAddress == character.ethernetAddress ) {
+						character.update(time, evt);
+					} else if( character.getNextAutomaticUpdateTime() <= time ) {
+						character.update(time, null);
+					}
+				}
+				
+				for( WalkingCharacter c : characters ) {
+					doCharacterPhysics( c );
+				}
+			} while( getNextAutomaticUpdateTime() <= time );
 			return this;
 		}
 	}

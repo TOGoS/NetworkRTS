@@ -1,15 +1,20 @@
 package togos.networkrts.experimental.dungeon;
 
-class BlockField
+class BlockField implements Cloneable
 {
 	final int w, h, d;
 	Block[][] blockStacks;
-	int[] light;
+	
+	protected BlockField( int w, int h, int d, Block[][] stacks ) {
+		this.w = w;
+		this.h = h;
+		this.d = d;
+		this.blockStacks = stacks;
+	}
 	
 	public BlockField( int w, int h, int d, Block[] fill ) {
 		this.w = w; this.h = h; this.d = d;
 		this.blockStacks = new Block[w*h*d][];
-		this.light = new int[w*h*d];
 		fill( fill );
 	}
 	
@@ -73,5 +78,13 @@ class BlockField
 				blockStacks[index] = newStack;
 			}
 		}
+	}
+	
+	public BlockField clone() {
+		Block[][] clonedStacks = new Block[blockStacks.length][];
+		for( int i=blockStacks.length-1; i>=0; --i ) {
+			clonedStacks[i] = blockStacks[i];
+		}
+		return new BlockField( w, h, d, clonedStacks );
 	}
 }

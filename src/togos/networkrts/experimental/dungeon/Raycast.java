@@ -1,9 +1,15 @@
 package togos.networkrts.experimental.dungeon;
 
+import java.util.Set;
+
 public class Raycast
 {
-	static void raycastXY( final Room r, final float x, final float y, final int z, BlockField dest, int destX, int destY ) {
-		dest.clear();
+	/**
+	 * Populates 'dest' with blocks visible, and 'roomsIncluded' with all rooms seen.
+	 * Does not attempt to clear either before populating.
+	 */
+	static void raycastXY( final Room r, final float x, final float y, final int z, BlockField dest, int destX, int destY, Set<Room> roomsIncluded ) {
+		Room prevRoom = null;
 		
 		CellCursor cursor = new CellCursor();
 		
@@ -17,6 +23,8 @@ public class Raycast
 			cursor.set( r, x, y, z );
 			float visibility = 1;
 			for( int j=100; j>=0 && visibility > 0; cursor.move(dx,dy,0), ox += dx, oy += dy, --j ) {
+				if( cursor.room != prevRoom ) roomsIncluded.add(prevRoom = cursor.room);
+				
 				//int cellX = (int)Math.floor(cx), cellY = (int)Math.floor(cy);
 				Block[] stack = cursor.getStack();
 				if( stack == null ) break;

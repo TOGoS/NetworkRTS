@@ -1,7 +1,9 @@
 package togos.networkrts.experimental.dungeon;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 class Room {
 	static class Neighbor {
@@ -21,6 +23,7 @@ class Room {
 	public long roomId;
 	public BlockField blockField;
 	public final List<Room.Neighbor> neighbors = new ArrayList();
+	public final Set<RoomWatcher> watchers = new HashSet();
 	
 	public Room( int w, int h, int d, Block[] fill ) {
 		this.blockField = new BlockField(w, h, d, fill);
@@ -36,4 +39,8 @@ class Room {
 	public int getWidth() { return blockField.w; }
 	public int getHeight() { return blockField.h; }
 	public int getDepth() { return blockField.d; }
+	
+	public void updated() {
+		for( RoomWatcher w : watchers ) w.roomUpdated(this);
+	}
 }
