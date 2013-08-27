@@ -119,32 +119,6 @@ public class DungeonGame
 		}
 	}
 	
-	static class ViewManager {
-		BlockField projection;
-		public ViewManager( int w, int h, int d ) {
-			projection = new BlockField( w, h, d, Block.EMPTY_STACK );
-		}
-		
-		float offX, offY;
-		
-		public void projectFrom( Room r, float x, float y, float z ) {
-			Raycast.raycastXY( r, x, y, (int)z, projection, projection.w/2, projection.h/2 );
-			this.offX = x - (int)x;
-			this.offY = y - (int)y;
-		}
-		
-		public void updateCanvas(RegionCanvas regionCanvas) {
-			regionCanvas.region = projection;
-			regionCanvas.cx = projection.w/2 + offX;
-			regionCanvas.cy = projection.h/2 + offY;
-			regionCanvas.repaint();
-		}
-		
-		public void projectFrom(CellCursor pos) {
-			projectFrom(pos.room, pos.x, pos.y, (int)pos.z);
-		}
-	}
-	
 	static class WalkCommand {
 		public int walkX, walkY;
 	}
