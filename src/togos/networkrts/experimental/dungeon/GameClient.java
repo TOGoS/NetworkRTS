@@ -102,26 +102,6 @@ public class GameClient
 		@Override public void update( Graphics g ) { paint(g); }
 	}
 	
-	static class Projection {
-		BlockField blockField;
-		public Projection( int w, int h, int d ) {
-			blockField = new BlockField( w, h, d, Block.EMPTY_STACK );
-		}
-		
-		/** Position within the projection of the origin */
-		float originX, originY;
-		
-		public void projectFrom( Room r, float x, float y, float z ) {
-			Raycast.raycastXY( r, x, y, (int)z, blockField, blockField.w/2, blockField.h/2 );
-			this.originX = blockField.w/2f;
-			this.originY = blockField.h/2f;
-		}
-		
-		public void projectFrom(CellCursor pos) {
-			projectFrom(pos.room, pos.x, pos.y, (int)pos.z);
-		}
-	}
-	
 	// Threads:
 	//   run simulation
 	//   encode and send player's projection
