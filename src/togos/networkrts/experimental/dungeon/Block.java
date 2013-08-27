@@ -2,7 +2,8 @@ package togos.networkrts.experimental.dungeon;
 
 import java.awt.Color;
 
-class Block {
+class Block
+{
 	public static final Block[] EMPTY_STACK = new Block[0];
 	
 	final long blockId;
