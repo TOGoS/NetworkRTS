@@ -1,14 +1,7 @@
 package togos.networkrts.experimental.dungeon;
 
 import java.awt.Canvas;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Frame;
 import java.awt.Graphics;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.awt.image.VolatileImage;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,8 +9,6 @@ import java.util.Random;
 
 import togos.networkrts.experimental.dungeon.Room.Neighbor;
 import togos.networkrts.experimental.gensim.AutoEventUpdatable;
-import togos.networkrts.experimental.gensim.EventLoop;
-import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
 
 public class DungeonGame
 {
