@@ -8,21 +8,11 @@ import java.util.List;
 import java.util.Random;
 
 import togos.networkrts.experimental.dungeon.Room.Neighbor;
+import togos.networkrts.experimental.dungeon.net.ObjectEthernetFrame;
 import togos.networkrts.experimental.gensim.AutoEventUpdatable;
 
 public class DungeonGame
 {
-	static class ObjectEthernetFrame<T> {
-		public final long srcAddress, destAddress;
-		public final T payload;
-		
-		public ObjectEthernetFrame( long srcAddress, long destAddress, T payload ) {
-			this.srcAddress = srcAddress;
-			this.destAddress = destAddress;
-			this.payload = payload;
-		}
-	}
-	
 	static class RegionCanvas extends Canvas {
 		private static final long serialVersionUID = -6047879639768380415L;
 		

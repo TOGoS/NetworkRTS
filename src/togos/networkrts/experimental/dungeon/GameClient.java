@@ -13,11 +13,11 @@ import java.awt.image.BufferedImage;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import togos.networkrts.experimental.dungeon.DungeonGame.ObjectEthernetFrame;
 import togos.networkrts.experimental.dungeon.DungeonGame.Simulator;
 import togos.networkrts.experimental.dungeon.DungeonGame.Transmitter;
 import togos.networkrts.experimental.dungeon.DungeonGame.VisibilityCache;
 import togos.networkrts.experimental.dungeon.DungeonGame.WalkCommand;
+import togos.networkrts.experimental.dungeon.net.ObjectEthernetFrame;
 import togos.networkrts.experimental.gensim.EventLoop;
 import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
 
@@ -120,8 +120,9 @@ public class GameClient
 		//// Client-server communication ////
 		
 		final BlockingQueue<ObjectEthernetFrame<?>> commandQueue = new LinkedBlockingQueue<ObjectEthernetFrame<?>>();
-		final BlockingQueue<Projection> projectionQueue = new LinkedBlockingQueue<Projection>();
+		final BlockingQueue<ObjectEthernetFrame<?>> projectionQueue = new LinkedBlockingQueue<ObjectEthernetFrame<?>>();
 		final long playerEthernetAddress = 0x123456l;
+		final long clientEthernetAddress = 0x1234566;
 		
 		//// Client stuff ////
 		
@@ -192,27 +193,33 @@ public class GameClient
 		leCanv.requestFocus();
 		
 		new CoreThread("Renderer") {
+			BlockFieldRenderer renderer = new BlockFieldRenderer();
+			BufferedImage b = null;
+			
+			protected void handleProjection( Projection p ) {
+				int dWidth = 640;
+				int dHeight = 480;
+				
+				if( b == null || b.getWidth() != dWidth || b.getHeight() != dHeight ) {
+					b = new BufferedImage(dWidth, dHeight, BufferedImage.TYPE_INT_ARGB);
+				}
+				synchronized( p.blockField ) {
+					synchronized( b ) {
+						Graphics g = b.getGraphics();
+						g.setColor(Color.BLACK);
+						g.fillRect(0, 0, dWidth, dHeight);
+						renderer.render(p.blockField, p.originX, p.originY, g, 0, 0, dWidth, dHeight);
+					}
+				}
+				leCanv.setImage(b);
+			}
+			
 			public void _run() throws InterruptedException {
-				BlockFieldRenderer renderer = new BlockFieldRenderer();
-				BufferedImage b = null;
 				while( true ) {
-					Projection p = projectionQueue.take();
-					
-					int dWidth = 640;
-					int dHeight = 480;
-					
-					if( b == null || b.getWidth() != dWidth || b.getHeight() != dHeight ) {
-						b = new BufferedImage(dWidth, dHeight, BufferedImage.TYPE_INT_ARGB);
-					}
-					synchronized( p.blockField ) {
-						synchronized( b ) {
-							Graphics g = b.getGraphics();
-							g.setColor(Color.BLACK);
-							g.fillRect(0, 0, dWidth, dHeight);
-							renderer.render(p.blockField, p.originX, p.originY, g, 0, 0, dWidth, dHeight);
-						}
-					}
-					leCanv.setImage(b);
+					ObjectEthernetFrame<?> f = projectionQueue.take(); 
+					if( f.payload instanceof Projection ) {
+						handleProjection( (Projection)f.payload );
+					}					
 				}
 			};
 		}.start();
@@ -227,7 +234,7 @@ public class GameClient
 		sim.commandee.projectionTransmitter = new Transmitter<Projection>() {
 			@Override public void send(Projection projection) {
 				try {
-					projectionQueue.put(projection.clone());
+					projectionQueue.put(new ObjectEthernetFrame(playerEthernetAddress, clientEthernetAddress, projection.clone()));
 				} catch( InterruptedException e ) {
 					e.printStackTrace();
 					System.exit(1);
