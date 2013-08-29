@@ -14,14 +14,15 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import togos.networkrts.experimental.dungeon.DungeonGame.Simulator;
-import togos.networkrts.experimental.dungeon.DungeonGame.Transmitter;
 import togos.networkrts.experimental.dungeon.DungeonGame.VisibilityCache;
 import togos.networkrts.experimental.dungeon.DungeonGame.WalkCommand;
+import togos.networkrts.experimental.dungeon.net.EthernetPort;
 import togos.networkrts.experimental.dungeon.net.ObjectEthernetFrame;
 import togos.networkrts.experimental.gensim.EventLoop;
 import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
+import togos.networkrts.util.LossyQueue;
 
-public class GameClient
+public class GameClient implements EthernetPort
 {
 	/**
 	 * A thread that halts the entire process when any exception is thrown.
@@ -116,16 +117,21 @@ public class GameClient
 	//   draw projection to buffer
 	//   AWT thread repaints as needed
 	
-	public static void main( String[] args ) {
-		//// Client-server communication ////
-		
-		final BlockingQueue<ObjectEthernetFrame<?>> commandQueue = new LinkedBlockingQueue<ObjectEthernetFrame<?>>();
-		final BlockingQueue<ObjectEthernetFrame<?>> projectionQueue = new LinkedBlockingQueue<ObjectEthernetFrame<?>>();
-		final long playerEthernetAddress = 0x123456l;
-		final long clientEthernetAddress = 0x1234566;
-		
-		//// Client stuff ////
-		
+	public long playerEthernetAddress;
+	public long clientEthernetAddress;
+	protected final BlockingQueue<ObjectEthernetFrame<?>> commandQueue = new LinkedBlockingQueue<ObjectEthernetFrame<?>>();
+	protected final BlockingQueue<Projection> projectionQueue = new LossyQueue<Projection>();	
+	
+	/**
+	 * Packet incoming from simulator (or somewhere)
+	 */
+	@Override public void put(long time, ObjectEthernetFrame f) {
+		if( f.payload instanceof Projection ) {
+			projectionQueue.add( (Projection)f.payload );
+		}
+	}
+	
+	public void openUi() {
 		BufferedImage img = new BufferedImage( 768, 512, BufferedImage.TYPE_INT_ARGB );
 		Graphics g = img.getGraphics();
 		g.setColor(Color.DARK_GRAY);
@@ -216,31 +222,41 @@ public class GameClient
 			
 			public void _run() throws InterruptedException {
 				while( true ) {
-					ObjectEthernetFrame<?> f = projectionQueue.take(); 
-					if( f.payload instanceof Projection ) {
-						handleProjection( (Projection)f.payload );
-					}					
+					handleProjection( projectionQueue.take() ); 
 				}
 			};
 		}.start();
+	}
+	
+	public static void main( String[] args ) {
+		final long playerEthernetAddress = 0x1234567;
+		final long clientEthernetAddress = 0x1234566;
+		
+		final GameClient client = new GameClient();
+		client.playerEthernetAddress = playerEthernetAddress;
+		client.clientEthernetAddress = clientEthernetAddress;
 		
 		//// Server stuff ////
 		
 		final QueuelessRealTimeEventSource<ObjectEthernetFrame<?>> evtReg = new QueuelessRealTimeEventSource<ObjectEthernetFrame<?>>();
 		final Simulator sim = DungeonGame.initSim(evtReg.getCurrentTime());
 		
-		sim.commandee.ethernetAddress = playerEthernetAddress;
+		sim.commandee.uplinkInterfaceAddress = playerEthernetAddress;
 		sim.commandee.visibilityCache = new VisibilityCache(32, 32, 8);
+		sim.commandee.clientEthernetAddress = clientEthernetAddress;
+		sim.commandee.uplink = client;
+		/*
 		sim.commandee.projectionTransmitter = new Transmitter<Projection>() {
 			@Override public void send(Projection projection) {
 				try {
-					projectionQueue.put(new ObjectEthernetFrame(playerEthernetAddress, clientEthernetAddress, projection.clone()));
+					gameClient.put( sim.getCurrentTime(), new ObjectEthernetFrame(playerEthernetAddress, clientEthernetAddress, projection.clone()));
 				} catch( InterruptedException e ) {
 					e.printStackTrace();
 					System.exit(1);
 				}
 			}
 		};
+		*/
 		
 		new CoreThread("Simulation runner") {
 			public void _run() throws Exception {
@@ -251,9 +267,11 @@ public class GameClient
 		new CoreThread("Command reader") {
 			public void _run() throws InterruptedException {
 				while(true) {
-					evtReg.post(commandQueue.take());
+					evtReg.post(client.commandQueue.take());
 				}
 			}
 		}.start();
+		
+		client.openUi();
 	}
 }

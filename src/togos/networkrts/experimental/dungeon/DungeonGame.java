@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Random;
 
 import togos.networkrts.experimental.dungeon.Room.Neighbor;
+import togos.networkrts.experimental.dungeon.net.EthernetPort;
 import togos.networkrts.experimental.dungeon.net.ObjectEthernetFrame;
 import togos.networkrts.experimental.gensim.AutoEventUpdatable;
 
@@ -91,10 +92,6 @@ public class DungeonGame
 		}
 	}
 	
-	interface Transmitter<T> {
-		public void send(T t);
-	}
-	
 	static class WalkingCharacter extends CellCursor implements AutoEventUpdatable<ObjectEthernetFrame<?>> {
 		public int facingX = 0, facingY = 0;
 		public int walkingX = 0, walkingY = 0;
@@ -102,10 +99,10 @@ public class DungeonGame
 		public long walkStepInterval = 100; // Interval between steps
 		public long blockDelay = 10; // Delay after being blocked
 		public Block block;
-		public long ethernetAddress = 0;
-		
 		public VisibilityCache visibilityCache; // = new VisibilityCache();
-		public Transmitter<Projection> projectionTransmitter;
+		public long clientEthernetAddress = 0;
+		public long uplinkInterfaceAddress = 0;
+		public EthernetPort uplink;
 		
 		public boolean watching; // TODO: Need to store a set of visible rooms, and probably store callbacks on said rooms
 		
@@ -143,8 +140,8 @@ public class DungeonGame
 		@Override public WalkingCharacter update(long time, ObjectEthernetFrame<?> evt) throws Exception {
 			if( visibilityCache != null && !visibilityCache.valid ) {
 				visibilityCache.rescan(this);
-				if( projectionTransmitter != null ) {
-					projectionTransmitter.send( visibilityCache.projection );
+				if( uplink != null && clientEthernetAddress != 0 ) {
+					uplink.put( time, new ObjectEthernetFrame(uplinkInterfaceAddress, clientEthernetAddress, visibilityCache.projection.clone()) );
 				}
 			}
 			if( evt != null && evt.payload instanceof WalkCommand ) {
@@ -165,6 +162,14 @@ public class DungeonGame
 		long currentTime = 0;
 		
 		final CellCursor tempCursor = new CellCursor();
+		
+		/**
+		 * When called during handling of an event or time step,
+		 * returns the time of the event being processed. 
+		 */
+		public long getCurrentTime() {
+			return currentTime;
+		}
 		
 		protected boolean attemptMove( WalkingCharacter c, int dx, int dy, int dz ) {
 			Room oldRoom = c.room;
@@ -226,7 +231,7 @@ public class DungeonGame
 			
 			do {
 				for( WalkingCharacter character : characters ) {
-					if( evt != null && evt.destAddress == character.ethernetAddress ) {
+					if( evt != null && evt.destAddress == character.uplinkInterfaceAddress ) {
 						character.update(time, evt);
 					} else if( character.getNextAutomaticUpdateTime() <= time ) {
 						character.update(time, null);
