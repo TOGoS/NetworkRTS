@@ -1,0 +1,64 @@
+Star Game Engine
+
+Core world structure
+- World is an [immutable] tree of spherical nodes
+- Each node can be
+  - solid (with radius and luminance) or
+  - a collection of 'orbiting' nodes
+- Nodes can be positioned
+  - Relative to parent with an orbital position (distance, direction, speed, phase) or
+  - Absolutely, with accellerative position (x,y,z, dx,dy,dz, ddx,ddy,ddz)
+- Nodes have a 'maximum outer radius' within which all child nodes fit
+
+Rendering
+- Each node core knows its luminance
+- Each node knows the total luminance of its core + all sub-nodes
+- Renderer traverses down tree
+  - Skip nodes that will not be on screen (simple frustum culling)
+  - When a node fits within a single pixel, add its total luminance to that pixel
+  - Otherwise continue traversing down, drawing node cores as circles
+
+Complex orbits
+- Model as elipses, with realistic speedup/slowdown at perihelion/aphelion
+  based on total mass of parent node
+
+Luminance variation over time
+- Luminance is represented as the sum of sine
+  waves at several wavelengths (one of which is infinite)
+
+Physics
+- Determine forces between objects
+- Update objects via messaging system to indicate forces, 
+
+Multiple regions
+- Allow world to be non-flat and provide a way to create mazes or places to hide
+- Different regions form a possibly cyclical graph and must therefore
+  reference each other by ID rather than by state
+- Connected by planar portals
+
+State update and messaging
+- Each object can replace itself in response to a message
+- Each object has an 'address mask' which is the addresses of itself
+  and all contained objects or-ed together.
+  
+  class AddressMask = Int128 // 64 bit type, 64 bit unique incremental ID
+  
+  interface TargetFilter = BoundingBox, AddressMask -> Boolean
+  
+  class Message[T]( val deliveryTime:Timestamp, val targetFilter:TargetFilter, val payload:T )
+  
+  class ObjectUpdate[T]( val replacements : Set[T], val messages :  )
+  
+  interface UpdateableObject[MessagePayload] {
+    def addressMask:AddressMask
+    def update( ownPosition:Position, m:Message[MessagePayload] ) : UpdateableObject
+  }
+  
+  class BaseUpdateableObject( val addressMask:Address ) {
+    val ObjectUpdate noop = new ObjectUpdate( this )
+  }
+
+- To update based on a message, root object(s) are asked to update themselves.
+  They forward the message to all sub-objects and replace them
+  as necessary
+- Objects schedule self-updates by sending messages to themselves with future delivery time  
