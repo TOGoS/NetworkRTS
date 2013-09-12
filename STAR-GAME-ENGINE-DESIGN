@@ -62,3 +62,7 @@ State update and messaging
   They forward the message to all sub-objects and replace them
   as necessary
 - Objects schedule self-updates by sending messages to themselves with future delivery time  
+
+
+Cool stuff to do
+- Long-exposure photos - just render many times and add up exposure at each point!
