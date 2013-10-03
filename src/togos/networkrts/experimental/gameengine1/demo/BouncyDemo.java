@@ -22,8 +22,12 @@ import togos.networkrts.experimental.gensim.BaseMutableAutoUpdatable;
 import togos.networkrts.experimental.gensim.EventLoop;
 import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
 
-public class BouncyDemo extends BaseMutableAutoUpdatable<Object>
+public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 {
+	enum Signal {
+		BREAK, JUMP
+	}
+	
 	static class Bouncer extends Entity
 	{
 		public final long time;
@@ -136,7 +140,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<Object>
 							e.time,
 							e.x, e.radius, e.z,
 							damp(e.vx * 0.9, 0.1), 0, e.vz,
-							e.ax, 0, e.az
+							e.ax, e.ay, e.az
 						);
 					} else {
 						e = e.withPosition(
@@ -181,26 +185,38 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<Object>
 	final static double gravity = 400;
 	
 	@Override
-	protected void handleEvent(Object evt) {
+	protected void handleEvent(final Signal evt) {
 		entityIndex = entityIndex.updateEntities(DYNAMIC_ENTITY_FLAG, new EntityUpdater<Bouncer>() {
 			@Override
 			public Bouncer update( Bouncer e, EntityShell<Bouncer> shell ) {
-				if( e.radius >= 2 && Math.random() < 0.1 ) {
-					// Asplode!
-					for( int i=0; i<4; ++i ) {
-						shell.add( new Bouncer(
-							null, e.time,
-							e.x, e.y, e.z,
-							e.vx + Math.random()*200-100, e.vy + Math.random()*400-200, 0, //e.vz + Math.random()*200-100,
-							e.ax, -gravity, e.az,
-							e.radius/2, e.mass/4, e.color,
-							DYNAMIC_ENTITY_FLAG, CoolEntityBehavior.INSTANCE
-						) );
+				if( evt == Signal.BREAK ) {
+					if( e.radius >= 2 && Math.random() < 0.1 ) {
+						// Asplode!
+						for( int i=0; i<4; ++i ) {
+							shell.add( new Bouncer(
+								null, e.time,
+								e.x, e.y, e.z,
+								e.vx + Math.random()*200-100, e.vy + Math.random()*400-200, 0, //e.vz + Math.random()*200-100,
+								e.ax, e.ay, e.az,
+								e.radius/2, e.mass/4, e.color,
+								DYNAMIC_ENTITY_FLAG, CoolEntityBehavior.INSTANCE
+							) );
+						}
+						return null;
 					}
-					return null;
-				} else {
-					return e;
 				}
+					
+				if( evt == Signal.JUMP ) {
+					if( e.ay < 0 ) {
+						return e.withPosition(
+							e.time, e.x, e.y, e.z,
+							e.vx, e.vy + Math.random() * 100, e.vz,
+							e.ax, e.ay, e.az
+						);
+					}
+				}
+				
+				return e;
 			}
 		});
 	}
@@ -230,39 +246,70 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<Object>
 				withColorAndBehavior( self, self.tag == "tag" ? Color.GREEN : Color.WHITE, this ) : self;
 		}
 		
+		protected static final double pos( double x, double vx, double ax, double dt ) {
+			return x + vx*dt + ax*dt*dt/2;
+		}
+		
 		@Override public Bouncer onCollision( long time, Bouncer self, Bouncer other, EntityShell shell ) {
-			
-			/*
-			 * An unrealistic bouncing algorithm.
-			 * Doesn't take relative velocity or momentum into account.
-			 * Just reflects velocity vectors.
-			 */
-			
 			assert self != null;
 			assert other != null;
-			double dx = self.x - other.x, dy = self.y - other.y, dz = self.z - other.z;
-			double distSquared = dx*dx + dy*dy + dz*dz;
-			if( distSquared == 0 ) return self;
 			
-			double dist = Math.sqrt(distSquared);
-			double nx = dx/dist, ny = dy/dist, nz = dz/dist; // Normalized distance
+			double sdt0 = (time -  self.time)/1000d;
+			double odt0 = (time - other.time)/1000d;
 			
-			double dotProduct = nx*self.vx + ny*self.vy + nz*self.vz;
-			double
-				rx = 2*dotProduct*nx - self.vx,
-				ry = 2*dotProduct*ny - self.vy,
-				rz = 2*dotProduct*nz - self.vz;
+			double dt = 0.01;
+			double sdt1 = sdt0+dt;
+			double odt1 = odt0+dt;
 			
+			double sx0 = pos( self.x,  self.vx,  self.ax, sdt0);
+			double sy0 = pos( self.y,  self.vy,  self.ay, sdt0);
+			double sz0 = pos( self.z,  self.vz,  self.az, sdt0);
+			double sx1 = pos( self.x,  self.vx,  self.ax, sdt1);
+			double sy1 = pos( self.y,  self.vy,  self.ay, sdt1);
+			double sz1 = pos( self.z,  self.vz,  self.az, sdt1);
+			double ox0 = pos(other.x, other.vx, other.ax, odt0);
+			double oy0 = pos(other.y, other.vy, other.ay, odt0);
+			double oz0 = pos(other.z, other.vz, other.az, odt0);
+			double ox1 = pos(other.x, other.vx, other.ax, odt1);
+			double oy1 = pos(other.y, other.vy, other.ay, odt1);
+			double oz1 = pos(other.z, other.vz, other.az, odt1);
+			
+			double dx0 = sx0 - ox0, dy0 = sy0 - oy0, dz0 = sz0 - oz0;
+			double dist0Squared = dx0*dx0 + dy0*dy0 + dz0*dz0;
+			if( dist0Squared == 0 ) return self;
+			
+			double dx1 = sx1 - ox1, dy1 = sy1 - oy1, dz1 = sz1 - oz1;
+			double dist1Squared = dx1*dx1 + dy1*dy1 + dz1*dz1;
+
+			// Inverse proportion of our mass over total system mass
+			double mProp = other.mass/(self.mass+other.mass);
 			double rad = self.radius+other.radius;
-			double overlap = rad-dist;
-			assert overlap >= 0;
+			double dist0 = Math.sqrt(dist0Squared);
+			double overlap0 = rad-dist0;
+			if( overlap0 < 0 ) return self;
+			
+			double dist1 = Math.sqrt(dist1Squared);
+			double overlap1 = rad-dist1;
+			
+			double dpm = 0.5;
+			double dvm = overlap1 > overlap0 ? 1.5 * (overlap1 - overlap0) / dt : 0;
+			
+			// New method?
+			// Push along centerline to border, proportional to mass
+			// Calculate how much overlap 1s in future
+			// Add that much to velocity along centerline * 1+elasticity (elasticity in 0-1) 
+			
 			return new Bouncer(
 				self.tag, time,
-				self.x + overlap*nx, self.y + overlap*ny, self.z + overlap*nz,
-				-rx*0.9, -ry*0.9, -rz*0.9,
+				sx0 + dpm * dx0/dist0 * mProp,
+				sy0 + dpm * dy0/dist0 * mProp,
+				sz0 + dpm * dz0/dist0 * mProp,
+				self.vx + mProp * dvm * (dx0/dist0),
+				self.vy + mProp * dvm * (dy0/dist0),
+				self.vz + mProp * dvm * (dz0/dist0),
 				self.ax, self.ay, self.az,
 				self.radius, self.mass,
-				self.tag == "tag" ? Color.ORANGE : Color.RED,
+				self.color == Color.BLUE ? self.color : self.tag == "tag" ? Color.ORANGE : Color.RED,
 				self.flags, new CoolEntityBehavior(time)
 			);
 		}
@@ -270,7 +317,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<Object>
 	
 	public static void main( String[] args ) throws Exception {
 		final BouncyDemo sim = new BouncyDemo();
-		final QueuelessRealTimeEventSource<Object> eventSource = new QueuelessRealTimeEventSource<Object>();
+		final QueuelessRealTimeEventSource<Signal> eventSource = new QueuelessRealTimeEventSource<Signal>();
 		
 		for( int i=0; i<200; ++i ) {
 			Bouncer e = new Bouncer(
@@ -288,9 +335,10 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<Object>
 				null, eventSource.getCurrentTime(),
 				Math.random()*8000-2000, Math.random()*2000, 0,
 				0, 0, 0,
-				0, 0, 0,
-				10+Math.random()*100, 1000, Color.BLUE,
-				0, NULL_BEHAVIOR
+				0, +gravity*0.005, 0,
+				10+Math.random()*100, 1, Color.BLUE,
+				DYNAMIC_ENTITY_FLAG, CoolEntityBehavior.INSTANCE
+				//0, NULL_BEHAVIOR
 			);
 			sim.entityIndex.add(e);
 		}
@@ -341,7 +389,11 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<Object>
 			@Override
 			public void keyPressed(KeyEvent e) {
 				try {
-					eventSource.post(new Object());
+					switch(e.getKeyCode()) {
+					case KeyEvent.VK_SPACE: eventSource.post(Signal.BREAK); break;
+					case KeyEvent.VK_ENTER: eventSource.post(Signal.JUMP); break;
+					}
+					
 				} catch( InterruptedException e1 ) {
 					Thread.currentThread().interrupt();
 					e1.printStackTrace();
