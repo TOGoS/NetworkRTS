@@ -85,7 +85,7 @@
 	<g id="Z-LES-400-pwr-port" class="Z-LES-400">
       <rect class="pwr-port" x="-10" y="-5" width="20" height="10" filter="url(#horizontal-bevel-1)"/>
     </g>
-    <g id="Z-LES-400" class="Z-LES-400">
+    <g id="Z-LES-400" class="Z-LES-400" transform="translate(0,0)">
 	  <use transform="translate(-25,-25)" xlink:href="#Z-LES-400-eth-port"/>
 	  <use transform="translate(-25,+25)" xlink:href="#Z-LES-400-eth-port"/>
 	  <use transform="translate(+25,-25)" xlink:href="#Z-LES-400-eth-port"/>
@@ -98,10 +98,13 @@
   </defs>
   
   <rect fill="#002" width="100%" height="100%"/>
-
+  <text id="debug-text" y="16" font-size="16px" fill="yellow">Debug</text>
+  
+  <!--
   <path class="component eth-cable" d="M125,125 C225,125 175,275 275,275" filter="url(#bevel1)"/>
   <use id="ES-A" class="component disabled" transform="translate(100,100)" xlink:href="#Z-LES-400"/>
   <use id="ES-B" class="component enabled" transform="translate(300,300)" xlink:href="#Z-LES-400"/>
+  -->
   
   <script type="application/ecmascript" xlink:href="thangs.js"/>
 </svg>
