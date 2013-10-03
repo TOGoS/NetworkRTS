@@ -19,7 +19,13 @@
       fill: #400;
     }
 	.component:hover {
-	  filter: url(#Halo);
+	  filter: url(#hover-halo);
+	}
+	.selected {
+	  filter: url(#selection-halo);
+	}
+	.selected:hover {
+	  filter: url(#hover-selection-halo);
 	}
     .enabled {
       fill: #0F0;
@@ -27,12 +33,22 @@
   ]]></style>
   
   <defs>
-    <filter id="Halo" filterUnits="objectBoundingBox" x="-10%" y="-10%" width="120%" height="120%">
+    <filter id="hover-halo" filterUnits="objectBoundingBox" x="-10%" y="-10%" width="120%" height="120%">
       <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
       <feColorMatrix type="matrix" values="0 0 0 0 1   0 0 0 0 1   0 0 0 0 1   0 0 0 1 0" result="halo"/>
 	  <feComposite in="SourceGraphic" in2="halo" operator="atop" k2="0.1" k3="1"/>
     </filter>
-    <filter id="Bevel" filterUnits="objectBoundingBox" x="-10%" y="-10%" width="120%" height="120%">
+    <filter id="hover-selection-halo" filterUnits="objectBoundingBox" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 1   0 0 0 0 1   0 0 0 0 0   0 0 0 1 0" result="halo"/>
+	  <feComposite in="SourceGraphic" in2="halo" operator="atop" k2="0.1" k3="1"/>
+    </filter>
+    <filter id="selection-halo" filterUnits="objectBoundingBox" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 1   0 0 0 1 0   0 0 0 0 0   0 0 0 1 0" result="halo"/>
+	  <feComposite in="SourceGraphic" in2="halo" operator="atop" k2="0.1" k3="1"/>
+    </filter>
+    <filter id="bevel1" filterUnits="objectBoundingBox" x="-10%" y="-10%" width="120%" height="120%">
       <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
       <feSpecularLighting in="blur" surfaceScale="1" specularConstant="0.5" specularExponent="10" result="specOut" lighting-color="white">
         <fePointLight x="+5000" y="-5000" z="5000"/>
@@ -42,7 +58,7 @@
       <feComposite in="specOut2" in2="flood" operator="arithmetic" k2="1" k3="1" result="specOut3"/>
       <feComposite in="SourceGraphic" in2="specOut3" operator="arithmetic" k1="1" k2="0" k3="0" k4="0"/>
     </filter>
-    <filter id="VerticalBevel" filterUnits="objectBoundingBox" x="0" y="0" width="100%" height="100%">
+    <filter id="vertical-bevel-1" filterUnits="objectBoundingBox" x="0" y="0" width="100%" height="100%">
       <feGaussianBlur in="SourceAlpha" stdDeviation="0,2" result="blur"/>
       <feSpecularLighting in="blur" surfaceScale="1" specularConstant="0.5" specularExponent="10" result="specOut" lighting-color="white">
         <fePointLight x="+5000" y="-5000" z="5000"/>
@@ -52,7 +68,7 @@
       <feComposite in="specOut2" in2="flood" operator="arithmetic" k2="1" k3="1" result="specOut3"/>
       <feComposite in="SourceGraphic" in2="specOut3" operator="arithmetic" k1="1" k2="0" k3="0" k4="0"/>
     </filter>
-    <filter id="HorizontalBevel" filterUnits="objectBoundingBox" x="0" y="0" width="100%" height="100%">
+    <filter id="horizontal-bevel-1" filterUnits="objectBoundingBox" x="0" y="0" width="100%" height="100%">
       <feGaussianBlur in="SourceAlpha" stdDeviation="3,0" result="blur"/>
       <feSpecularLighting in="blur" surfaceScale="1" specularConstant="0.5" specularExponent="10" result="specOut" lighting-color="white">
         <fePointLight x="+5000" y="-5000" z="5000"/>
@@ -64,10 +80,10 @@
     </filter>
 	
 	<g id="Z-LES-400-eth-port" class="Z-LES-400">
-      <rect class="eth-port" x="-5" y="-10" width="10" height="20" filter="url(#VerticalBevel)"/>
+      <rect class="eth-port" x="-5" y="-10" width="10" height="20" filter="url(#vertical-bevel-1)"/>
     </g>
 	<g id="Z-LES-400-pwr-port" class="Z-LES-400">
-      <rect class="pwr-port" x="-10" y="-5" width="20" height="10" filter="url(#HorizontalBevel)"/>
+      <rect class="pwr-port" x="-10" y="-5" width="20" height="10" filter="url(#horizontal-bevel-1)"/>
     </g>
     <g id="Z-LES-400" class="Z-LES-400">
 	  <use transform="translate(-25,-25)" xlink:href="#Z-LES-400-eth-port"/>
@@ -75,7 +91,7 @@
 	  <use transform="translate(+25,-25)" xlink:href="#Z-LES-400-eth-port"/>
 	  <use transform="translate(+25,+25)" xlink:href="#Z-LES-400-eth-port"/>
 	  <use transform="translate(  0,+50)" xlink:href="#Z-LES-400-pwr-port"/>
-      <rect class="body" x="-25" y="-50" width="50" height="100" filter="url(#Bevel)"/>
+      <rect class="body" x="-25" y="-50" width="50" height="100" filter="url(#bevel1)"/>
       <rect class="on-off-light" x="-15" y="-30" width="10" height="10"/>
 	  <text class="label" x="-20" y="-40" font-size="8px" fill="black">Z-LES-400</text>
     </g>
@@ -83,7 +99,7 @@
   
   <rect fill="#002" width="100%" height="100%"/>
 
-  <path class="component eth-cable" d="M125,125 C225,125 175,275 275,275" filter="url(#Bevel)"/>
+  <path class="component eth-cable" d="M125,125 C225,125 175,275 275,275" filter="url(#bevel1)"/>
   <use id="ES-A" class="component disabled" transform="translate(100,100)" xlink:href="#Z-LES-400"/>
   <use id="ES-B" class="component enabled" transform="translate(300,300)" xlink:href="#Z-LES-400"/>
   
