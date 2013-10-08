@@ -13,7 +13,7 @@ function() {
 		this.name = name;
 	};
 	PortShape.prototype.canConnectTo = function( otherGender ) { return false; };
-
+	
 	var makePortShapePair = function(name) {
 		var male = new PortShape(name + " (male)");
 		var female = new PortShape(name + " (female)");
@@ -39,10 +39,10 @@ function() {
 		var name = loadTypeNames[i];
 		loadTypes[name] = new LoadType(name);
 	}
-
+	
 	var eth   = loadTypes['ethernet'];
 	var pwr5v = loadTypes['power-5v'];
-	
+
 	var portDistance = function( p0, p1 ) {
 		var dx = (p0.x + p0.component.x) - (p1.x + p1.component.x);
 		var dy = (p0.y + p0.component.y) - (p1.y + p1.component.y);
@@ -210,12 +210,23 @@ function() {
 		this.recombobulate();
 	};
 	
-	var Cable = function( pathElem, loadType, port0Shape, port1Shape ) {
+	var Cable = function( elem, loadType, port0Shape, port1Shape ) {
 		if( port1Shape == null ) port1Shape = port0Shape;
-		Component.call( this, pathElem, [
+		Component.call( this, elem, [
 			new Port('end0' , loadType, port0Shape, -1, 0, -1, 0),
 			new Port('end1', loadType, port1Shape, +1, 0, +1, 0)
 		]);
+		elem = this.elem;
+		this.boundingBoxElem = null;
+		this.pathElem = null;
+		if( elem != null ) for( var cni=0; cni<elem.childNodes.length; ++cni ) {
+			var cn = elem.childNodes[cni];
+			if( cn.localName == 'rect' ) {
+				this.boundingBoxElem = cn;
+			} else if( cn.localName == 'path' ) {
+				this.pathElem = cn;
+			}
+		}
 		this.isFlexible = true;
 	};
 	Cable.prototype = new Component();
@@ -233,7 +244,18 @@ function() {
 	Cable.prototype.recombobulate = function() {
 		var r = this.ports[0];
 		var l = this.ports[1];
-		this.elem.setAttribute("d",
+		
+		var bgRect = this.boundingBoxElem;
+		if( bgRect != null ) {
+			var bgX = Math.min(r.x, l.x) - 5;
+			var bgY = Math.min(r.y, l.y) - 5;
+			bgRect.x.baseVal.value = bgX;
+			bgRect.y.baseVal.value = bgY;
+			bgRect.width.baseVal.value  = Math.max(r.x, l.x) - bgX + 5;
+			bgRect.height.baseVal.value = Math.max(r.y, l.y) - bgY + 5;
+		}
+		console.log("l.x = "+l.x);
+		this.pathElem.setAttribute("d",
 			"M"+r.x+","+r.y+" "+
 			"C"+(r.x-r.dx*100)+","+(r.y-r.dy*100)+" "+
 			(l.x-l.dx*100)+","+(l.y-l.dy*100)+" "+
@@ -258,7 +280,7 @@ function() {
 	
 	var EthernetCable = makeCableClass( document.getElementById('cat5-cable'), eth, portShapes.rj45.male );
 	var FiveVoltPowerCable = makeCableClass( document.getElementById('5v-power-cable'), pwr5v, portShapes.barrel.dc2100um.female );
-		
+	
 	var ZLES400 = makeComponentClass( document.getElementById('Z-LES-400'), [
 		new Port('e0', eth, portShapes.rj45.female, -25,-25,-1, 0),
 		new Port('e1', eth, portShapes.rj45.female, -25,+25,-1, 0),
@@ -312,30 +334,30 @@ function() {
 	
 	var switch0, ethcab0;
 	
-	switch0 = new ZLES400(); 
+	switch0 = new ZLES400();
 	switch0.setPosition( 300, 200 );
 	switch0.show();
 	
-	switch0 = new ZLES400(); 
+	switch0 = new ZLES400();
 	switch0.setPosition( 200, 300 );
 	switch0.show();
 	
-	ethcab0 = new EthernetCable();	
+	ethcab0 = new EthernetCable();
 	ethcab0.ports[0].setPosition( 50, 50, -1, 0 );
 	ethcab0.ports[1].setPosition( 75, 75, +1, 0 );
 	ethcab0.show();
-
-	ethcab0 = new EthernetCable();	
+	
+	ethcab0 = new EthernetCable();
 	ethcab0.ports[0].setPosition( 50, 150, -1, 0 );
 	ethcab0.ports[1].setPosition( 75, 175, +1, 0 );
 	ethcab0.show();
-
-	ethcab0 = new EthernetCable();	
+	
+	ethcab0 = new EthernetCable();
 	ethcab0.ports[0].setPosition( 50, 250, -1, 0 );
 	ethcab0.ports[1].setPosition( 75, 275, +1, 0 );
 	ethcab0.show();
-
-	ethcab0 = new FiveVoltPowerCable();	
+	
+	ethcab0 = new FiveVoltPowerCable();
 	ethcab0.ports[0].setPosition( 50, 350, -1, 0 );
 	ethcab0.ports[1].setPosition( 75, 375, +1, 0 );
 	ethcab0.show();

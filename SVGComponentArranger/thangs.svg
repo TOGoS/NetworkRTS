@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="768">
   <style><![CDATA[
+    .bounding-box {
+      stroke: none;
+      fill: none;
+    }
     .Z-LES-400 .body {
       fill: #886;
     }
@@ -102,8 +106,14 @@
       <text class="label" x="-20" y="-40" font-size="8px" fill="black">Z-LES-400</text>
     </g>
 	
-	<path id="cat5-cable" class="cat5-cable" d="M125,125 C225,125 175,275 275,275"/>
-	<path id="5v-power-cable" class="five-volt-power-cable" d="M125,125 C225,125 175,275 275,275"/>
+    <g id="cat5-cable" class="cat5-cable">
+      <rect class="bounding-box"/>
+      <path d="M125,125 C225,125 175,275 275,275"/>
+    </g>
+    <g id="5v-power-cable" class="five-volt-power-cable">
+      <rect class="bounding-box"/>
+      <path d="M125,125 C225,125 175,275 275,275"/>
+    </g>
   </defs>
   
   <rect fill="#002" width="100%" height="100%"/>
