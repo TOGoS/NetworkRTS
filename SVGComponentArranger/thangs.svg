@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="768">
   <style><![CDATA[
     .Z-LES-400 .body {
       fill: #886;
@@ -8,6 +8,7 @@
       stroke: #28D;
       stroke-width: 10;
       fill: none;
+	  filter: url(#bevel1);
     }
     .Z-LES-400 .eth-port {
       fill: #666;
@@ -33,22 +34,22 @@
   ]]></style>
   
   <defs>
-    <filter id="hover-halo" filterUnits="objectBoundingBox" x="-10%" y="-10%" width="120%" height="120%">
+    <filter id="hover-halo">
       <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
       <feColorMatrix type="matrix" values="0 0 0 0 1   0 0 0 0 1   0 0 0 0 1   0 0 0 1 0" result="halo"/>
       <feComposite in="SourceGraphic" in2="halo" operator="atop" k2="0.1" k3="1"/>
     </filter>
-    <filter id="hover-selection-halo" filterUnits="objectBoundingBox" x="-10%" y="-10%" width="120%" height="120%">
+    <filter id="hover-selection-halo">
       <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
       <feColorMatrix type="matrix" values="0 0 0 0 1   0 0 0 0 1   0 0 0 0 0   0 0 0 1 0" result="halo"/>
       <feComposite in="SourceGraphic" in2="halo" operator="atop" k2="0.1" k3="1"/>
     </filter>
-    <filter id="selection-halo" filterUnits="objectBoundingBox" x="-10%" y="-10%" width="120%" height="120%">
+    <filter id="selection-halo">
       <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
       <feColorMatrix type="matrix" values="0 0 0 0 1   0 0 0 1 0   0 0 0 0 0   0 0 0 1 0" result="halo"/>
       <feComposite in="SourceGraphic" in2="halo" operator="atop" k2="0.1" k3="1"/>
     </filter>
-    <filter id="bevel1" filterUnits="objectBoundingBox" x="-10%" y="-10%" width="120%" height="120%">
+    <filter id="bevel1">
       <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
       <feSpecularLighting in="blur" surfaceScale="1" specularConstant="0.5" specularExponent="10" result="specOut" lighting-color="white">
         <fePointLight x="+5000" y="-5000" z="5000"/>
@@ -78,7 +79,6 @@
       <feComposite in="specOut2" in2="flood" operator="arithmetic" k2="1" k3="1" result="specOut3"/>
       <feComposite in="SourceGraphic" in2="specOut3" operator="arithmetic" k1="1" k2="0" k3="0" k4="0"/>
     </filter>
-    
     <g id="Z-LES-400-eth-port" class="Z-LES-400">
       <rect class="eth-port" x="-5" y="-10" width="10" height="20" filter="url(#vertical-bevel-1)"/>
     </g>
@@ -95,10 +95,17 @@
       <rect class="on-off-light" x="-15" y="-30" width="10" height="10"/>
       <text class="label" x="-20" y="-40" font-size="8px" fill="black">Z-LES-400</text>
     </g>
+	
+	<path id="ethernet-cable" class="eth-cable" d="M125,125 C225,125 175,275 275,275"/>
   </defs>
   
   <rect fill="#002" width="100%" height="100%"/>
   <text id="debug-text" y="16" font-size="16px" fill="yellow">Debug</text>
+  
+  <g id="cables">
+  </g>
+  <g id="components">
+  </g>
   
   <!--
   <path class="component eth-cable" d="M125,125 C225,125 175,275 275,275" filter="url(#bevel1)"/>
