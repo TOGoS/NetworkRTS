@@ -4,8 +4,14 @@
     .Z-LES-400 .body {
       fill: #886;
     }
-    .eth-cable {
+    .cat5-cable {
       stroke: #28D;
+      stroke-width: 10;
+      fill: none;
+	  filter: url(#bevel1);
+    }
+    .five-volt-power-cable {
+      stroke: #D82;
       stroke-width: 10;
       fill: none;
 	  filter: url(#bevel1);
@@ -96,7 +102,8 @@
       <text class="label" x="-20" y="-40" font-size="8px" fill="black">Z-LES-400</text>
     </g>
 	
-	<path id="ethernet-cable" class="eth-cable" d="M125,125 C225,125 175,275 275,275"/>
+	<path id="cat5-cable" class="cat5-cable" d="M125,125 C225,125 175,275 275,275"/>
+	<path id="5v-power-cable" class="five-volt-power-cable" d="M125,125 C225,125 175,275 275,275"/>
   </defs>
   
   <rect fill="#002" width="100%" height="100%"/>

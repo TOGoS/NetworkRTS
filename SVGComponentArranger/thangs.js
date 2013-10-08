@@ -256,7 +256,8 @@ function() {
 		return f;
 	};
 	
-	var EthernetCable = makeCableClass( document.getElementById('ethernet-cable'), eth, portShapes.rj45.male );
+	var EthernetCable = makeCableClass( document.getElementById('cat5-cable'), eth, portShapes.rj45.male );
+	var FiveVoltPowerCable = makeCableClass( document.getElementById('5v-power-cable'), pwr5v, portShapes.barrel.dc2100um.female );
 		
 	var ZLES400 = makeComponentClass( document.getElementById('Z-LES-400'), [
 		new Port('e0', eth, portShapes.rj45.female, -25,-25,-1, 0),
@@ -332,6 +333,11 @@ function() {
 	ethcab0 = new EthernetCable();	
 	ethcab0.ports[0].setPosition( 50, 250, -1, 0 );
 	ethcab0.ports[1].setPosition( 75, 275, +1, 0 );
+	ethcab0.show();
+
+	ethcab0 = new FiveVoltPowerCable();	
+	ethcab0.ports[0].setPosition( 50, 350, -1, 0 );
+	ethcab0.ports[1].setPosition( 75, 375, +1, 0 );
 	ethcab0.show();
 	
 	document.addEventListener('mousemove', function(evt) {
