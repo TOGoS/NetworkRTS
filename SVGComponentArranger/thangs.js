@@ -254,7 +254,7 @@ function() {
 			bgRect.width.baseVal.value  = Math.max(r.x, l.x) - bgX + 5;
 			bgRect.height.baseVal.value = Math.max(r.y, l.y) - bgY + 5;
 		}
-		console.log("l.x = "+l.x);
+		
 		this.pathElem.setAttribute("d",
 			"M"+r.x+","+r.y+" "+
 			"C"+(r.x-r.dx*100)+","+(r.y-r.dy*100)+" "+
@@ -290,36 +290,47 @@ function() {
 	] );
 	
 	var dragged = null;
+	var draggedElement = null;
 	var dragDistance = 0;
 	var selected = [];
 	var dragX, dragY, draggedX, draggedY;
+	
+	var startDrag = function( evt, comp, elem ) {
+		if( dragged != null ) return; // Already dragging something?
+		
+		if( comp.isFlexible ) {
+			var closestPort = null;
+			var closestDist = 9999;
+			for( var i in comp.ports ) {
+				var dx = comp.ports[i].x - evt.clientX;
+				var dy = comp.ports[i].y - evt.clientY;
+				var dist = Math.sqrt(dx*dx + dy*dy);
+				if( closestPort == null || dist < closestDist ) {
+					closestDist = dist;
+					closestPort = comp.ports[i];
+				}
+			}
+			dragged = closestPort;
+		} else {
+			dragged = comp;
+		}
+		draggedElement = elem;
+		draggedElement.setAttributeNS(null, 'pointer-events', 'none');
+		dragX = evt.clientX;
+		dragY = evt.clientY;
+		draggedX = dragged.x;
+		draggedY = dragged.y;
+		dragDistance = 0;
+	};
+	
 	var registerComponentUiEventHandlers = function( comp ) {
 		var elem = comp.elem;
 		elem.addEventListener('mousedown', function(evt) {
-			if( comp.isFlexible ) {
-				var closestPort = null;
-				var closestDist = 9999;
-				for( var i in comp.ports ) {
-					var dx = comp.ports[i].x - evt.clientX;
-					var dy = comp.ports[i].y - evt.clientY;
-					var dist = Math.sqrt(dx*dx + dy*dy);
-					if( closestPort == null || dist < closestDist ) {
-						closestDist = dist;
-						closestPort = comp.ports[i];
-					}
-				}
-				dragged = closestPort;
-			} else {
-				dragged = comp;
-			}
-			dragX = evt.clientX;
-			dragY = evt.clientY;
-			draggedX = dragged.x;
-			draggedY = dragged.y;
-			dragDistance = 0;
+			startDrag( evt, comp, elem );
 		});
 		elem.addEventListener('click', function(evt) {
 			if( dragDistance == 0 ) {
+				//startDrag( evt, comp, elem );
 				var si = selected.indexOf(elem);
 				if( si > -1 ) {
 					selected.splice(si, 1);
@@ -371,7 +382,12 @@ function() {
 		dragDistance += 1;
 	});
 	document.addEventListener('mouseup', function(evt) {
+		//if( dragDistance == 0 ) return;
+		if( draggedElement != null ) {
+			draggedElement.setAttributeNS(null, 'pointer-events', 'all');
+		}
 		dragged = null;
+		draggedElement = null;
 	});
 	document.addEventListener('keydown', function(evt) {
 		setDebugText("Key "+evt.keyCode);
