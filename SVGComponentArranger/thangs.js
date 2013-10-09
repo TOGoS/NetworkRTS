@@ -288,6 +288,12 @@ function() {
 		new Port('e3', eth, portShapes.rj45.female, +25,+25,+1, 0),
 		new Port('pwr',pwr5v, portShapes.barrel.dc2100um.male, 0,+50, 0,+1)
 	] );
+	var ZPS4_5_2 = makeComponentClass( document.getElementById('Z-PS-4-5-2'), [
+    new Port('p0', pwr5v, portShapes.barrel.dc2100um.male, 0,-25, 0,-1),
+		new Port('p1', pwr5v, portShapes.barrel.dc2100um.male, +25,0, +1,0),
+		new Port('p2', pwr5v, portShapes.barrel.dc2100um.male, 0,+25, 0,+1),
+		new Port('p3', pwr5v, portShapes.barrel.dc2100um.male, -25,0, -1,0)
+	] );
 	
 	var dragged = null;
 	var draggedElement = null;
@@ -351,6 +357,10 @@ function() {
 	
 	switch0 = new ZLES400();
 	switch0.setPosition( 200, 300 );
+	switch0.show();
+	
+	switch0 = new ZPS4_5_2();
+	switch0.setPosition( 300, 300 );
 	switch0.show();
 	
 	ethcab0 = new EthernetCable();
