@@ -149,7 +149,16 @@ Time advancement approaches
        - must add events differently from within the simulation thread (execute directly or add to internal queue)
          and from other threads (post to real time event source, even to add a timer to the simulator)
 
+Entity event handling
+  Functional approach:
+    All events (incoming and between entities) go through simulator event loop.
+    Simulator updates entities, so it knows which have been updated.
 
+  Callback approach:
+    Incoming events go through simulator event loop (to ensure proper timing).
+    Inter-entity events may update entities directly, but they must then
+    inform the simulation that they have been updated
+    (e.g. in case their 'next auto-update time' has changed).
 
 An approach to immutable object updating:
 An object can be asked to update itself at any point during the simulation.
@@ -159,4 +168,3 @@ This can be in response to an event (triggered by a collision in the simulator o
 or a timer that the object has asked to receive by adding itself with a nextUpdateTime.
 The simulator can skip tree nodes representing parts of the world with late nextUpdateTimes, only
 updating (removing + possibly re-adding) currently active objects.
-An object 

@@ -19,13 +19,16 @@ Some puzzle that requires multiple player characters to solve.
     XXX| |XXXXX| |XXXXX
     X|       '       |X
 
+Player-transporting tubes with junctions that can be electronically switched.
+
 Player's head contains an Avatarian uplink and an ethernet switch.
 Player has an ethernet port on the side of his head.
 
 External devices can be plugged in and carried in the player's hands or backpack.
 Devices may have an internal battery and/or draw power from other attached devices.
 
-The avatar knows how to assemble boards if he has all the parts in his inventory. 
+The avatar knows how to assemble boards from a design if he has all
+the parts in his inventory.
 
 Avatar
   left hand

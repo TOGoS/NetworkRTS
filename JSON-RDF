@@ -1,0 +1,33 @@
+Guidelines for interpreting JSON structures as RDF.
+
+Rationale:
+- JSON is much easier to deal with than RDF and RDF encodings
+  and should be sufficient for most data structures.
+- It may be useful to be able to convert these data structures to RDF
+  or think of them as following the RDF data model
+
+Limitations:
+- Full names of predicates are not given explicitly; there must be an
+  implied mapping of short->long name
+- Each subject can only have one object per predicate
+
+Optimizations:
+- class names may be given by only the last part of their URI
+- classes may be omitted entirely when the object's context implies a specific class
+
+Encode predicate -> URI reference mappings by appending 'Uri' to the predicate name.
+e.g.
+
+  <someProperty rdf:resource="http://foo/bar"/>
+
+would be encoded as:
+
+  "somePropertyUri": "http://foo/bar"
+
+Encode object types via a classUri predicate, e.g.
+
+  {
+    "classUri": "http://xmlns.com/foaf/0.1/Person",
+    "firstName": "Jim",
+    "lastName": "Beam"
+  }

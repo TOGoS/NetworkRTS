@@ -1,0 +1,71 @@
+Core Data Model for Tile-Based Game Engines
+
+== Classes ==
+
+Entity:
+  Position in world (room, x, y)
+  Possibly some unique identifier (UUID?)
+  Behavior (how it reacts to different events)
+
+Block:
+  What data is stored depends on implementation
+  Probably will contain a reference to a static or animaged 'image' (2D or 3D)
+  Blocks associated with entities will reference their entity data
+  Behavior 
+
+BlockStack: Array[Block]
+
+TileData:
+  tiles : Array[BlockStack] where index = z*(w*h) + y*(w) + x
+
+RoomNeighbor:
+  dx, dy, dz : Integer
+  room : Room
+
+Room:
+  tileData : TileData
+  neighbors : Set[RoomNeighbor]
+
+== Room encoding ==
+
+Use RDF-equivalent JSON (see JSON-RDF) for all data structure encoding.
+
+In serialized form, tile data is a string where each character is the
+index into a block list.  Some characters (such as whitespace) are
+reserved to mean 'skip over' to make serialized form more
+human-readable.  Others, such as quotes, NUL, etc, should be avoided
+for similar reasons.
+
+Blocks with entity data are stored with the room.  A block palette is
+simply a map of numeric index -> block information.
+
+When saving rooms, serialization procedures should try to select
+existing block palettes that (a) are commonly used by other rooms, (b)
+have a small memory footprint, and (c) contain all blocks referenced
+by the room at indexes <128 (so that when UTF-8 encoded, tileData has
+minimal size).  Some heuristic may be used to balance these
+optimizations.
+
+palettes should be referenced when all blocks can be given single-byte IDs
+
+  {
+    "classUri": "http://ns.nuke24.net/DungeonGame/Room",
+    "staticBlockPaletteUri": "urn:sha1:BLAHBLAHBLAH",
+    "entityBlockPalette": {
+      100: 
+    },
+    "primaryTileData": "mdklm32R@r3kj2nr43r1[]d;'amdkaldjhx,"
+    "stackedTileData": [
+      # Remainder of stacks with size>1 go here
+      x0,y0,z0,block0Index,
+      x1,y1,z1,block1Index,
+      ...
+    ],
+    "neighbors": [
+      {
+        "x": -10, "y": 0, "z": 0,
+        "roomUri": "uuid:abcd-efgh-ijk"
+      },
+      ...
+    ]
+  }
