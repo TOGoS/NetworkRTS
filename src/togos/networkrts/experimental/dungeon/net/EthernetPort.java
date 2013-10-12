@@ -5,5 +5,5 @@ package togos.networkrts.experimental.dungeon.net;
  */
 public interface EthernetPort
 {
-	public void put( long time, ObjectEthernetFrame f );
+	public void put( long time, ObjectEthernetFrame<?> f );
 }

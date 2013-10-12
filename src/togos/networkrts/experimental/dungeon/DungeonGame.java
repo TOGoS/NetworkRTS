@@ -299,7 +299,7 @@ public class DungeonGame
 		
 		// TODO: replace this with a proper switch
 		EthernetPort ioPort = new EthernetPort() {
-			@Override public void put(long time, ObjectEthernetFrame f) {
+			@Override public void put(long time, ObjectEthernetFrame<?> f) {
 				for( WalkingCharacter character : characters ) {
 					if( f != null ) {
 						if( f.destAddress == character.uplinkInterfaceAddress ) {

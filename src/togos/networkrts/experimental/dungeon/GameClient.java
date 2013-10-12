@@ -126,7 +126,7 @@ public class GameClient implements EthernetPort
 	/**
 	 * Packet incoming from simulator (or somewhere)
 	 */
-	@Override public void put(long time, ObjectEthernetFrame f) {
+	@Override public void put(long time, ObjectEthernetFrame<?> f) {
 		if( f.payload instanceof Projection ) {
 			projectionQueue.add( (Projection)f.payload );
 		}
@@ -245,7 +245,7 @@ public class GameClient implements EthernetPort
 		final VisibilityCache playerVc = new VisibilityCache(32, 32, 8, sim.getInternalUpdater());
 		playerVc.addUpdateListener(new UpdateListener() {
 			@Override public void updated(long time) {
-				sim.commandee.uplink.put(time, new ObjectEthernetFrame(0, 0, playerVc.projection.clone()));
+				sim.commandee.uplink.put(time, new ObjectEthernetFrame<Projection>(0, 0, playerVc.projection.clone()));
 			}
 		});
 		

@@ -22,8 +22,8 @@ class Room {
 	
 	public long roomId;
 	public BlockField blockField;
-	public final List<Room.Neighbor> neighbors = new ArrayList();
-	public final Set<RoomWatcher> watchers = new HashSet();
+	public final List<Room.Neighbor> neighbors = new ArrayList<Room.Neighbor>();
+	public final Set<RoomWatcher> watchers = new HashSet<RoomWatcher>();
 	
 	public Room( int w, int h, int d, Block[] fill ) {
 		this.blockField = new BlockField(w, h, d, fill);

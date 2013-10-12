@@ -17,12 +17,12 @@ public class EthernetSwitch
 		/**
 		 * Handle an incoming packet.
 		 */
-		@Override public void put(long time, ObjectEthernetFrame f) {
+		@Override public void put(long time, ObjectEthernetFrame<?> f) {
 			swich.handlePacket(number, time, f);
 			// TODO Auto-generated method stub
 		}
 		
-		protected void send(long time, ObjectEthernetFrame f) {
+		protected void send(long time, ObjectEthernetFrame<?> f) {
 			if( facing != null ) facing.put(time, f);
 		}
 	}
