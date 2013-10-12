@@ -19,13 +19,13 @@ public class EthernetSwitch
 		/**
 		 * Handle an incoming packet.
 		 */
-		@Override public void put(ObjectEthernetFrame<?> f) {
+		@Override public void messageReceived(ObjectEthernetFrame<?> f) {
 			swich.handlePacket(number, f);
 		}
 		
 		protected void send(ObjectEthernetFrame<?> f) {
 			// TODO: Probably want to add some delay
-			if( facing != null ) facing.put(f);
+			if( facing != null ) facing.messageReceived(f);
 		}
 	}
 	

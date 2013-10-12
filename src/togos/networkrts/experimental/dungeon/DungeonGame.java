@@ -13,25 +13,25 @@ import togos.networkrts.experimental.gensim.AutoEventUpdatable;
 
 public class DungeonGame
 {
-	static interface MessageReceiver {
-		public void messageReceived( Object message );
+	public static interface MessageReceiver<T> {
+		public void messageReceived( T message );
 	}
-	static interface UpdateListener {
+	public static interface UpdateListener {
 		public void updated();
 	}
 	
-	static class DGTimer implements Comparable<DGTimer> {
+	static class DGTimer<Payload> implements Comparable<DGTimer<?>> {
 		public final long time;
-		public final MessageReceiver target;
-		public final Object payload;
+		public final MessageReceiver<? super Payload> target;
+		public final Payload payload;
 		
-		public DGTimer( long time, MessageReceiver target, Object payload ) {
+		public DGTimer( long time, MessageReceiver<? super Payload> target, Payload payload ) {
 			this.time = time;
 			this.target = target;
 			this.payload = payload;
 		}
 		
-		@Override public int compareTo(DGTimer o) {
+		@Override public int compareTo(DGTimer<?> o) {
 			return time < o.time ? -1 : time > o.time ? 1 : 0;
 		}
 	}
@@ -104,7 +104,7 @@ public class DungeonGame
 		}
 	}
 	
-	static class WalkingCharacter extends CellCursor implements MessageReceiver
+	static class WalkingCharacter extends CellCursor implements MessageReceiver<Object>
 	{
 		protected InternalUpdater updater;
 		private VisibilityCache visibilityCache;
@@ -169,12 +169,12 @@ public class DungeonGame
 	
 	public interface InternalUpdater {
 		public long getCurrentTime();
-		public void addTimer( long timestamp, MessageReceiver dest, Object payload );
+		public <Payload> void addTimer( long timestamp, MessageReceiver<? super Payload> dest, Payload payload );
 		public void addPostUpdateListener( UpdateListener ent );
 	}
 	
 	static class Simulator implements AutoEventUpdatable<ObjectEthernetFrame<?>> {
-		final PriorityQueue<DGTimer> timerQueue = new PriorityQueue<DGTimer>();
+		final PriorityQueue<DGTimer<?>> timerQueue = new PriorityQueue<DGTimer<?>>();
 		/**
 		 * After all message timers for a given time have been run,
 		 * all postUpdateListeners will be updated.
@@ -190,8 +190,8 @@ public class DungeonGame
 			@Override public long getCurrentTime() {
 				return currentTime;
 			}
-			@Override public void addTimer(long time, MessageReceiver target, Object payload) {
-				timerQueue.add(new DGTimer(time, target, payload));
+			@Override public <Payload> void addTimer(long time, MessageReceiver<? super Payload> target, Payload payload) {
+				timerQueue.add(new DGTimer<Payload>(time, target, payload));
 			}
 			@Override public void addPostUpdateListener(UpdateListener ent) {
 				postUpdateListeners.add(ent);
@@ -262,7 +262,7 @@ public class DungeonGame
 		
 		@Override public long getNextAutomaticUpdateTime() {
 			long nextAutoUpdateTime = TIME_INFINITY;
-			DGTimer firstTimer;
+			DGTimer<?> firstTimer;
 			if( (firstTimer = timerQueue.peek()) != null ) {
 				nextAutoUpdateTime = Math.min(nextAutoUpdateTime, firstTimer.time);
 			}
@@ -286,7 +286,7 @@ public class DungeonGame
 			
 		
 		protected void fastForward( long endTime ) {
-			DGTimer t;
+			DGTimer<?> t;
 			while( (t = timerQueue.peek()) != null && t.time <= endTime ) {
 				t = timerQueue.remove();
 				if( t.time != currentTime ) timersRan();
@@ -299,7 +299,7 @@ public class DungeonGame
 		
 		// TODO: replace this with a proper switch
 		private EthernetPort ioPort = new EthernetPort() {
-			@Override public void put(ObjectEthernetFrame<?> f) {
+			@Override public void messageReceived(ObjectEthernetFrame<?> f) {
 				for( WalkingCharacter character : characters ) {
 					if( f != null ) {
 						if( f.destAddress == character.uplinkInterfaceAddress ) {
@@ -313,7 +313,7 @@ public class DungeonGame
 		@Override
 		public Simulator update( long time, ObjectEthernetFrame<?> f ) throws Exception {
 			fastForward( time ); // Fast forward to the proper time
-			ioPort.put( f ); // Process the incoming event
+			ioPort.messageReceived( f ); // Process the incoming event
 			fastForward( time ); // Process any remaining immediate events
 			timersRan();
 			return this;
