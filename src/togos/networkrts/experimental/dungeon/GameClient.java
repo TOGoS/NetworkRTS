@@ -14,6 +14,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import togos.networkrts.experimental.dungeon.DungeonGame.Simulator;
+import togos.networkrts.experimental.dungeon.DungeonGame.UpdateListener;
 import togos.networkrts.experimental.dungeon.DungeonGame.VisibilityCache;
 import togos.networkrts.experimental.dungeon.DungeonGame.WalkCommand;
 import togos.networkrts.experimental.dungeon.net.EthernetPort;
@@ -241,8 +242,15 @@ public class GameClient implements EthernetPort
 		final QueuelessRealTimeEventSource<ObjectEthernetFrame<?>> evtReg = new QueuelessRealTimeEventSource<ObjectEthernetFrame<?>>();
 		final Simulator sim = DungeonGame.initSim(evtReg.getCurrentTime());
 		
+		final VisibilityCache playerVc = new VisibilityCache(32, 32, 8, sim.getInternalUpdater());
+		playerVc.addUpdateListener(new UpdateListener() {
+			@Override public void updated(long time) {
+				sim.commandee.uplink.put(time, new ObjectEthernetFrame(0, 0, playerVc.projection.clone()));
+			}
+		});
+		
 		sim.commandee.uplinkInterfaceAddress = playerEthernetAddress;
-		sim.commandee.visibilityCache = new VisibilityCache(32, 32, 8);
+		sim.commandee.setVisibilityCache(playerVc); 
 		sim.commandee.clientEthernetAddress = clientEthernetAddress;
 		sim.commandee.uplink = client;
 		/*

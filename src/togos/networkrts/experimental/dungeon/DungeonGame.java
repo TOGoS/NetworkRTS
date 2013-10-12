@@ -1,10 +1,9 @@
 package togos.networkrts.experimental.dungeon;
 
-import java.awt.Canvas;
-import java.awt.Graphics;
-import java.awt.image.VolatileImage;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Random;
 
 import togos.networkrts.experimental.dungeon.Room.Neighbor;
@@ -14,44 +13,26 @@ import togos.networkrts.experimental.gensim.AutoEventUpdatable;
 
 public class DungeonGame
 {
-	static class RegionCanvas extends Canvas {
-		private static final long serialVersionUID = -6047879639768380415L;
+	static interface MessageReceiver {
+		public void messageReceived( long time, Object message );
+	}
+	static interface UpdateListener {
+		public void updated( long time );
+	}
+	
+	static class DGTimer implements Comparable<DGTimer> {
+		public final long time;
+		public final MessageReceiver target;
+		public final Object payload;
 		
-		// TODO: I'd rather the canvas be dumber and not need to know the
-		// region or the offset.  Instead, have another thread render
-		// the scene and the canvas just blit it.
-		BlockField region;
-		float cx, cy;
-		
-		BlockFieldRenderer renderer = new BlockFieldRenderer();
-		VolatileImage buffer;
-		
-		protected void paintBuffer( Graphics g ) {
-			if( region == null ) return;
-			
-			synchronized(region) {
-				renderer.render(region, cx, cy, g, 0, 0, getWidth(), getHeight());
-			}
+		public DGTimer( long time, MessageReceiver target, Object payload ) {
+			this.time = time;
+			this.target = target;
+			this.payload = payload;
 		}
 		
-		@Override
-		public void paint( Graphics g ) {
-			if( buffer == null || buffer.contentsLost() || buffer.getWidth() != getWidth() || buffer.getHeight() != getHeight() ) {
-				buffer = createVolatileImage(getWidth(), getHeight());
-			}
-			if( buffer == null ) return; // *shrug*
-			
-			Graphics bg = buffer.getGraphics();
-			bg.setClip(g.getClip());
-			bg.setColor( getBackground() );
-			bg.fillRect(0, 0, getWidth(), getHeight());
-			paintBuffer( bg );
-			g.drawImage( buffer, 0, 0, null );
-		}
-		
-		@Override
-		public void update( Graphics g ) {
-			paint(g);
+		@Override public int compareTo(DGTimer o) {
+			return time < o.time ? -1 : time > o.time ? 1 : 0;
 		}
 	}
 	
@@ -60,12 +41,17 @@ public class DungeonGame
 	 * whether that projection is still valid,
 	 * and handles adding and removing itself from rooms' watcher lists.
 	 */
-	static class VisibilityCache implements RoomWatcher {
-		public boolean valid = false;
+	static class VisibilityCache implements RoomWatcher, UpdateListener
+	{
+		protected CellCursor position;
+		public final InternalUpdater updater;
+		public boolean valid = false, updated = false;
 		public final Projection projection;
+		protected HashSet<UpdateListener> updateListeners = new HashSet<UpdateListener>();
 		
-		public VisibilityCache( int w, int h, int d ) {
-			projection = new Projection( w, h, d );
+		public VisibilityCache( int w, int h, int d, InternalUpdater updater ) {
+			this.projection = new Projection( w, h, d );
+			this.updater = updater;
 		}
 		
 		public void clear() {
@@ -76,43 +62,85 @@ public class DungeonGame
 			valid = false;
 		}
 		
-		public void rescan( CellCursor pos ) {
+		public void rescan() {
 			clear();
-			projection.projectFrom(pos);
-			for( Room r : projection.roomsIncluded ) {
-				r.watchers.add(this);
+			if( position != null ) {
+				projection.projectFrom(position);
+				for( Room r : projection.roomsIncluded ) {
+					r.watchers.add(this);
+				}
 			}
 			valid = true;
+			updated = true;
 		}
 		
 		@Override public void roomUpdated(Room r) {
-			valid = false;
-			// May need some way to notify simulator
-			// that entity's update time has changed
+			invalidate();
+		}
+		
+		public void addUpdateListener( UpdateListener l ) {
+			this.updateListeners.add(l);
+		}
+		
+		protected void invalidate() {
+			this.valid = false;
+			updater.addPostUpdateListener(this);
+		}
+		
+		public void setPosition( CellCursor pos ) {
+			this.position = pos;
+			invalidate();
+		}
+		
+		
+		
+		/**
+		 * Should only be triggered during post-event processing in response to
+		 * invalidate();
+		 */
+		public void updated( long time ) {
+			if( !valid ) rescan();
+			for( UpdateListener l : updateListeners ) l.updated( time );
 		}
 	}
 	
-	static class WalkingCharacter extends CellCursor implements AutoEventUpdatable<ObjectEthernetFrame<?>> {
+	static class WalkingCharacter extends CellCursor implements MessageReceiver
+	{
+		protected InternalUpdater updater;
+		private VisibilityCache visibilityCache;
 		public int facingX = 0, facingY = 0;
 		public int walkingX = 0, walkingY = 0;
 		public long walkReadyTime = 0;
 		public long walkStepInterval = 100; // Interval between steps
 		public long blockDelay = 10; // Delay after being blocked
 		public Block block;
-		public VisibilityCache visibilityCache; // = new VisibilityCache();
 		public long clientEthernetAddress = 0;
 		public long uplinkInterfaceAddress = 0;
 		public EthernetPort uplink;
 		
 		public boolean watching; // TODO: Need to store a set of visible rooms, and probably store callbacks on said rooms
 		
-		public WalkingCharacter( Block block ) {
+		public WalkingCharacter( Block block, InternalUpdater updater ) {
 			this.block = block;
+			this.updater = updater;
+		}
+		
+		public void set( Room r, float x, float y, float z ) {
+			super.set(r,x,y,z);
+			if( visibilityCache != null ) visibilityCache.setPosition(this);
 		}
 		
 		public void putAt( Room r, float x, float y, float z) {
 			set(r, x, y, z);
 			addBlock(block);
+		}
+		
+		public void setVisibilityCache(VisibilityCache vc) {
+			if( this.visibilityCache != null ) {
+				this.visibilityCache.clear();
+			}
+			this.visibilityCache = vc;
+			vc.setPosition(this);
 		}
 		
 		public void startWalking(int x, int y, int z) {
@@ -127,28 +155,11 @@ public class DungeonGame
 			this.walkingY = 0;
 		}
 		
-		@Override public long getNextAutomaticUpdateTime() {
-			if( visibilityCache != null && !visibilityCache.valid ) {
-				return TIME_IMMEDIATE;
-			}
-			if( walkingX == 0 && walkingY == 0 ) {
-				return TIME_INFINITY;
-			}
-			return walkReadyTime;
-		}
-		
-		@Override public WalkingCharacter update(long time, ObjectEthernetFrame<?> evt) throws Exception {
-			if( visibilityCache != null && !visibilityCache.valid ) {
-				visibilityCache.rescan(this);
-				if( uplink != null && clientEthernetAddress != 0 ) {
-					uplink.put( time, new ObjectEthernetFrame(uplinkInterfaceAddress, clientEthernetAddress, visibilityCache.projection.clone()) );
-				}
-			}
-			if( evt != null && evt.payload instanceof WalkCommand ) {
-				WalkCommand wc = (WalkCommand)evt.payload;
+		@Override public void messageReceived(long time, Object message) {
+			if( message instanceof WalkCommand ) {
+				WalkCommand wc = (WalkCommand)message;
 				startWalking( wc.walkX, wc.walkY, 0 );
 			}
-			return this;
 		}
 	}
 	
@@ -156,8 +167,40 @@ public class DungeonGame
 		public int walkX, walkY;
 	}
 	
+	interface InternalUpdater {
+		public long getCurrentTime();
+		public void addTimer( long timestamp, MessageReceiver dest, Object payload );
+		public void addPostUpdateListener( UpdateListener ent );
+	}
+	
 	static class Simulator implements AutoEventUpdatable<ObjectEthernetFrame<?>> {
-		WalkingCharacter commandee;
+		final PriorityQueue<DGTimer> timerQueue = new PriorityQueue<DGTimer>();
+		/**
+		 * After all message timers for a given time have been run,
+		 * all postUpdateListeners will be updated.
+		 * 
+		 * These may induce a new set of immediate message timers,
+		 * but this should be avoided, esp. where it may cause cascading updates.
+		 * 
+		 * They may NOT add new post-update listeners
+		 */
+		final HashSet<UpdateListener> postUpdateListeners = new HashSet<UpdateListener>();
+		
+		protected final InternalUpdater internalUpdater = new InternalUpdater() {
+			@Override public long getCurrentTime() {
+				return currentTime;
+			}
+			@Override public void addTimer(long time, MessageReceiver target, Object payload) {
+				timerQueue.add(new DGTimer(time, target, payload));
+			}
+			@Override public void addPostUpdateListener(UpdateListener ent) {
+				postUpdateListeners.add(ent);
+			}
+		};
+		
+		public InternalUpdater getInternalUpdater() { return internalUpdater; }
+		
+		public WalkingCharacter commandee = null;
 		List<WalkingCharacter> characters = new ArrayList<WalkingCharacter>();
 		long currentTime = 0;
 		
@@ -212,12 +255,16 @@ public class DungeonGame
 			} else {
 				c.walkReadyTime = currentTime + c.blockDelay;
 			}
+			
+			// Force an update at that time:
+			internalUpdater.addTimer(c.walkReadyTime, null, null);
 		}
 		
 		@Override public long getNextAutomaticUpdateTime() {
 			long nextAutoUpdateTime = TIME_INFINITY;
-			for( AutoEventUpdatable<?> c : characters ) {
-				nextAutoUpdateTime = Math.min(nextAutoUpdateTime, c.getNextAutomaticUpdateTime());
+			DGTimer firstTimer;
+			if( (firstTimer = timerQueue.peek()) != null ) {
+				nextAutoUpdateTime = Math.min(nextAutoUpdateTime, firstTimer.time);
 			}
 			if( nextAutoUpdateTime <= currentTime ) {
 				nextAutoUpdateTime = currentTime;
@@ -225,23 +272,50 @@ public class DungeonGame
 			return nextAutoUpdateTime;
 		}
 		
-		@Override
-		public Simulator update( long time, ObjectEthernetFrame<?> evt ) throws Exception {
-			currentTime = time;
+		protected void runPostUpdateListeners() {
+			for( UpdateListener e : postUpdateListeners ) e.updated(currentTime);
+			postUpdateListeners.clear();
+		}
+		
+		protected void timersRan() {
+			for( WalkingCharacter c : characters ) {
+				doCharacterPhysics( c );
+			}
+			runPostUpdateListeners();
+		}
 			
-			do {
+		
+		protected void fastForward( long endTime ) {
+			DGTimer t;
+			while( (t = timerQueue.peek()) != null && t.time <= endTime ) {
+				t = timerQueue.remove();
+				if( t.time != currentTime ) timersRan();
+				currentTime = t.time;
+				if( t.target != null ) t.target.messageReceived(currentTime, t.payload);
+			}
+			if( endTime != currentTime ) timersRan();
+			currentTime = endTime;
+		}
+		
+		// TODO: replace this with a proper switch
+		EthernetPort ioPort = new EthernetPort() {
+			@Override public void put(long time, ObjectEthernetFrame f) {
 				for( WalkingCharacter character : characters ) {
-					if( evt != null && evt.destAddress == character.uplinkInterfaceAddress ) {
-						character.update(time, evt);
-					} else if( character.getNextAutomaticUpdateTime() <= time ) {
-						character.update(time, null);
+					if( f != null ) {
+						if( f.destAddress == character.uplinkInterfaceAddress ) {
+							character.messageReceived(time, f.payload);
+						}
 					}
 				}
-				
-				for( WalkingCharacter c : characters ) {
-					doCharacterPhysics( c );
-				}
-			} while( getNextAutomaticUpdateTime() <= time );
+			}
+		};
+		
+		@Override
+		public Simulator update( long time, ObjectEthernetFrame<?> f ) throws Exception {
+			fastForward( time ); // Fast forward to the proper time
+			ioPort.put(time, f); // Process the incoming event
+			fastForward( time ); // Process any remaining immediate events
+			timersRan();
 			return this;
 		}
 	}
@@ -283,28 +357,30 @@ public class DungeonGame
 		r0.neighbors.add(new Neighbor(r0,   0, -64, 0));
 		r0.neighbors.add(new Neighbor(r0,   0,  64, 0));
 		
-		final WalkingCharacter player = new WalkingCharacter( Block.PLAYER );
+		final Simulator sim = new Simulator();
+		
+		final WalkingCharacter player = new WalkingCharacter( Block.PLAYER, sim.getInternalUpdater() );
 		player.walkReadyTime = initialTime;
 		player.putAt( r0, 2.51f, 2.51f, 1.51f );
-		
-		final Simulator sim = new Simulator();
 		sim.commandee = player;
 		sim.characters.add(player);
 		
-		final WalkingCharacter bot = new WalkingCharacter( Block.BOT );
+		final WalkingCharacter bot = new WalkingCharacter( Block.BOT, sim.getInternalUpdater() );
 		bot.putAt( r0, 3.51f, 3.51f, 1.51f);
 		bot.startWalking( 1, 1, 0);
 		sim.characters.add(bot);
 		
-		final WalkingCharacter bot2 = new WalkingCharacter( Block.BOT );
+		final WalkingCharacter bot2 = new WalkingCharacter( Block.BOT, sim.getInternalUpdater() );
 		bot2.putAt( r0, 4.51f, 3.51f, 1.51f);
 		bot2.startWalking( 1, 1, 0);
 		sim.characters.add(bot2);
 		
-		final WalkingCharacter bot3 = new WalkingCharacter( Block.BOT );
+		final WalkingCharacter bot3 = new WalkingCharacter( Block.BOT, sim.getInternalUpdater() );
 		bot3.putAt( r0, 1.51f, 3.51f, 1.51f);
 		bot3.startWalking( 1, 1, 0);
 		sim.characters.add(bot3);
+		
+		sim.internalUpdater.addTimer(initialTime, null, null);
 
 		return sim;
 	}
