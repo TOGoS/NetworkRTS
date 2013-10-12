@@ -283,7 +283,11 @@ public class DungeonGame
 			}
 			runPostUpdateListeners();
 		}
-			
+		
+		protected <Payload> void deliver( DGTimer<Payload> t ) {
+			if( t.target == null ) return;
+			t.target.messageReceived(t.payload);
+		}
 		
 		protected void fastForward( long endTime ) {
 			DGTimer<?> t;
@@ -291,7 +295,7 @@ public class DungeonGame
 				t = timerQueue.remove();
 				if( t.time != currentTime ) timersRan();
 				currentTime = t.time;
-				if( t.target != null ) t.target.messageReceived(t.payload);
+				deliver(t);
 			}
 			if( endTime != currentTime ) timersRan();
 			currentTime = endTime;
