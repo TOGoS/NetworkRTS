@@ -14,10 +14,10 @@ import togos.networkrts.experimental.gensim.AutoEventUpdatable;
 public class DungeonGame
 {
 	static interface MessageReceiver {
-		public void messageReceived( long time, Object message );
+		public void messageReceived( Object message );
 	}
 	static interface UpdateListener {
-		public void updated( long time );
+		public void updated();
 	}
 	
 	static class DGTimer implements Comparable<DGTimer> {
@@ -98,9 +98,9 @@ public class DungeonGame
 		 * Should only be triggered during post-event processing in response to
 		 * invalidate();
 		 */
-		public void updated( long time ) {
+		public void updated() {
 			if( !valid ) rescan();
-			for( UpdateListener l : updateListeners ) l.updated( time );
+			for( UpdateListener l : updateListeners ) l.updated();
 		}
 	}
 	
@@ -155,7 +155,7 @@ public class DungeonGame
 			this.walkingY = 0;
 		}
 		
-		@Override public void messageReceived(long time, Object message) {
+		@Override public void messageReceived(Object message) {
 			if( message instanceof WalkCommand ) {
 				WalkCommand wc = (WalkCommand)message;
 				startWalking( wc.walkX, wc.walkY, 0 );
@@ -167,7 +167,7 @@ public class DungeonGame
 		public int walkX, walkY;
 	}
 	
-	interface InternalUpdater {
+	public interface InternalUpdater {
 		public long getCurrentTime();
 		public void addTimer( long timestamp, MessageReceiver dest, Object payload );
 		public void addPostUpdateListener( UpdateListener ent );
@@ -273,7 +273,7 @@ public class DungeonGame
 		}
 		
 		protected void runPostUpdateListeners() {
-			for( UpdateListener e : postUpdateListeners ) e.updated(currentTime);
+			for( UpdateListener e : postUpdateListeners ) e.updated();
 			postUpdateListeners.clear();
 		}
 		
@@ -291,19 +291,19 @@ public class DungeonGame
 				t = timerQueue.remove();
 				if( t.time != currentTime ) timersRan();
 				currentTime = t.time;
-				if( t.target != null ) t.target.messageReceived(currentTime, t.payload);
+				if( t.target != null ) t.target.messageReceived(t.payload);
 			}
 			if( endTime != currentTime ) timersRan();
 			currentTime = endTime;
 		}
 		
 		// TODO: replace this with a proper switch
-		EthernetPort ioPort = new EthernetPort() {
-			@Override public void put(long time, ObjectEthernetFrame<?> f) {
+		private EthernetPort ioPort = new EthernetPort() {
+			@Override public void put(ObjectEthernetFrame<?> f) {
 				for( WalkingCharacter character : characters ) {
 					if( f != null ) {
 						if( f.destAddress == character.uplinkInterfaceAddress ) {
-							character.messageReceived(time, f.payload);
+							character.messageReceived(f.payload);
 						}
 					}
 				}
@@ -313,7 +313,7 @@ public class DungeonGame
 		@Override
 		public Simulator update( long time, ObjectEthernetFrame<?> f ) throws Exception {
 			fastForward( time ); // Fast forward to the proper time
-			ioPort.put(time, f); // Process the incoming event
+			ioPort.put( f ); // Process the incoming event
 			fastForward( time ); // Process any remaining immediate events
 			timersRan();
 			return this;

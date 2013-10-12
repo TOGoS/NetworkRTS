@@ -2,6 +2,8 @@ package togos.networkrts.experimental.dungeon.net;
 
 import java.util.HashMap;
 
+import togos.networkrts.experimental.dungeon.DungeonGame.InternalUpdater;
+
 public class EthernetSwitch
 {
 	static class Port implements EthernetPort {
@@ -17,22 +19,24 @@ public class EthernetSwitch
 		/**
 		 * Handle an incoming packet.
 		 */
-		@Override public void put(long time, ObjectEthernetFrame<?> f) {
-			swich.handlePacket(number, time, f);
-			// TODO Auto-generated method stub
+		@Override public void put(ObjectEthernetFrame<?> f) {
+			swich.handlePacket(number, f);
 		}
 		
-		protected void send(long time, ObjectEthernetFrame<?> f) {
-			if( facing != null ) facing.put(time, f);
+		protected void send(ObjectEthernetFrame<?> f) {
+			// TODO: Probably want to add some delay
+			if( facing != null ) facing.put(f);
 		}
 	}
 	
 	protected final Port[] ports;
-	protected final HashMap<Long,Integer> origins = new HashMap<Long,Integer>();	
+	protected final HashMap<Long,Integer> origins = new HashMap<Long,Integer>();
+	protected final InternalUpdater updater;
 	
-	public EthernetSwitch( int portCount ) {
+	public EthernetSwitch( int portCount, InternalUpdater updater ) {
 		ports = new Port[portCount];
 		for( int i=0; i<portCount; ++i ) ports[i] = new Port(this, i);
+		this.updater = updater;
 	}
 	
 	public EthernetPort getPort( int n ) {
@@ -41,7 +45,7 @@ public class EthernetSwitch
 		return ports[n];
 	}
 	
-	public void handlePacket(int sourcePortNumber, long time, ObjectEthernetFrame<?> f) {
+	public void handlePacket(int sourcePortNumber, ObjectEthernetFrame<?> f) {
 		Long sourceAddress = Long.valueOf(f.destAddress);
 		Long destAddress = Long.valueOf(f.destAddress);
 		origins.put( sourceAddress, sourcePortNumber );
@@ -49,10 +53,10 @@ public class EthernetSwitch
 		if( destPortNumber == null ) {
 			// TODO: loop detection, ack!
 			for( Port p : ports ) {
-				p.send(time, f);
+				p.send(f);
 			}
 		} else {
-			ports[destPortNumber.intValue()].send(time, f);
+			ports[destPortNumber.intValue()].send(f);
 		}
 	}
 }
