@@ -12,24 +12,18 @@ public class ConnectorTypes
 	
 	public static class PairedConnectorType implements ConnectorType {
 		private final String name;
-		private final Class<?> payloadClass;
 		private ConnectorType mate;
 		
-		private PairedConnectorType(String name, Class<?> payloadClass) {
+		private PairedConnectorType(String name) {
 			this.name = name;
-			this.payloadClass = payloadClass;
 		}
 		
-		public static ConnectorTypePair createPair(String name, Class<?> payloadClass) {
-			PairedConnectorType male   = new PairedConnectorType(name + " (male)", payloadClass);
-			PairedConnectorType female = new PairedConnectorType(name + " (female)", payloadClass);
+		public static ConnectorTypePair createPair(String name) {
+			PairedConnectorType male   = new PairedConnectorType(name + " (male)");
+			PairedConnectorType female = new PairedConnectorType(name + " (female)");
 			female.mate = male;
 			male.mate = female;
 			return new ConnectorTypePair(male, female);
-		}
-		
-		@Override public boolean canCarry(Class<?> payloadClass) {
-			return this.payloadClass.isAssignableFrom(payloadClass);
 		}
 		
 		@Override public boolean canConnectTo(ConnectorType other) {
@@ -40,4 +34,6 @@ public class ConnectorTypes
 			return name;
 		}
 	}
+	
+	public static final ConnectorTypePair rj45 = PairedConnectorType.createPair("RJ45");
 }

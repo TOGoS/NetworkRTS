@@ -13,17 +13,17 @@ import java.awt.image.BufferedImage;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import togos.networkrts.experimental.dungeon.DungeonGame.MessageReceiver;
 import togos.networkrts.experimental.dungeon.DungeonGame.Simulator;
 import togos.networkrts.experimental.dungeon.DungeonGame.UpdateListener;
 import togos.networkrts.experimental.dungeon.DungeonGame.VisibilityCache;
 import togos.networkrts.experimental.dungeon.DungeonGame.WalkCommand;
-import togos.networkrts.experimental.dungeon.net.EthernetPort;
 import togos.networkrts.experimental.dungeon.net.ObjectEthernetFrame;
 import togos.networkrts.experimental.gensim.EventLoop;
 import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
 import togos.networkrts.util.LossyQueue;
 
-public class GameClient implements EthernetPort
+public class GameClient implements MessageReceiver<ObjectEthernetFrame<?>>
 {
 	/**
 	 * A thread that halts the entire process when any exception is thrown.

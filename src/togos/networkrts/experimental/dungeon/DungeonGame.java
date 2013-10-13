@@ -7,7 +7,6 @@ import java.util.PriorityQueue;
 import java.util.Random;
 
 import togos.networkrts.experimental.dungeon.Room.Neighbor;
-import togos.networkrts.experimental.dungeon.net.EthernetPort;
 import togos.networkrts.experimental.dungeon.net.ObjectEthernetFrame;
 import togos.networkrts.experimental.gensim.AutoEventUpdatable;
 
@@ -114,9 +113,9 @@ public class DungeonGame
 		public long walkStepInterval = 100; // Interval between steps
 		public long blockDelay = 10; // Delay after being blocked
 		public Block block;
+		public MessageReceiver <ObjectEthernetFrame<?>> uplink;
 		public long clientEthernetAddress = 0;
 		public long uplinkInterfaceAddress = 0;
-		public EthernetPort uplink;
 		
 		public boolean watching; // TODO: Need to store a set of visible rooms, and probably store callbacks on said rooms
 		
@@ -302,7 +301,7 @@ public class DungeonGame
 		}
 		
 		// TODO: replace this with a proper switch
-		private EthernetPort ioPort = new EthernetPort() {
+		private MessageReceiver<ObjectEthernetFrame<?>> ioPort = new MessageReceiver<ObjectEthernetFrame<?>>() {
 			@Override public void messageReceived(ObjectEthernetFrame<?> f) {
 				for( WalkingCharacter character : characters ) {
 					if( f != null ) {
@@ -370,11 +369,13 @@ public class DungeonGame
 		sim.characters.add(player);
 		
 		final WalkingCharacter bot = new WalkingCharacter( Block.BOT, sim.getInternalUpdater() );
+		bot.walkStepInterval = 75;
 		bot.putAt( r0, 3.51f, 3.51f, 1.51f);
 		bot.startWalking( 1, 1, 0);
 		sim.characters.add(bot);
 		
 		final WalkingCharacter bot2 = new WalkingCharacter( Block.BOT, sim.getInternalUpdater() );
+		bot2.walkStepInterval = 125;
 		bot2.putAt( r0, 4.51f, 3.51f, 1.51f);
 		bot2.startWalking( 1, 1, 0);
 		sim.characters.add(bot2);

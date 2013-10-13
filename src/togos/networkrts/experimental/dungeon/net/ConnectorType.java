@@ -4,5 +4,4 @@ public interface ConnectorType
 {
 	public String getName();
 	public boolean canConnectTo(ConnectorType other);
-	public boolean canCarry(Class<?> payloadClass);
 }

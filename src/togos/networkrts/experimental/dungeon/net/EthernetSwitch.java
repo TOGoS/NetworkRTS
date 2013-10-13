@@ -6,26 +6,23 @@ import togos.networkrts.experimental.dungeon.DungeonGame.InternalUpdater;
 
 public class EthernetSwitch
 {
-	static class Port implements EthernetPort {
+	@SuppressWarnings("rawtypes")
+	static class Port extends AbstractConnector<ObjectEthernetFrame> {
 		public final EthernetSwitch swich;
 		public final int number;
-		public EthernetPort facing;
 		
 		public Port( EthernetSwitch swich, int number ) {
+			super( ConnectorTypes.rj45.female, ObjectEthernetFrame.class );
 			this.swich = swich;
 			this.number = number;
 		}
 		
-		/**
-		 * Handle an incoming packet.
-		 */
-		@Override public void messageReceived(ObjectEthernetFrame<?> f) {
+		@Override public void messageReceived(ObjectEthernetFrame f) {
 			swich.handlePacket(number, f);
 		}
 		
-		protected void send(ObjectEthernetFrame<?> f) {
-			// TODO: Probably want to add some delay
-			if( facing != null ) facing.messageReceived(f);
+		@Override public boolean isLocked() {
+			return false;
 		}
 	}
 	
@@ -39,7 +36,7 @@ public class EthernetSwitch
 		this.updater = updater;
 	}
 	
-	public EthernetPort getPort( int n ) {
+	public Port getPort( int n ) {
 		assert n >= 0;
 		assert n < ports.length;
 		return ports[n];
@@ -53,10 +50,10 @@ public class EthernetSwitch
 		if( destPortNumber == null ) {
 			// TODO: loop detection, ack!
 			for( Port p : ports ) {
-				p.send(f);
+				p.sendMessage(f);
 			}
 		} else {
-			ports[destPortNumber.intValue()].send(f);
+			ports[destPortNumber.intValue()].sendMessage(f);
 		}
 	}
 }
