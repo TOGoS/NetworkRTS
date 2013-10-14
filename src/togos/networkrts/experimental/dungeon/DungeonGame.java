@@ -12,13 +12,6 @@ import togos.networkrts.experimental.gensim.AutoEventUpdatable;
 
 public class DungeonGame
 {
-	public static interface MessageReceiver<T> {
-		public void messageReceived( T message );
-	}
-	public static interface UpdateListener {
-		public void updated();
-	}
-	
 	static class DGTimer<Payload> implements Comparable<DGTimer<?>> {
 		public final long time;
 		public final MessageReceiver<? super Payload> target;
