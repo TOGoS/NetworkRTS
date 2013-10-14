@@ -13,10 +13,12 @@ import java.awt.image.BufferedImage;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import togos.networkrts.experimental.dungeon.DungeonGame.DGTimer;
 import togos.networkrts.experimental.dungeon.DungeonGame.Simulator;
 import togos.networkrts.experimental.dungeon.DungeonGame.VisibilityCache;
 import togos.networkrts.experimental.dungeon.DungeonGame.WalkCommand;
 import togos.networkrts.experimental.dungeon.net.ObjectEthernetFrame;
+import togos.networkrts.experimental.gensim.AutoEventUpdatable;
 import togos.networkrts.experimental.gensim.EventLoop;
 import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
 import togos.networkrts.util.LossyQueue;
@@ -237,8 +239,9 @@ public class GameClient implements MessageReceiver<ObjectEthernetFrame<?>>
 		
 		//// Server stuff ////
 		
-		final QueuelessRealTimeEventSource<ObjectEthernetFrame<?>> evtReg = new QueuelessRealTimeEventSource<ObjectEthernetFrame<?>>();
+		final QueuelessRealTimeEventSource<DGTimer<?>> evtReg = new QueuelessRealTimeEventSource<DGTimer<?>>();
 		final Simulator sim = DungeonGame.initSim(evtReg.getCurrentTime());
+		final MessageReceiver<Object> simIoPort = sim.commandee;
 		
 		final VisibilityCache playerVc = new VisibilityCache(32, 32, 8, sim.getInternalUpdater());
 		playerVc.addUpdateListener(new UpdateListener() {
@@ -273,7 +276,8 @@ public class GameClient implements MessageReceiver<ObjectEthernetFrame<?>>
 		new CoreThread("Command reader") {
 			public void _run() throws InterruptedException {
 				while(true) {
-					evtReg.post(client.commandQueue.take());
+					evtReg.post(new DGTimer<Object>(AutoEventUpdatable.TIME_IMMEDIATE, simIoPort, client.commandQueue.take().payload));
+					//evtReg.post(client.commandQueue.take());
 				}
 			}
 		}.start();

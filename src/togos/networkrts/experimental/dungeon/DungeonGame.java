@@ -183,7 +183,7 @@ public class DungeonGame
 		public void addPostUpdateListener( UpdateListener ent );
 	}
 	
-	static class Simulator implements AutoEventUpdatable<ObjectEthernetFrame<?>> {
+	static class Simulator implements AutoEventUpdatable<DGTimer<?>> {
 		final PriorityQueue<DGTimer<?>> timerQueue = new PriorityQueue<DGTimer<?>>();
 		/**
 		 * After all message timers for a given time have been run,
@@ -282,11 +282,21 @@ public class DungeonGame
 			postUpdateListeners.clear();
 		}
 		
-		protected void timersRan() {
+		protected void doPostMessageUpdates() {
 			for( WalkingCharacter c : characters ) {
 				doCharacterPhysics( c );
 			}
 			runPostUpdateListeners();
+		}
+		
+		protected void timePassed(long newTime) {
+			if( currentTime == newTime ) {
+				// No, it didn't!
+				return;
+			}
+			
+			currentTime = newTime;
+			doPostMessageUpdates();
 		}
 		
 		protected <Payload> void deliver( DGTimer<Payload> t ) {
@@ -298,33 +308,20 @@ public class DungeonGame
 			DGTimer<?> t;
 			while( (t = timerQueue.peek()) != null && t.time <= endTime ) {
 				t = timerQueue.remove();
-				if( t.time != currentTime ) timersRan();
-				currentTime = t.time;
+				timePassed(Math.max(t.time, currentTime));
 				deliver(t);
 			}
-			if( endTime != currentTime ) timersRan();
 			currentTime = endTime;
 		}
 		
-		// TODO: replace this with a proper switch
-		private MessageReceiver<ObjectEthernetFrame<?>> ioPort = new MessageReceiver<ObjectEthernetFrame<?>>() {
-			@Override public void messageReceived(ObjectEthernetFrame<?> f) {
-				for( WalkingCharacter character : characters ) {
-					if( f != null ) {
-						if( f.destAddress == character.uplinkInterfaceAddress ) {
-							character.messageReceived(f.payload);
-						}
-					}
-				}
-			}
-		};
-		
 		@Override
-		public Simulator update( long time, ObjectEthernetFrame<?> f ) throws Exception {
-			fastForward( time ); // Fast forward to the proper time
-			ioPort.messageReceived( f ); // Process the incoming event
-			fastForward( time ); // Process any remaining immediate events
-			timersRan();
+		public Simulator update( long time, DGTimer<?> t ) throws Exception {
+			fastForward( time );
+			if( t != null ) {
+				timerQueue.add(t);
+				fastForward( time );
+			}
+			doPostMessageUpdates();
 			return this;
 		}
 	}
