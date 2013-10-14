@@ -1,6 +1,5 @@
 package togos.networkrts.experimental.dungeon;
 
-
 class CellCursor {
 	Room room;
 	float x, y, z;
@@ -13,8 +12,8 @@ class CellCursor {
 	}
 	
 	public void set( CellCursor c ) { set( c.room, c.x, c.y, c.z ); }
-		
-	public void move( float dx, float dy, float dz ) {
+	
+	public void changePosition( float dx, float dy, float dz ) {
 		x += dx; y += dy; z += dz;
 		if( room != null && !room.contains(x,y,z) ) {
 			for( Room.Neighbor n : room.neighbors ) {

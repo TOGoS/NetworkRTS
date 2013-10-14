@@ -35,7 +35,7 @@ public class DungeonGame
 	 */
 	static class VisibilityCache implements RoomWatcher, UpdateListener
 	{
-		protected CellCursor position;
+		private final CellCursor position = new CellCursor();
 		public final InternalUpdater updater;
 		public boolean valid = false, updated = false;
 		public final Projection projection;
@@ -80,11 +80,9 @@ public class DungeonGame
 		}
 		
 		public void setPosition( CellCursor pos ) {
-			this.position = pos;
+			this.position.set(pos);
 			invalidate();
 		}
-		
-		
 		
 		/**
 		 * Should only be triggered during post-event processing in response to
@@ -96,7 +94,7 @@ public class DungeonGame
 		}
 	}
 	
-	static class WalkingCharacter extends CellCursor implements MessageReceiver<Object>
+	static class WalkingCharacter implements MessageReceiver<Object>
 	{
 		protected InternalUpdater updater;
 		private VisibilityCache visibilityCache;
@@ -109,22 +107,42 @@ public class DungeonGame
 		public MessageReceiver <ObjectEthernetFrame<?>> uplink;
 		public long clientEthernetAddress = 0;
 		public long uplinkInterfaceAddress = 0;
-		
-		public boolean watching; // TODO: Need to store a set of visible rooms, and probably store callbacks on said rooms
+		private final CellCursor position = new CellCursor();
 		
 		public WalkingCharacter( Block block, InternalUpdater updater ) {
 			this.block = block;
 			this.updater = updater;
 		}
 		
-		public void set( Room r, float x, float y, float z ) {
-			super.set(r,x,y,z);
-			if( visibilityCache != null ) visibilityCache.setPosition(this);
+		protected void preMove( boolean roomChanged ) {
+			position.removeBlock(block);
+			// If room has not changed, we'll only call room.updated() once, in postMove
+			if( roomChanged && position.room != null ) position.room.updated();
+		}
+		protected void postMove( boolean roomChanged ) {
+			position.addBlock(block);
+			if( visibilityCache != null ) visibilityCache.setPosition(this.position);
+			if( position.room != null ) position.room.updated();
+		}
+		
+		public void setPosition( Room r, float x, float y, float z ) {
+			boolean roomChanged = r != this.position.room;
+			preMove( roomChanged );
+			position.set(r, x, y, z);
+			postMove( roomChanged );
+		}
+		
+		public void setPosition( CellCursor pos ) {
+			setPosition(pos.room, pos.x, pos.y, pos.z);
+		}
+		
+		public void getPosition(CellCursor dest) {
+			dest.set(position);
 		}
 		
 		public void putAt( Room r, float x, float y, float z) {
-			set(r, x, y, z);
-			addBlock(block);
+			setPosition(r, x, y, z);
+			position.addBlock(block);
 		}
 		
 		public void setVisibilityCache(VisibilityCache vc) {
@@ -132,7 +150,7 @@ public class DungeonGame
 				this.visibilityCache.clear();
 			}
 			this.visibilityCache = vc;
-			vc.setPosition(this);
+			vc.setPosition(this.position);
 		}
 		
 		public void startWalking(int x, int y, int z) {
@@ -174,7 +192,7 @@ public class DungeonGame
 		 * These may induce a new set of immediate message timers,
 		 * but this should be avoided, esp. where it may cause cascading updates.
 		 * 
-		 * They may NOT add new post-update listeners
+		 * These may NOT add new post-update listeners
 		 */
 		final HashSet<UpdateListener> postUpdateListeners = new HashSet<UpdateListener>();
 		
@@ -207,19 +225,14 @@ public class DungeonGame
 		}
 		
 		protected boolean attemptMove( WalkingCharacter c, int dx, int dy, int dz ) {
-			Room oldRoom = c.room;
-			tempCursor.set(c);
-			tempCursor.move( dx, dy, dz );
+			c.getPosition(tempCursor);
+			tempCursor.changePosition( dx, dy, dz );
 			boolean blocked = false;
 			for( Block b : tempCursor.getAStack() ) {
 				if( b.blocking ) blocked = true;
 			}
 			if( !blocked ) {
-				c.removeBlock(c.block);
-				c.set(tempCursor);
-				c.addBlock(c.block);
-				oldRoom.updated();
-				if( c.room != oldRoom ) c.room.updated();
+				c.setPosition(tempCursor);
 				return true;
 			} else {
 				return false;
@@ -332,7 +345,7 @@ public class DungeonGame
 			for( int dy=0; dy<=1+r; ++dy )
 			for( int dx=0; dx<=1+r; ++dx ) {
 				c1.set(c);
-				c1.move(dx, dy, 0);
+				c1.changePosition(dx, dy, 0);
 				c1.setStack( Block.FOLIAGE.stack );
 			}
 		}
@@ -341,7 +354,7 @@ public class DungeonGame
 			for( int dy=-1; dy<=1; ++dy )
 			for( int dx=-1; dx<=1; ++dx ) {
 				c1.set(c);
-				c1.move(dx, dy, 0);
+				c1.changePosition(dx, dy, 0);
 				c1.setStack( Block.WALL.stack );
 			}
 		}
