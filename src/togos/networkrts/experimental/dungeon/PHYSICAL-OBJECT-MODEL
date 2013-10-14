@@ -1,0 +1,15 @@
+A physical object has a location, which may be:
+- in a component slot of another object
+- inside a 'bag' (which may be modeled as a large component slot?)
+- some (x,y,z) position within a room
+
+Objects can only be linked (via ports) to other objects within the same space.
+
+A group of connected objects may be moved as long as they are only
+connected to each other.  An object may not be moved while it is
+connected to objects not being moved.
+
+Other than to their containing spaces, objects are linked only by connectors.    
+
+All objects, even rooms, are contained in some space except for the root
+object space, which acts like a bag.
