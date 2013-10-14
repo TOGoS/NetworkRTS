@@ -1,10 +1,18 @@
 package togos.networkrts.experimental.dungeon.net;
 
+import togos.networkrts.experimental.dungeon.MessageReceiver;
+
 public abstract class AbstractConnector<Payload> implements Connector<Payload>
 {
 	protected final ConnectorType connectorType;
 	protected final Class<Payload> payloadClass;
 	protected Connector<Payload> mate;
+	
+	public final MessageReceiver<Payload> backside = new MessageReceiver<Payload>() {
+		@Override public void messageReceived(Payload message) {
+			sendMessage(message);
+		}
+	};
 	
 	public AbstractConnector(ConnectorType cType, Class<Payload> payloadClass) {
 		this.connectorType = cType;
@@ -32,7 +40,7 @@ public abstract class AbstractConnector<Payload> implements Connector<Payload>
 		this.mate = other;
 	}
 	
-	protected void sendMessage(Payload p) {
+	public void sendMessage(Payload p) {
 		if( mate != null ) mate.messageReceived(p);
 	}
 }

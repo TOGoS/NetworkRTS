@@ -1,6 +1,8 @@
 package togos.networkrts.experimental.dungeon.net;
 
-public interface Connector<Payload>
+import togos.networkrts.experimental.dungeon.MessageReceiver;
+
+public interface Connector<Payload> extends MessageReceiver<Payload>
 {
 	public ConnectorType getConnectorType();
 	public Class<Payload> getPayloadClass();

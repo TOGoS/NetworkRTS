@@ -29,11 +29,13 @@ public class EthernetSwitch
 	protected final Port[] ports;
 	protected final HashMap<Long,Integer> origins = new HashMap<Long,Integer>();
 	protected final InternalUpdater updater;
+	protected final long internalDelay;
 	
-	public EthernetSwitch( int portCount, InternalUpdater updater ) {
+	public EthernetSwitch( int portCount, long internalDelay, InternalUpdater updater ) {
 		ports = new Port[portCount];
 		for( int i=0; i<portCount; ++i ) ports[i] = new Port(this, i);
 		this.updater = updater;
+		this.internalDelay = internalDelay;
 	}
 	
 	public Port getPort( int n ) {
@@ -43,17 +45,18 @@ public class EthernetSwitch
 	}
 	
 	public void handlePacket(int sourcePortNumber, ObjectEthernetFrame<?> f) {
-		Long sourceAddress = Long.valueOf(f.destAddress);
+		Long sourceAddress = Long.valueOf(f.srcAddress);
 		Long destAddress = Long.valueOf(f.destAddress);
 		origins.put( sourceAddress, sourcePortNumber );
 		Integer destPortNumber = origins.get(destAddress);
+		long delayed = updater.getCurrentTime() + internalDelay;
 		if( destPortNumber == null ) {
 			// TODO: loop detection, ack!
 			for( Port p : ports ) {
-				p.sendMessage(f);
+				updater.addTimer(delayed, p.backside, f);
 			}
 		} else {
-			ports[destPortNumber.intValue()].sendMessage(f);
+			updater.addTimer(delayed, ports[destPortNumber.intValue()].backside, f);
 		}
 	}
 }

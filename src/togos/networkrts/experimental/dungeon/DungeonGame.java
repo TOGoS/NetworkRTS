@@ -7,7 +7,14 @@ import java.util.PriorityQueue;
 import java.util.Random;
 
 import togos.networkrts.experimental.dungeon.Room.Neighbor;
+import togos.networkrts.experimental.dungeon.net.AbstractConnector;
+import togos.networkrts.experimental.dungeon.net.ConnectionError;
+import togos.networkrts.experimental.dungeon.net.Connector;
+import togos.networkrts.experimental.dungeon.net.ConnectorTypes;
+import togos.networkrts.experimental.dungeon.net.Connectors;
+import togos.networkrts.experimental.dungeon.net.EthernetSwitch;
 import togos.networkrts.experimental.dungeon.net.ObjectEthernetFrame;
+import togos.networkrts.experimental.dungeon.net.PatchCable;
 import togos.networkrts.experimental.gensim.AutoEventUpdatable;
 
 public class DungeonGame
@@ -27,6 +34,10 @@ public class DungeonGame
 			return time < o.time ? -1 : time > o.time ? 1 : 0;
 		}
 	}
+	
+	static interface DGPhysicalObject {
+		
+	};
 	
 	/**
 	 * Tracks most recent projection,
@@ -70,6 +81,9 @@ public class DungeonGame
 			invalidate();
 		}
 		
+		public void removeUpdateListener( UpdateListener l ) {
+			this.updateListeners.remove(l);
+		}
 		public void addUpdateListener( UpdateListener l ) {
 			this.updateListeners.add(l);
 		}
@@ -94,19 +108,16 @@ public class DungeonGame
 		}
 	}
 	
-	static class WalkingCharacter implements MessageReceiver<Object>
+	static class WalkingCharacter implements DGPhysicalObject, MessageReceiver<Object>
 	{
-		protected InternalUpdater updater;
-		private VisibilityCache visibilityCache;
+		protected final InternalUpdater updater;
+		protected VisibilityCache visibilityCache;
 		public int facingX = 0, facingY = 0;
 		public int walkingX = 0, walkingY = 0;
 		public long walkReadyTime = 0;
 		public long walkStepInterval = 100; // Interval between steps
 		public long blockDelay = 10; // Delay after being blocked
 		public Block block;
-		public MessageReceiver <ObjectEthernetFrame<?>> uplink;
-		public long clientEthernetAddress = 0;
-		public long uplinkInterfaceAddress = 0;
 		private final CellCursor position = new CellCursor();
 		
 		public WalkingCharacter( Block block, InternalUpdater updater ) {
@@ -173,6 +184,100 @@ public class DungeonGame
 		}
 	}
 	
+	static class AvatarianTranceiver implements DGPhysicalObject {
+		protected final InternalUpdater updater;
+		protected final long transmissionDelay;
+		protected AvatarianTranceiver other;
+		
+		private AvatarianTranceiver( long transmissionDelay, InternalUpdater updater ) {
+			this.updater = updater;
+			this.transmissionDelay = transmissionDelay;
+		}
+		
+		protected MessageReceiver<ObjectEthernetFrame<?>> transmissionReceiver = new MessageReceiver<ObjectEthernetFrame<?>>() {
+			@Override public void messageReceived(ObjectEthernetFrame<?> message) {
+				port.sendMessage(message);
+			}
+		};
+		
+		public final AbstractConnector<ObjectEthernetFrame<?>> port = new AbstractConnector<ObjectEthernetFrame<?>>(ConnectorTypes.rj45.female, ObjectEthernetFrame.GENERIC_CLASS) {
+			@Override public boolean isLocked() { return false; }
+			@Override public void messageReceived(ObjectEthernetFrame<?> message) {
+				updater.addTimer(updater.getCurrentTime()+transmissionDelay, other.transmissionReceiver, message);
+			}
+		};
+		
+		public static AvatarianTranceiver[] makePair(long transmissionDelay, InternalUpdater updater) {
+			AvatarianTranceiver t1 = new AvatarianTranceiver(transmissionDelay, updater);
+			AvatarianTranceiver t2 = new AvatarianTranceiver(transmissionDelay, updater);
+			t1.other = t2;
+			t2.other = t1;
+			return new AvatarianTranceiver[]{ t1, t2 };
+		}
+	}
+	
+	static class Avatar extends WalkingCharacter
+	{
+		// TODO: Use more generic physical container system
+		AvatarianTranceiver atc;
+		EthernetSwitch internalSwitch = new EthernetSwitch(6, 0, updater);
+		final HashSet<DGPhysicalObject> internalItems = new HashSet<DGPhysicalObject>();
+		public Connector<ObjectEthernetFrame<?>> headPort;
+		public long avatarEthernetAddress = 0x1234567;
+		public long clientEthernetAddress;
+		
+		public final AbstractConnector<ObjectEthernetFrame<?>> controllerPort = new AbstractConnector<ObjectEthernetFrame<?>>(ConnectorTypes.rj45.female, ObjectEthernetFrame.GENERIC_CLASS) {
+			@Override public boolean isLocked() { return false; }
+			@Override public void messageReceived(ObjectEthernetFrame<?> message) {
+				if( avatarEthernetAddress == message.destAddress ) {
+					Avatar.this.messageReceived(message.payload);
+				}
+			}
+		};
+		
+		public Avatar( Block block, AvatarianTranceiver atc, InternalUpdater updater ) {
+			super(block, updater);
+			PatchCable<ObjectEthernetFrame<?>> headPortCable = new PatchCable<ObjectEthernetFrame<?>>(ConnectorTypes.rj45.male, ConnectorTypes.rj45.female, ObjectEthernetFrame.GENERIC_CLASS, 0, updater);
+			PatchCable<ObjectEthernetFrame<?>> uplinkCable = new PatchCable<ObjectEthernetFrame<?>>(ConnectorTypes.rj45.male, ConnectorTypes.rj45.male, ObjectEthernetFrame.GENERIC_CLASS, 0, updater);
+			PatchCable<ObjectEthernetFrame<?>> controllerCable = new PatchCable<ObjectEthernetFrame<?>>(ConnectorTypes.rj45.male, ConnectorTypes.rj45.male, ObjectEthernetFrame.GENERIC_CLASS, 0, updater);
+			this.atc = atc;
+			this.headPort = headPortCable.right;
+			try {
+				Connectors.connect(internalSwitch.getPort(2), headPortCable.left);
+				
+				Connectors.connect(internalSwitch.getPort(0), uplinkCable.right);
+				Connectors.connect(atc.port, uplinkCable.left);
+				
+				Connectors.connect(internalSwitch.getPort(1), controllerCable.right);
+				Connectors.connect(controllerPort, controllerCable.left);
+			} catch( ConnectionError e ) {
+				System.err.println("Failed to connect head internals: "+e.getMessage());
+			}
+		}
+		
+		public <Payload> void sendFrame( long destAddress, Payload payload ) {
+			if( destAddress != 0 ) {
+				controllerPort.sendMessage(new ObjectEthernetFrame<Payload>(avatarEthernetAddress, destAddress, payload));
+			}
+		}
+		
+		protected UpdateListener vcUpdateListener = new UpdateListener() {
+			public void updated() {
+				sendFrame(clientEthernetAddress, visibilityCache.projection.clone());
+			}
+		};
+		
+		@Override public void setVisibilityCache(VisibilityCache vc) {
+			VisibilityCache oldVc = this.visibilityCache;
+			if( oldVc != null ) oldVc.removeUpdateListener(vcUpdateListener);
+			
+			super.setVisibilityCache(vc);
+			if( vc != null ) vc.addUpdateListener(vcUpdateListener);
+			
+			vcUpdateListener.updated();
+		}
+	}
+	
 	static class WalkCommand {
 		public int walkX, walkY;
 	}
@@ -210,7 +315,9 @@ public class DungeonGame
 		
 		public InternalUpdater getInternalUpdater() { return internalUpdater; }
 		
-		public WalkingCharacter commandee = null;
+		public Avatar commandee = null;
+		public Connector<ObjectEthernetFrame<?>> playerRemoteTranceiverPort;
+		
 		List<WalkingCharacter> characters = new ArrayList<WalkingCharacter>();
 		long currentTime = 0;
 		
@@ -365,7 +472,11 @@ public class DungeonGame
 		
 		final Simulator sim = new Simulator();
 		
-		final WalkingCharacter player = new WalkingCharacter( Block.PLAYER, sim.getInternalUpdater() );
+		final AvatarianTranceiver[] playerTranceivers = AvatarianTranceiver.makePair(0, sim.internalUpdater);
+		
+		sim.playerRemoteTranceiverPort = playerTranceivers[1].port;
+		
+		final Avatar player = new Avatar( Block.PLAYER, playerTranceivers[0], sim.getInternalUpdater() );
 		player.walkReadyTime = initialTime;
 		player.putAt( r0, 2.51f, 2.51f, 1.51f );
 		sim.commandee = player;
@@ -389,7 +500,7 @@ public class DungeonGame
 		sim.characters.add(bot3);
 		
 		sim.internalUpdater.addTimer(initialTime, null, null);
-
+		
 		return sim;
 	}
 }

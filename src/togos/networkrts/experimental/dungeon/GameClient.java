@@ -17,6 +17,10 @@ import togos.networkrts.experimental.dungeon.DungeonGame.DGTimer;
 import togos.networkrts.experimental.dungeon.DungeonGame.Simulator;
 import togos.networkrts.experimental.dungeon.DungeonGame.VisibilityCache;
 import togos.networkrts.experimental.dungeon.DungeonGame.WalkCommand;
+import togos.networkrts.experimental.dungeon.net.AbstractConnector;
+import togos.networkrts.experimental.dungeon.net.ConnectionError;
+import togos.networkrts.experimental.dungeon.net.ConnectorTypes;
+import togos.networkrts.experimental.dungeon.net.Connectors;
 import togos.networkrts.experimental.dungeon.net.ObjectEthernetFrame;
 import togos.networkrts.experimental.gensim.AutoEventUpdatable;
 import togos.networkrts.experimental.gensim.EventLoop;
@@ -118,7 +122,7 @@ public class GameClient implements MessageReceiver<ObjectEthernetFrame<?>>
 	//   draw projection to buffer
 	//   AWT thread repaints as needed
 	
-	public long playerEthernetAddress;
+	public long avatarEthernetAddress;
 	public long clientEthernetAddress;
 	protected final BlockingQueue<ObjectEthernetFrame<?>> commandQueue = new LinkedBlockingQueue<ObjectEthernetFrame<?>>();
 	protected final BlockingQueue<Projection> projectionQueue = new LossyQueue<Projection>();	
@@ -154,7 +158,7 @@ public class GameClient implements MessageReceiver<ObjectEthernetFrame<?>>
 				cmd.walkX = (walkLeft && !walkRight) ? -1 : (walkRight && !walkLeft) ? 1 : 0;
 				cmd.walkY = (walkUp   && !walkDown ) ? -1 : (walkDown  && !walkUp  ) ? 1 : 0;
 				try {
-					commandQueue.put(new ObjectEthernetFrame<WalkCommand>(0, playerEthernetAddress, cmd));
+					commandQueue.put(new ObjectEthernetFrame<WalkCommand>(0, avatarEthernetAddress, cmd));
 				} catch( InterruptedException e ) {
 					Thread.currentThread().interrupt();
 					throw new RuntimeException(e);
@@ -230,42 +234,36 @@ public class GameClient implements MessageReceiver<ObjectEthernetFrame<?>>
 	}
 	
 	public static void main( String[] args ) {
-		final long playerEthernetAddress = 0x1234567;
 		final long clientEthernetAddress = 0x1234566;
 		
 		final GameClient client = new GameClient();
-		client.playerEthernetAddress = playerEthernetAddress;
 		client.clientEthernetAddress = clientEthernetAddress;
 		
 		//// Server stuff ////
 		
 		final QueuelessRealTimeEventSource<DGTimer<?>> evtReg = new QueuelessRealTimeEventSource<DGTimer<?>>();
 		final Simulator sim = DungeonGame.initSim(evtReg.getCurrentTime());
-		final MessageReceiver<Object> simIoPort = sim.commandee;
 		
 		final VisibilityCache playerVc = new VisibilityCache(32, 32, 8, sim.getInternalUpdater());
-		playerVc.addUpdateListener(new UpdateListener() {
-			@Override public void updated() {
-				sim.commandee.uplink.messageReceived(new ObjectEthernetFrame<Projection>(0, 0, playerVc.projection.clone()));
-			}
-		});
-		
-		sim.commandee.uplinkInterfaceAddress = playerEthernetAddress;
 		sim.commandee.setVisibilityCache(playerVc); 
-		sim.commandee.clientEthernetAddress = clientEthernetAddress;
-		sim.commandee.uplink = client;
-		/*
-		sim.commandee.projectionTransmitter = new Transmitter<Projection>() {
-			@Override public void send(Projection projection) {
-				try {
-					gameClient.put( sim.getCurrentTime(), new ObjectEthernetFrame(playerEthernetAddress, clientEthernetAddress, projection.clone()));
-				} catch( InterruptedException e ) {
-					e.printStackTrace();
-					System.exit(1);
+		
+		client.avatarEthernetAddress = sim.commandee.avatarEthernetAddress;
+		sim.commandee.clientEthernetAddress = client.clientEthernetAddress;
+		try {
+			Connectors.connect( sim.playerRemoteTranceiverPort, new AbstractConnector<ObjectEthernetFrame<?>>(ConnectorTypes.rj45.male, ObjectEthernetFrame.GENERIC_CLASS) {
+				@Override public boolean isLocked() { return false; }
+				@Override public void messageReceived(ObjectEthernetFrame<?> message) {
+					if( message.destAddress == client.clientEthernetAddress ) {
+						if( message.payload instanceof Projection ) {
+							client.projectionQueue.add((Projection)message.payload);
+						}
+					}
 				}
-			}
-		};
-		*/
+			});
+		} catch( ConnectionError e ) {
+			e.printStackTrace();
+			System.exit(1);
+		}
 		
 		new CoreThread("Simulation runner") {
 			public void _run() throws Exception {
@@ -276,8 +274,7 @@ public class GameClient implements MessageReceiver<ObjectEthernetFrame<?>>
 		new CoreThread("Command reader") {
 			public void _run() throws InterruptedException {
 				while(true) {
-					evtReg.post(new DGTimer<Object>(AutoEventUpdatable.TIME_IMMEDIATE, simIoPort, client.commandQueue.take().payload));
-					//evtReg.post(client.commandQueue.take());
+					evtReg.post(new DGTimer<ObjectEthernetFrame<?>>(AutoEventUpdatable.TIME_IMMEDIATE, sim.playerRemoteTranceiverPort, client.commandQueue.take()));
 				}
 			}
 		}.start();
