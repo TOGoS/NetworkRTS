@@ -20,7 +20,7 @@ class Projection implements Serializable, Cloneable
 		this.roomsIncluded = roomsIncluded;
 	}
 	public Projection( int w, int h, int d ) {
-		this( new BlockField( w, h, d, Block.EMPTY_STACK ), 0, 0, new HashSet<Room>() );
+		this( new BlockField( w, h, d, SimpleBlock.EMPTY_STACK ), 0, 0, new HashSet<Room>() );
 	}
 	
 	public void clear() {

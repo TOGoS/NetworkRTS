@@ -24,7 +24,7 @@ class BlockField implements Cloneable
 		}
 	}
 	
-	public void clear() { fill(Block.EMPTY_STACK); }
+	public void clear() { fill(SimpleBlock.EMPTY_STACK); }
 	
 	protected final int stackIndex( int x, int y, int z ) {
 		return w*h*NumUtil.tmod(z,d)+w*NumUtil.tmod(y,h)+NumUtil.tmod(x,w);
@@ -46,7 +46,7 @@ class BlockField implements Cloneable
 		Block[] stack = blockStacks[index];
 		if( stack.length == 0 ) {
 			// Simply replace the stack pointer! 
-			blockStacks[index] = b.stack;
+			blockStacks[index] = b.getStack();
 			return;
 		}
 		// Otherwise we need to build a new stack :(
@@ -69,10 +69,10 @@ class BlockField implements Cloneable
 			if( stack[j] == b ) {
 				Block[] newStack;
 				if( stack.length == 2 ) {
-					newStack = stack[j^1].stack;
+					newStack = stack[j^1].getStack();
 				} else {
 					newStack = new Block[stack.length-1];
-					for( int k=0; k<j; ++k ) newStack[j] = stack[k];
+					for( int k=0; k<j; ++k ) newStack[k] = stack[k];
 					for( int k=j+1; k<stack.length; ++k ) newStack[k-1] = stack[k];
 				}
 				blockStacks[index] = newStack;

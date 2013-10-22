@@ -23,14 +23,14 @@ public class BlockFieldRenderer
 				findOpaque: for( int z=bf.d-1; z>=0; --z ) {
 					Block[] stack = bf.getStack( x, y, z );
 					for( Block b : stack ) {
-						if( b.opacity == 1 ) break findOpaque;
+						if( b.getOpacity() == 1 ) break findOpaque;
 					}
 					--highestOpaqueLayer; 
 				}
 				for( int z=highestOpaqueLayer; z<bf.d; ++z ) {
 					Block[] stack = bf.getStack( x, y, z );
 					for( Block b : stack ) {
-						g.setColor(b.color);
+						g.setColor(b.getColor());
 						g.fillRect( canvX + (int)(canvWidth/2f + (x-cx) * tileSize), canvY + (int)(canvHeight/2f + (y-cy) * tileSize), tileSize, tileSize );
 					}
 				}

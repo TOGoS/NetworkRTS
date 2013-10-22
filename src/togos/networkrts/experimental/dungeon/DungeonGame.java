@@ -1,10 +1,12 @@
 package togos.networkrts.experimental.dungeon;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Random;
+import java.util.Set;
 
 import togos.networkrts.experimental.dungeon.Room.Neighbor;
 import togos.networkrts.experimental.dungeon.net.AbstractConnector;
@@ -35,8 +37,108 @@ public class DungeonGame
 		}
 	}
 	
-	static interface DGPhysicalObject {
-		
+	static interface Affixion
+	{
+		public String getDescription();
+	}
+	
+	static class BaseAffixion implements Affixion
+	{
+		protected final String description;
+		public BaseAffixion( String description ) {
+			this.description = description;
+		}
+		public String getDescription() {
+			return description;
+		}
+	}
+	
+	static class Affixions
+	{
+		static final Affixion NONE = new BaseAffixion("nothing");
+	}
+	
+	/**
+	 * An object can be either in a container
+	 * or at a position in some room.  In either case, it
+	 * may be fixed in position by an affixion.
+	 */
+	static interface Location {
+		public Container getContainer();
+		public Room getRoom();
+		public boolean getRoomPosition(CellCursor c);
+		public Affixion getAffixion(); 
+	}
+	
+	static final Location NOWHERE = new Location() {
+		@Override public Container getContainer() { return null; }
+		@Override public Affixion getAffixion() { return Affixions.NONE; }
+		@Override public Room getRoom() { return null; }
+		@Override public boolean getRoomPosition(CellCursor c) { return false; }
+	};
+	
+	static class ContainerLocation implements Location {
+		protected final Container c;
+		protected final Affixion af;
+		public ContainerLocation( Container c, Affixion af ) {
+			this.c = c;
+			this.af = af;
+		}
+		@Override public Container getContainer() {
+			return c;
+		}
+		@Override public Room getRoom() {
+			return null;
+		}
+		@Override public boolean getRoomPosition(CellCursor c) {
+			return false;
+		}
+		@Override public Affixion getAffixion() {
+			return af;
+		}
+	}
+	
+	static class RoomLocation implements Location {
+		protected final Room r;
+		protected final float x, y, z;
+		protected final Affixion af;
+		public RoomLocation( Room r, float x, float y, float z, Affixion af ) {
+			this.r = r; this.x = x;
+			this.y = y; this.z = z;
+			this.af = af;
+		}
+		public RoomLocation( CellCursor c, Affixion af ) {
+			this( c.room, c.x, c.y, c.z, af );
+		}
+		@Override public Container getContainer() {
+			return null;
+		}
+		@Override public Room getRoom() {
+			return r;
+		}
+		@Override public boolean getRoomPosition(CellCursor c) {
+			c.set(r, x, y, z);
+			return true;
+		}
+		@Override public Affixion getAffixion() {
+			return af;
+		}
+	}
+	
+	static interface Container
+	{
+		public void addItem( GameObject obj );
+		public void removeItem( GameObject obj );
+		public Set<GameObject> getContents();
+	}
+	
+	static interface GameObject extends Block
+	{
+		public void setLocation( Location loc );
+		public Location getLocation();
+		public Container getInterior();
+		public Container getExterior();
+		public boolean isOpen();
 	};
 	
 	/**
@@ -93,6 +195,11 @@ public class DungeonGame
 			updater.addPostUpdateListener(this);
 		}
 		
+		public void setPosition( Location loc ) {
+			loc.getRoomPosition(this.position);
+			invalidate();
+		}
+		
 		public void setPosition( CellCursor pos ) {
 			this.position.set(pos);
 			invalidate();
@@ -108,60 +215,86 @@ public class DungeonGame
 		}
 	}
 	
-	static class WalkingCharacter implements DGPhysicalObject, MessageReceiver<Object>
+	static abstract class BaseGameObject implements GameObject
 	{
 		protected final InternalUpdater updater;
-		protected VisibilityCache visibilityCache;
-		public int facingX = 0, facingY = 0;
-		public int walkingX = 0, walkingY = 0;
-		public long walkReadyTime = 0;
-		public long walkStepInterval = 100; // Interval between steps
-		public long blockDelay = 10; // Delay after being blocked
-		public Block block;
-		private final CellCursor position = new CellCursor();
+		private Container interior;
+		private Container exterior;
+		private Location location = NOWHERE;
+		private VisibilityCache visibilityCache;
 		
-		public WalkingCharacter( Block block, InternalUpdater updater ) {
-			this.block = block;
+		private final Block[] stack = new Block[]{ this };
+		
+		public BaseGameObject( InternalUpdater updater ) {
 			this.updater = updater;
 		}
 		
-		protected void preMove( boolean roomChanged ) {
-			position.removeBlock(block);
-			// If room has not changed, we'll only call room.updated() once, in postMove
-			if( roomChanged && position.room != null ) position.room.updated();
-		}
-		protected void postMove( boolean roomChanged ) {
-			position.addBlock(block);
-			if( visibilityCache != null ) visibilityCache.setPosition(this.position);
-			if( position.room != null ) position.room.updated();
+		@Override public String getDescription() {
+			return "some sort of object";
 		}
 		
-		public void setPosition( Room r, float x, float y, float z ) {
-			boolean roomChanged = r != this.position.room;
-			preMove( roomChanged );
-			position.set(r, x, y, z);
-			postMove( roomChanged );
+		@Override public Color getColor() {
+			return Color.PINK;
 		}
 		
-		public void setPosition( CellCursor pos ) {
-			setPosition(pos.room, pos.x, pos.y, pos.z);
+		@Override public float getOpacity() {
+			return 0.01f;
 		}
 		
-		public void getPosition(CellCursor dest) {
-			dest.set(position);
+		@Override public Block[] getStack() {
+			return stack;
 		}
 		
-		public void putAt( Room r, float x, float y, float z) {
-			setPosition(r, x, y, z);
-			position.addBlock(block);
+		@Override public boolean isBlocking() {
+			return false;
 		}
 		
+		@Override public void setLocation( Location l ) {
+			location = l;
+			if( visibilityCache != null ) visibilityCache.setPosition(this.location);
+		}
+		
+		@Override public Location getLocation() {
+			return location;
+		}
+		
+		@Override public Container getInterior() {
+			return interior;
+		}
+		
+		@Override public Container getExterior() {
+			return exterior;
+		}
+		
+		@Override public boolean isOpen() {
+			return false;
+		}
+		
+		// TODO: Should probably not allow this to be set directly.
+		// Could be built-in to camera objects
 		public void setVisibilityCache(VisibilityCache vc) {
 			if( this.visibilityCache != null ) {
 				this.visibilityCache.clear();
 			}
 			this.visibilityCache = vc;
-			vc.setPosition(this.position);
+			vc.setPosition(this.location);
+		}
+		
+		public VisibilityCache getVisibilityCache() {
+			return visibilityCache;
+		}
+	}
+	
+	static abstract class WalkingCharacter extends BaseGameObject implements MessageReceiver<Object>
+	{
+		public int facingX = 0, facingY = 0;
+		public int walkingX = 0, walkingY = 0;
+		public long walkReadyTime = 0;
+		public long walkStepInterval = 100; // Interval between steps
+		public long blockDelay = 10; // Delay after being blocked
+		
+		public WalkingCharacter( InternalUpdater updater ) {
+			super(updater);
 		}
 		
 		public void startWalking(int x, int y, int z) {
@@ -184,13 +317,12 @@ public class DungeonGame
 		}
 	}
 	
-	static class AvatarianTranceiver implements DGPhysicalObject {
-		protected final InternalUpdater updater;
+	static class AvatarianTranceiver extends BaseGameObject {
 		protected final long transmissionDelay;
 		protected AvatarianTranceiver other;
 		
 		private AvatarianTranceiver( long transmissionDelay, InternalUpdater updater ) {
-			this.updater = updater;
+			super(updater);
 			this.transmissionDelay = transmissionDelay;
 		}
 		
@@ -216,12 +348,23 @@ public class DungeonGame
 		}
 	}
 	
+	static class Bot extends WalkingCharacter
+	{
+		public Bot( InternalUpdater updater ) {
+			super(updater);
+		}
+		
+		@Override public Color getColor() {
+			return Color.RED;
+		}
+	}
+	
 	static class Avatar extends WalkingCharacter
 	{
 		// TODO: Use more generic physical container system
 		AvatarianTranceiver atc;
 		EthernetSwitch internalSwitch = new EthernetSwitch(6, 0, updater);
-		final HashSet<DGPhysicalObject> internalItems = new HashSet<DGPhysicalObject>();
+		final HashSet<GameObject> internalItems = new HashSet<GameObject>();
 		public Connector<ObjectEthernetFrame<?>> headPort;
 		public long avatarEthernetAddress = 0x1234567;
 		public long clientEthernetAddress;
@@ -235,8 +378,8 @@ public class DungeonGame
 			}
 		};
 		
-		public Avatar( Block block, AvatarianTranceiver atc, InternalUpdater updater ) {
-			super(block, updater);
+		public Avatar( AvatarianTranceiver atc, InternalUpdater updater ) {
+			super(updater);
 			PatchCable<ObjectEthernetFrame<?>> headPortCable = new PatchCable<ObjectEthernetFrame<?>>(ConnectorTypes.rj45.male, ConnectorTypes.rj45.female, ObjectEthernetFrame.GENERIC_CLASS, 0, updater);
 			PatchCable<ObjectEthernetFrame<?>> uplinkCable = new PatchCable<ObjectEthernetFrame<?>>(ConnectorTypes.rj45.male, ConnectorTypes.rj45.male, ObjectEthernetFrame.GENERIC_CLASS, 0, updater);
 			PatchCable<ObjectEthernetFrame<?>> controllerCable = new PatchCable<ObjectEthernetFrame<?>>(ConnectorTypes.rj45.male, ConnectorTypes.rj45.male, ObjectEthernetFrame.GENERIC_CLASS, 0, updater);
@@ -255,6 +398,14 @@ public class DungeonGame
 			}
 		}
 		
+		@Override public Color getColor() {
+			return Color.YELLOW;
+		}
+		
+		@Override public String getDescription() { return "the Avatar"; }
+		@Override public float getOpacity() { return 0.5f; }
+		@Override public boolean isBlocking() { return true; }
+		
 		public <Payload> void sendFrame( long destAddress, Payload payload ) {
 			if( destAddress != 0 ) {
 				controllerPort.sendMessage(new ObjectEthernetFrame<Payload>(avatarEthernetAddress, destAddress, payload));
@@ -263,12 +414,12 @@ public class DungeonGame
 		
 		protected UpdateListener vcUpdateListener = new UpdateListener() {
 			public void updated() {
-				sendFrame(clientEthernetAddress, visibilityCache.projection.clone());
+				sendFrame(clientEthernetAddress, getVisibilityCache().projection.clone());
 			}
 		};
 		
 		@Override public void setVisibilityCache(VisibilityCache vc) {
-			VisibilityCache oldVc = this.visibilityCache;
+			VisibilityCache oldVc = this.getVisibilityCache();
 			if( oldVc != null ) oldVc.removeUpdateListener(vcUpdateListener);
 			
 			super.setVisibilityCache(vc);
@@ -331,15 +482,40 @@ public class DungeonGame
 			return currentTime;
 		}
 		
+		protected void move( GameObject obj, Location l1 ) {
+			Location l0 = obj.getLocation();
+			if( l0.getContainer() != null && l0.getContainer() != l1.getContainer() ) {
+				l0.getContainer().removeItem(obj);
+			}
+			if( l1.getContainer() != null && l1.getContainer() != l0.getContainer() ) {
+				l1.getContainer().addItem(obj);
+			}
+			CellCursor cc = new CellCursor();
+			if( l0.getRoomPosition(cc) ) {
+				cc.removeBlock(obj);
+				cc.room.updated();
+			}
+			obj.setLocation(l1);
+			if( l1.getRoomPosition(cc) ) {
+				cc.addBlock(obj);
+				if( l1.getRoom() != l0.getRoom() ) cc.room.updated();
+			}
+		}
+		
 		protected boolean attemptMove( WalkingCharacter c, int dx, int dy, int dz ) {
-			c.getPosition(tempCursor);
+			if( !c.getLocation().getRoomPosition(tempCursor) ) {
+				// Not in a room => can't move!
+				return false;
+			}
+			
 			tempCursor.changePosition( dx, dy, dz );
 			boolean blocked = false;
 			for( Block b : tempCursor.getAStack() ) {
-				if( b.blocking ) blocked = true;
+				if( b.isBlocking() ) blocked = true;
+				// TODO: But maybe it could be shoved?
 			}
 			if( !blocked ) {
-				c.setPosition(tempCursor);
+				move( c, new RoomLocation(tempCursor, Affixions.NONE) );
 				return true;
 			} else {
 				return false;
@@ -434,10 +610,10 @@ public class DungeonGame
 	}
 	
 	public static Simulator initSim( long initialTime ) {
-		Room r0 = new Room(64, 64, 4, Block.EMPTY_STACK);
+		Room r0 = new Room(64, 64, 4, SimpleBlock.EMPTY_STACK);
 		for( int y=r0.getHeight()-1; y>=0; --y )
 		for( int x=r0.getWidth()-1; x>=0; --x ) {
-			r0.blockField.setStack(x, y, 0, Block.GRASS.stack);
+			r0.blockField.setStack(x, y, 0, SimpleBlock.GRASS.stack);
 		}
 		
 		CellCursor c = new CellCursor();
@@ -450,7 +626,7 @@ public class DungeonGame
 			for( int dx=0; dx<=1+r; ++dx ) {
 				c1.set(c);
 				c1.changePosition(dx, dy, 0);
-				c1.setStack( Block.FOLIAGE.stack );
+				c1.setStack( SimpleBlock.FOLIAGE.stack );
 			}
 		}
 		for( int i=0; i<20; ++i ) {
@@ -459,7 +635,7 @@ public class DungeonGame
 			for( int dx=-1; dx<=1; ++dx ) {
 				c1.set(c);
 				c1.changePosition(dx, dy, 0);
-				c1.setStack( Block.WALL.stack );
+				c1.setStack( SimpleBlock.WALL.stack );
 			}
 		}
 		
@@ -476,26 +652,26 @@ public class DungeonGame
 		
 		sim.playerRemoteTranceiverPort = playerTranceivers[1].port;
 		
-		final Avatar player = new Avatar( Block.PLAYER, playerTranceivers[0], sim.getInternalUpdater() );
+		final Avatar player = new Avatar( playerTranceivers[0], sim.getInternalUpdater() );
 		player.walkReadyTime = initialTime;
-		player.putAt( r0, 2.51f, 2.51f, 1.51f );
+		sim.move(player, new RoomLocation(r0, 2.51f, 2.51f, 1.51f, Affixions.NONE) );
 		sim.commandee = player;
 		sim.characters.add(player);
 		
-		final WalkingCharacter bot = new WalkingCharacter( Block.BOT, sim.getInternalUpdater() );
+		final WalkingCharacter bot = new Bot( sim.getInternalUpdater() );
 		bot.walkStepInterval = 75;
-		bot.putAt( r0, 3.51f, 3.51f, 1.51f);
+		sim.move(bot, new RoomLocation(r0, 3.51f, 3.51f, 1.51f, Affixions.NONE) );
 		bot.startWalking( 1, 1, 0);
 		sim.characters.add(bot);
 		
-		final WalkingCharacter bot2 = new WalkingCharacter( Block.BOT, sim.getInternalUpdater() );
+		final WalkingCharacter bot2 = new Bot( sim.getInternalUpdater() );
 		bot2.walkStepInterval = 125;
-		bot2.putAt( r0, 4.51f, 3.51f, 1.51f);
+		sim.move(bot2, new RoomLocation(r0, 4.51f, 3.51f, 1.51f, Affixions.NONE) );
 		bot2.startWalking( 1, 1, 0);
 		sim.characters.add(bot2);
 		
-		final WalkingCharacter bot3 = new WalkingCharacter( Block.BOT, sim.getInternalUpdater() );
-		bot3.putAt( r0, 1.51f, 3.51f, 1.51f);
+		final WalkingCharacter bot3 = new Bot( sim.getInternalUpdater() );
+		sim.move(bot3, new RoomLocation(r0, 1.51f, 3.51f, 1.51f, Affixions.NONE) );
 		bot3.startWalking( 1, 1, 0);
 		sim.characters.add(bot3);
 		

@@ -30,7 +30,7 @@ class CellCursor {
 	
 	public Block[] getAStack() {
 		Block[] stack = getStack();
-		return stack == null ? Block.EMPTY_STACK : stack;
+		return stack == null ? SimpleBlock.EMPTY_STACK : stack;
 	}
 	
 	public Block[] getStack() {

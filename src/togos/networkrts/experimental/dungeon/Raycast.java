@@ -39,9 +39,8 @@ public class Raycast
 					dest.setStack( destCX, destCY, zz, cursor.getStackAtZ(zz) );
 				}
 				
-				for( Block b : stack ) visibility -= b.opacity;
+				for( Block b : stack ) visibility -= b.getOpacity();
 			}
 		}
 	}
-
 }
