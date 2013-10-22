@@ -56,6 +56,7 @@ public class DungeonGame
 	static class Affixions
 	{
 		static final Affixion NONE = new BaseAffixion("nothing");
+		static final Affixion COMPONENT = new BaseAffixion("being a component of its container");
 	}
 	
 	/**
@@ -127,14 +128,87 @@ public class DungeonGame
 	
 	static interface Container
 	{
+		/**
+		 * Simulator will call this to determine
+		 * if the container has room for the thing
+		 * in addition to whatever's already there
+		 */
+		public boolean canHold( GameObject obj );
+		/**
+		 * Force the container to hold the given object.
+		 * The container may schedule events or updates in response.
+		 * The item's location will be updated separately.
+		 */
 		public void addItem( GameObject obj );
+		/**
+		 * Force the container to not hold the given object.
+		 * The container may schedule events or updates in response.
+		 * The item's location will be updated separately.
+		 */
 		public void removeItem( GameObject obj );
+		/**
+		 * Return contents for reading.
+		 */
 		public Set<GameObject> getContents();
+	}
+	
+	static abstract class BaseContainer implements Container
+	{
+		Set<GameObject> items = new HashSet<GameObject>();
+		
+		@Override public void addItem(GameObject obj) {
+			items.add(obj);
+		}
+		
+		@Override public void removeItem(GameObject obj) {
+			items.remove(obj);
+		}
+		
+		@Override public Set<GameObject> getContents() {
+			return items;
+		}
+	}
+	
+	/**
+	 * Represents a non-container; i.e. it can't hold anything.
+	 */
+	static class VoidContainer extends BaseContainer
+	{
+		public static final VoidContainer instance = new VoidContainer();
+		
+		@Override public boolean canHold(GameObject obj) { return false; }
+	}
+	
+	static class Bag extends BaseContainer
+	{
+		float volumeAvailable;
+		float volumeUsed;
+		public Bag( float volume ) {
+			this.volumeAvailable = volume;
+		}
+		
+		@Override public boolean canHold(GameObject obj) {
+			return false;
+		}
+		
+		@Override public void addItem(GameObject obj) {
+			items.add(obj);
+		}
+		
+		@Override public void removeItem(GameObject obj) {
+			items.remove(obj);
+		}
+
 	}
 	
 	static interface GameObject extends Block
 	{
+		// These are all 'low-level' methods.
+		// They should only manipulate the object's state
+		// and getters should not return different values at different times
+		
 		public void setLocation( Location loc );
+		public float getVolume();
 		public Location getLocation();
 		public Container getInterior();
 		public Container getExterior();
@@ -218,8 +292,8 @@ public class DungeonGame
 	static abstract class BaseGameObject implements GameObject
 	{
 		protected final InternalUpdater updater;
-		private Container interior;
-		private Container exterior;
+		private Container interior = VoidContainer.instance;
+		private Container exterior = VoidContainer.instance;
 		private Location location = NOWHERE;
 		private VisibilityCache visibilityCache;
 		
@@ -239,6 +313,10 @@ public class DungeonGame
 		
 		@Override public float getOpacity() {
 			return 0.01f;
+		}
+		
+		@Override public float getVolume() {
+			return 1;
 		}
 		
 		@Override public Block[] getStack() {
@@ -354,9 +432,8 @@ public class DungeonGame
 			super(updater);
 		}
 		
-		@Override public Color getColor() {
-			return Color.RED;
-		}
+		@Override public Color getColor() { return Color.RED; }
+		@Override public boolean isBlocking() { return true; }
 	}
 	
 	static class Avatar extends WalkingCharacter
@@ -398,10 +475,7 @@ public class DungeonGame
 			}
 		}
 		
-		@Override public Color getColor() {
-			return Color.YELLOW;
-		}
-		
+		@Override public Color getColor() { return Color.YELLOW; }
 		@Override public String getDescription() { return "the Avatar"; }
 		@Override public float getOpacity() { return 0.5f; }
 		@Override public boolean isBlocking() { return true; }
@@ -484,11 +558,23 @@ public class DungeonGame
 		
 		protected void move( GameObject obj, Location l1 ) {
 			Location l0 = obj.getLocation();
-			if( l0.getContainer() != null && l0.getContainer() != l1.getContainer() ) {
-				l0.getContainer().removeItem(obj);
-			}
-			if( l1.getContainer() != null && l1.getContainer() != l0.getContainer() ) {
-				l1.getContainer().addItem(obj);
+			boolean movedBetweenContainers =
+				l0.getContainer() != l1.getContainer() ||
+				l0.getRoom() != l1.getRoom();
+			if( movedBetweenContainers ) {
+				// Disconnect anything attached to the exterior!
+				for( GameObject o : obj.getExterior().getContents() ) {
+					if( o instanceof Connector ) {
+						Connectors.forceDisconnect( (Connector<?>)o );
+					}
+				}
+				
+				if( l0.getContainer() != null ) {
+					l0.getContainer().removeItem(obj);
+				}
+				if( l1.getContainer() != null ) {
+					l1.getContainer().addItem(obj);
+				}
 			}
 			CellCursor cc = new CellCursor();
 			if( l0.getRoomPosition(cc) ) {

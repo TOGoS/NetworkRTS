@@ -18,10 +18,14 @@ public class Connectors
 		}
 	}
 	
-	public static void disconnect( Connector<?> c ) throws ConnectionError {
-		ensureReconnectable(c);
+	public static <T> void forceDisconnect(Connector<T> c) {
 		_disconnect(c.getMate());
 		_disconnect(c);
+	}
+	
+	public static void disconnect( Connector<?> c ) throws ConnectionError {
+		ensureReconnectable(c);
+		forceDisconnect( c );
 	}
 	
 	public static boolean canConnect(Connector<?> c1, Connector<?> c2) {
