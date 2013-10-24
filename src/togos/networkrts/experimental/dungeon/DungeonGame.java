@@ -64,65 +64,21 @@ public class DungeonGame
 	 * or at a position in some room.  In either case, it
 	 * may be fixed in position by an affixion.
 	 */
-	static interface Location {
-		public Container getContainer();
-		public Room getRoom();
-		public boolean getRoomPosition(CellCursor c);
-		public Affixion getAffixion(); 
-	}
-	
-	static final Location NOWHERE = new Location() {
-		@Override public Container getContainer() { return null; }
-		@Override public Affixion getAffixion() { return Affixions.NONE; }
-		@Override public Room getRoom() { return null; }
-		@Override public boolean getRoomPosition(CellCursor c) { return false; }
-	};
-	
-	static class ContainerLocation implements Location {
-		protected final Container c;
-		protected final Affixion af;
-		public ContainerLocation( Container c, Affixion af ) {
-			this.c = c;
-			this.af = af;
+	static class Location {
+		static final Location NOWHERE = new Location(null, 0, 0, 0, Affixions.NONE);	
+		
+		public final Container container;
+		public final float x, y, z;
+		public final Affixion affixion;
+		public Location( Container c, float x, float y, float z, Affixion affixion ) {
+			this.container = c;
+			this.x = x;
+			this.y = y;
+			this.z = z;
+			this.affixion = affixion;
 		}
-		@Override public Container getContainer() {
-			return c;
-		}
-		@Override public Room getRoom() {
-			return null;
-		}
-		@Override public boolean getRoomPosition(CellCursor c) {
-			return false;
-		}
-		@Override public Affixion getAffixion() {
-			return af;
-		}
-	}
-	
-	static class RoomLocation implements Location {
-		protected final Room r;
-		protected final float x, y, z;
-		protected final Affixion af;
-		public RoomLocation( Room r, float x, float y, float z, Affixion af ) {
-			this.r = r; this.x = x;
-			this.y = y; this.z = z;
-			this.af = af;
-		}
-		public RoomLocation( CellCursor c, Affixion af ) {
-			this( c.room, c.x, c.y, c.z, af );
-		}
-		@Override public Container getContainer() {
-			return null;
-		}
-		@Override public Room getRoom() {
-			return r;
-		}
-		@Override public boolean getRoomPosition(CellCursor c) {
-			c.set(r, x, y, z);
-			return true;
-		}
-		@Override public Affixion getAffixion() {
-			return af;
+		public Location( CellCursor cc, Affixion affixion ) {
+			this( cc.room, cc.x, cc.y, cc.z, affixion );
 		}
 	}
 	
@@ -270,7 +226,7 @@ public class DungeonGame
 		}
 		
 		public void setPosition( Location loc ) {
-			loc.getRoomPosition(this.position);
+			this.position.set(loc);
 			invalidate();
 		}
 		
@@ -294,7 +250,7 @@ public class DungeonGame
 		protected final InternalUpdater updater;
 		private Container interior = VoidContainer.instance;
 		private Container exterior = VoidContainer.instance;
-		private Location location = NOWHERE;
+		private Location location = Location.NOWHERE;
 		private VisibilityCache visibilityCache;
 		
 		private final Block[] stack = new Block[]{ this };
@@ -558,9 +514,7 @@ public class DungeonGame
 		
 		protected void move( GameObject obj, Location l1 ) {
 			Location l0 = obj.getLocation();
-			boolean movedBetweenContainers =
-				l0.getContainer() != l1.getContainer() ||
-				l0.getRoom() != l1.getRoom();
+			boolean movedBetweenContainers = l0.container != l1.container;
 			if( movedBetweenContainers ) {
 				// Disconnect anything attached to the exterior!
 				for( GameObject o : obj.getExterior().getContents() ) {
@@ -568,32 +522,18 @@ public class DungeonGame
 						Connectors.forceDisconnect( (Connector<?>)o );
 					}
 				}
-				
-				if( l0.getContainer() != null ) {
-					l0.getContainer().removeItem(obj);
-				}
-				if( l1.getContainer() != null ) {
-					l1.getContainer().addItem(obj);
-				}
 			}
-			CellCursor cc = new CellCursor();
-			if( l0.getRoomPosition(cc) ) {
-				cc.removeBlock(obj);
-				cc.room.updated();
-			}
+			if( l0.container != null ) l0.container.removeItem(obj);
 			obj.setLocation(l1);
-			if( l1.getRoomPosition(cc) ) {
-				cc.addBlock(obj);
-				if( l1.getRoom() != l0.getRoom() ) cc.room.updated();
-			}
+			if( l1.container != null ) l1.container.addItem(obj);
 		}
 		
 		protected boolean attemptMove( WalkingCharacter c, int dx, int dy, int dz ) {
-			if( !c.getLocation().getRoomPosition(tempCursor) ) {
+			if( !(c.getLocation().container instanceof Room) ) {
 				// Not in a room => can't move!
 				return false;
 			}
-			
+			CellCursor tempCursor = new CellCursor(c.getLocation());
 			tempCursor.changePosition( dx, dy, dz );
 			boolean blocked = false;
 			for( Block b : tempCursor.getAStack() ) {
@@ -601,7 +541,7 @@ public class DungeonGame
 				// TODO: But maybe it could be shoved?
 			}
 			if( !blocked ) {
-				move( c, new RoomLocation(tempCursor, Affixions.NONE) );
+				move( c, new Location(tempCursor, Affixions.NONE) );
 				return true;
 			} else {
 				return false;
@@ -740,24 +680,24 @@ public class DungeonGame
 		
 		final Avatar player = new Avatar( playerTranceivers[0], sim.getInternalUpdater() );
 		player.walkReadyTime = initialTime;
-		sim.move(player, new RoomLocation(r0, 2.51f, 2.51f, 1.51f, Affixions.NONE) );
+		sim.move(player, new Location(r0, 2.51f, 2.51f, 1.51f, Affixions.NONE) );
 		sim.commandee = player;
 		sim.characters.add(player);
 		
 		final WalkingCharacter bot = new Bot( sim.getInternalUpdater() );
 		bot.walkStepInterval = 75;
-		sim.move(bot, new RoomLocation(r0, 3.51f, 3.51f, 1.51f, Affixions.NONE) );
+		sim.move(bot, new Location(r0, 3.51f, 3.51f, 1.51f, Affixions.NONE) );
 		bot.startWalking( 1, 1, 0);
 		sim.characters.add(bot);
 		
 		final WalkingCharacter bot2 = new Bot( sim.getInternalUpdater() );
 		bot2.walkStepInterval = 125;
-		sim.move(bot2, new RoomLocation(r0, 4.51f, 3.51f, 1.51f, Affixions.NONE) );
+		sim.move(bot2, new Location(r0, 4.51f, 3.51f, 1.51f, Affixions.NONE) );
 		bot2.startWalking( 1, 1, 0);
 		sim.characters.add(bot2);
 		
 		final WalkingCharacter bot3 = new Bot( sim.getInternalUpdater() );
-		sim.move(bot3, new RoomLocation(r0, 1.51f, 3.51f, 1.51f, Affixions.NONE) );
+		sim.move(bot3, new Location(r0, 1.51f, 3.51f, 1.51f, Affixions.NONE) );
 		bot3.startWalking( 1, 1, 0);
 		sim.characters.add(bot3);
 		

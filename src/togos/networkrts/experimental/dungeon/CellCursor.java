@@ -1,14 +1,28 @@
 package togos.networkrts.experimental.dungeon;
 
+import togos.networkrts.experimental.dungeon.DungeonGame.Location;
+
 class CellCursor {
 	Room room;
 	float x, y, z;
 	
 	public CellCursor() { }
 	
+	public CellCursor( Location l ) {
+		set(l);
+	}
+	
 	public void set( Room room, float x, float y, float z ) {
 		this.room = room;
 		this.x = x; this.y = y; this.z = z;
+	}
+	
+	public void set( Location l ) {
+		if( l.container instanceof Room ) {
+			set( (Room)l.container, l.x, l.y, l.z );
+		} else {
+			set( null, 0, 0, 0 );
+		}
 	}
 	
 	public void set( CellCursor c ) { set( c.room, c.x, c.y, c.z ); }
