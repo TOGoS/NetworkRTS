@@ -14,7 +14,7 @@ public class CompileError extends ScriptError
 		super( message, sloc );
 	}
 	
-	public CompileError( SourceLocation sLoc, Exception cause ) {
+	public CompileError( Exception cause, SourceLocation sLoc ) {
 		super( cause, sLoc );
 	}
 }
