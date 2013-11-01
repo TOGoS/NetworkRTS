@@ -1,6 +1,7 @@
 package togos.lang;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -21,7 +22,7 @@ public class ScriptError extends Exception
 	}
 	
 	public ScriptError( String message, Throwable cause, SourceLocation sLoc ) {
-		this( message, cause, Arrays.asList(sLoc) );
+		this( message, cause, sLoc == null ? Collections.<SourceLocation>emptyList() : Arrays.asList(sLoc) );
 	}
 	
 	public ScriptError( String message, List<SourceLocation> trace ) {
@@ -52,7 +53,11 @@ public class ScriptError extends Exception
 	}
 	
 	public String getMessageWithScriptTrace() {
-		return getMessage() + "\n" + traceAsString("  ","\n");
+		return getMessage() + (
+			scriptTrace.size() == 0 ?
+				" (no source location)" :
+				"\n" + traceAsString("  ","\n")
+		);
 	}
 	
 	public List<SourceLocation> getScriptTrace() {
