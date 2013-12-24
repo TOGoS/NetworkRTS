@@ -1,0 +1,15 @@
+Should be transportable over UDP
+
+Message types
+  Informational
+    Sights, sounds, status, etc
+  Request/renew/cancel subscription
+    e.g. to image stream
+  Command
+    Move, look at, etc
+
+All messages should contain
+  Channel ID
+  Ordering value (so when receiving contradictory information, newer can take precedence)
+
+Encryption/authentication is outside the scope for now
