@@ -8,6 +8,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import javax.swing.JPanel;
 
@@ -166,11 +167,11 @@ public class RenderDemo2
 	}
 	
 	static class Entity {
-		final long id;
+		final UUID id;
 		final float x, y, vx, vy, w, h;
 		final String imageName;
 		
-		public Entity( long id, float x, float y, float vx, float vy, float w, float h, String imageName ) {
+		public Entity( UUID id, float x, float y, float vx, float vy, float w, float h, String imageName ) {
 			this.id = id;
 			this.x = x; this.y = y;
 			this.vx = vx; this.vy = vy;
@@ -180,6 +181,8 @@ public class RenderDemo2
 	}
 	
 	static class Room {
+		final UUID id; 
+		
 		final int size;
 		final byte[] tileIds;
 		final BlockType[] blockTypes;
@@ -187,9 +190,10 @@ public class RenderDemo2
 		final RenderNode background;
 		float backgroundDistance;
 		
-		public Room( int size, byte[] tileIds, BlockType[] blockTypes, List<Entity> entities, RenderNode background, float backgroundDistance ) {
+		public Room( UUID id, int size, byte[] tileIds, BlockType[] blockTypes, List<Entity> entities, RenderNode background, float backgroundDistance ) {
 			assert tileIds.length >= size*size;
 			
+			this.id = id;
 			this.size = size;
 			this.tileIds = tileIds;
 			this.blockTypes = blockTypes;
@@ -215,7 +219,7 @@ public class RenderDemo2
 					e.id, newX, newY, newVX, newVY, e.w, e.h, e.imageName
 				));
 			}
-			return new Room( size, tileIds, blockTypes, updatedEntities, background, backgroundDistance );
+			return new Room( ROOM0_ID, size, tileIds, blockTypes, updatedEntities, background, backgroundDistance );
 		}
 		
 		public RenderNode toRenderNode( float viewX, float viewY, ImageHandleCache ihc ) {
@@ -231,15 +235,16 @@ public class RenderDemo2
 			return l.toRenderNode( background, 1, ihc, 0, 0, size ).withSprite(sprites);
 		}
 	
-		public Entity findEntity( long id ) {
+		public Entity findEntity( UUID id ) {
 			for( Entity e : entities ) {
-				if( e.id == id ) return e;
+				if( e.id.equals(id) ) return e;
 			}
 			return null;
 		}
 	}
 	
-	static long PLAYER_ID = 0x113322;
+	static UUID PLAYER_ID = UUID.randomUUID();
+	static UUID ROOM0_ID = UUID.randomUUID();
 	
 	static BlockType[] blockTypes = new BlockType[] {
 		new BlockType( "transparent:16x16", false, false ),
@@ -367,7 +372,7 @@ public class RenderDemo2
 		ArrayList<Entity> roomEntities = new ArrayList<Entity>();
 		roomEntities.add(new Entity(PLAYER_ID, 3.5f, 3.5f, 0, 0, 0.8f, 0.8f, "tile-images/dude.png"));
 		
-		Room room = new Room(testLayer.size, testLayer.tileIds, testLayer.blockTypes, roomEntities,
+		Room room = new Room(ROOM0_ID, testLayer.size, testLayer.tileIds, testLayer.blockTypes, roomEntities,
 			bgLayer1.toRenderNode(ihc, 0.75f), 1);
 
 		f.setVisible(true);
