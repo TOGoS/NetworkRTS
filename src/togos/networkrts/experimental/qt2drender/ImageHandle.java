@@ -43,7 +43,7 @@ public class ImageHandle
 	RenderNode renderNode = null;
 	public synchronized RenderNode asOpaqueRenderNode() {
 		if( renderNode == null ) {
-			renderNode = new RenderNode( null, 0, 0, 0, 0, this, null, null, null, null );			
+			renderNode = new RenderNode( null, 0, 0, 0, 0, RenderNode.EMPTY_SPRITE_LIST, this, null, null, null, null );			
 		}
 		return renderNode;
 	}
