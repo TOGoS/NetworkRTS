@@ -1,5 +1,7 @@
 package togos.networkrts.experimental.qt2drender;
 
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +51,9 @@ public class ImageHandle
 		}
 		
 		BufferedImage scale = new BufferedImage(w, h, isCompletelyOpaque ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB);
-		scale.getGraphics().drawImage( image, 0, 0, w, h, 0, 0, image.getWidth(), image.getHeight(), null);
+		Graphics2D g = (Graphics2D)scale.getGraphics();
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g.drawImage( image, 0, 0, w, h, 0, 0, image.getWidth(), image.getHeight(), null);
 		scales.add(scale);
 		return scale;
 	}
