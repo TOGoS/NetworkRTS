@@ -198,9 +198,9 @@ public class RenderDemo2
 				float newVX = e.vx;
 				float newVY = e.vy + 9.8f*time;
 				
-				if( blockTypes[tileIds[(int)e.x + size*(int)(newY + e.h)]].hard ) {
-					if( newVY > 0 ) newVY = 0;
-					newY = (int)(newY + e.h)-e.h;
+				if( blockTypes[tileIds[(int)e.x + size*(int)(newY + e.h/2)]].hard ) {
+					if( newVY > 0 ) newVY = -newVY*0.95f;
+					newY = (int)(newY + e.h/2)-e.h/2;
 				}
 				
 				updatedEntities.add(new Entity(
@@ -325,7 +325,7 @@ public class RenderDemo2
 		
 		@Override public void paint( Graphics g ) {
 			int nodeSize = 8;
-			float scale = 512;
+			float scale = 256;
 			
 			//float dx = (float)(Math.cos(ts * 0.01));
 			//float dy = (float)(Math.sin(ts * 0.01));
