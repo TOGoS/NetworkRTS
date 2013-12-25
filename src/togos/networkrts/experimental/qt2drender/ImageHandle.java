@@ -9,22 +9,36 @@ import togos.networkrts.experimental.qt2drender.Renderer.RenderNode;
 public class ImageHandle
 {
 	public final BufferedImage image;
-	public final boolean hasTranslucentPixels;
+	public final boolean isCompletelyOpaque;
+	public final boolean isCompletelyTransparent;
 	// Big fat memory leak:
 	final List<BufferedImage> scales = new ArrayList<BufferedImage>();
 	
 	public ImageHandle( BufferedImage image ) {
 		this.image = image;
 		
-		findTranslucentPixels: {
-			for( int y=0; y<image.getHeight(); ++y ) for( int x=0; x<image.getWidth(); ++x ) {
-				if( (image.getRGB(y, x) & 0xFF000000) != 0xFF000000 ) {
-					hasTranslucentPixels = true;
-					break findTranslucentPixels;
-				}
+		boolean isCompletelyTransparent = true;
+		boolean isCompletelyOpaque = true;
+		
+		for( int y=0; y<image.getHeight(); ++y ) for( int x=0; x<image.getWidth(); ++x ) {
+			switch( (image.getRGB(x, y) & 0xFF000000) ) {
+			case 0xFF000000:
+				isCompletelyTransparent = false;
+				break;
+			case 0x00000000:
+				isCompletelyOpaque = false;
+				break;
+			default:
+				isCompletelyTransparent = false;
+				isCompletelyOpaque = false;
+				break;
 			}
-			hasTranslucentPixels = false;
+			
+			if( !isCompletelyTransparent && !isCompletelyOpaque ) break;
 		}
+		
+		this.isCompletelyOpaque = isCompletelyOpaque;
+		this.isCompletelyTransparent = isCompletelyTransparent;
 	}
 	
 	public BufferedImage optimized( int w, int h ) {
@@ -34,7 +48,7 @@ public class ImageHandle
 			if( scale.getWidth() == w && scale.getHeight() == h ) return scale;
 		}
 		
-		BufferedImage scale = new BufferedImage(w, h, hasTranslucentPixels ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB);
+		BufferedImage scale = new BufferedImage(w, h, isCompletelyOpaque ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB);
 		scale.getGraphics().drawImage( image, 0, 0, w, h, 0, 0, image.getWidth(), image.getHeight(), null);
 		scales.add(scale);
 		return scale;

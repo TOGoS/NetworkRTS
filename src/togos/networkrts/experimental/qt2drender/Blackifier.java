@@ -30,21 +30,20 @@ public class Blackifier
 		return (color >> shift) & 0xFF;
 	}
 	
-	static int blacken( int color, float value ) {
+	static int blacken( int color, float brightness, float visibility ) {
 		int originalAlpha = component(color, 24);
-		
 		return color(
-			originalAlpha + (1-value)*(255-originalAlpha),
-			component(color, 16)*value,
-			component(color,  8)*value,
-			component(color,  0)*value
+			originalAlpha + (1-visibility)*(255-originalAlpha),
+			component(color, 16)*brightness*visibility,
+			component(color,  8)*brightness*visibility,
+			component(color,  0)*brightness*visibility
 		);
 	}
 	
-	public static BufferedImage shade( BufferedImage img, float m0, float m1, float m2, float m3 ) {
+	public static BufferedImage shade( BufferedImage img, float brightness, float v0, float v1, float v2, float v3 ) {
 		int w = img.getWidth(), h = img.getHeight();
 		int[] buf = img.getRGB(0, 0, w, h, new int[w*h], 0, w);
-		boolean hasTransparency = false;
+		boolean isCompletelyOpaque = true;
 		for( int j=w*h-1, y=h-1; y>=0; --y ) for( int x=w-1; x>=0; --x, --j ) {
 			float cx = x+0.5f;
 			float cy = y+0.5f;
@@ -55,16 +54,16 @@ public class Blackifier
 			float d3 = dist(w,h,cx,cy);
 			float value = (m0/d0 + m1/d1 + m2/d2 + m3/d3) / (1/d0 + 1/d1 + 1/d2 + 1/d3);
 			*/
-			if( (buf[j] & 0xFF000000) != 0xFF000000 ) hasTransparency = true;
 			
-			float topValue    = (m0/cx + m1/(w-cx)) / (1/cx + 1/(w-cx));
-			float bottomValue = (m2/cx + m3/(w-cx)) / (1/cx + 1/(w-cx));
+			float topValue    = (v0/cx + v1/(w-cx)) / (1/cx + 1/(w-cx));
+			float bottomValue = (v2/cx + v3/(w-cx)) / (1/cx + 1/(w-cx));
 			float value = (topValue/cy + bottomValue/(h-cy)) / (1/cy + 1/(h-cy));
 			value = value * value;
 			
-			buf[j] = blacken( buf[j], value );
+			buf[j] = blacken( buf[j], brightness, value );
+			if( (buf[j] & 0xFF000000) != 0xFF000000 ) isCompletelyOpaque = false;
 		}
-		BufferedImage res = new BufferedImage( w, h, hasTransparency ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB );
+		BufferedImage res = new BufferedImage( w, h, isCompletelyOpaque ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB );
 		res.setRGB( 0, 0, w, h, buf, 0, w );
 		return res;
 	}
