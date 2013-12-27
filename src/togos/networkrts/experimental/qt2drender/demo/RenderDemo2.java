@@ -7,7 +7,6 @@ import java.awt.Graphics;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import javax.swing.JPanel;
@@ -96,7 +95,11 @@ public class RenderDemo2
 			}
 			if( regionIsVisiblyEmpty(x, y, s) ) {
 				if( bgRenderNode != null ) {
-					return new RenderNode( bgRenderNode, x, y, size, 1, RenderNode.EMPTY_SPRITE_LIST, null, null, null, null, null );
+					return new RenderNode(
+						bgRenderNode, x, y, size, 1,
+						RenderNode.EMPTY_SPRITE_LIST, ImageHandle.EMPTY_ARRAY,
+						null, null, null, null
+					);
 				} else {
 					return RenderNode.EMPTY;
 				}
@@ -111,7 +114,7 @@ public class RenderDemo2
 					cornerVisibility(x+1,y+1) ? brightness : 0
 				);
 				if( ih.hasTranslucentPixels ) {
-					return new RenderNode( bgRenderNode, x, y, size, 1, RenderNode.EMPTY_SPRITE_LIST, ih, null, null, null, null );
+					return new RenderNode( bgRenderNode, x, y, size, 1, RenderNode.EMPTY_SPRITE_LIST, ih.single, null, null, null, null );
 				} else {
 					return ih.asOpaqueRenderNode();
 				}
@@ -120,7 +123,8 @@ public class RenderDemo2
 			// TODO: could handle case where this area is mostly translucent special
 			
 			int b = s/2;
-			return new RenderNode( null, 0, 0, 0, 0, RenderNode.EMPTY_SPRITE_LIST, null,
+			return new RenderNode( null, 0, 0, 0, 0,
+				RenderNode.EMPTY_SPRITE_LIST, ImageHandle.EMPTY_ARRAY,
 				toRenderNode( bgRenderNode, brightness, ihc, x+0, y+0, s/2),
 				toRenderNode( bgRenderNode, brightness, ihc, x+b, y+0, s/2),
 				toRenderNode( bgRenderNode, brightness, ihc, x+0, y+b, s/2),

@@ -8,10 +8,13 @@ import togos.networkrts.experimental.qt2drender.Renderer.RenderNode;
 
 public class ImageHandle
 {
+	public static final ImageHandle[] EMPTY_ARRAY = new ImageHandle[0];
+	
 	public final BufferedImage image;
 	public final boolean hasTranslucentPixels;
 	// Big fat memory leak:
-	final List<BufferedImage> scales = new ArrayList<BufferedImage>();
+	protected final List<BufferedImage> scales = new ArrayList<BufferedImage>();
+	public final ImageHandle[] single = new ImageHandle[]{ this };
 	
 	public ImageHandle( BufferedImage image ) {
 		this.image = image;
@@ -43,7 +46,7 @@ public class ImageHandle
 	RenderNode renderNode = null;
 	public synchronized RenderNode asOpaqueRenderNode() {
 		if( renderNode == null ) {
-			renderNode = new RenderNode( null, 0, 0, 0, 0, RenderNode.EMPTY_SPRITE_LIST, this, null, null, null, null );			
+			renderNode = new RenderNode( null, 0, 0, 0, 0, RenderNode.EMPTY_SPRITE_LIST, this.single, null, null, null, null );			
 		}
 		return renderNode;
 	}

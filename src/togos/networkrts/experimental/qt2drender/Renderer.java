@@ -30,7 +30,11 @@ public class Renderer
 	
 	public static class RenderNode {
 		public static final Sprite[] EMPTY_SPRITE_LIST = new Sprite[0];
-		public static final RenderNode EMPTY = new RenderNode(null, 0, 0, 0, 0, EMPTY_SPRITE_LIST, null, null, null, null, null);
+		public static final RenderNode EMPTY = new RenderNode(
+			null, 0, 0, 0, 0,
+			EMPTY_SPRITE_LIST, ImageHandle.EMPTY_ARRAY,
+			null, null, null, null
+		);
 		
 		final RenderNode background;
 		/**
@@ -42,7 +46,7 @@ public class Renderer
 		
 		final Sprite[] sprites;
 		
-		final ImageHandle image;
+		final ImageHandle[] tileImages;
 		final RenderNode n0, n1, n2, n3;
 		
 		static boolean spritesSortedProperly( Sprite[] sprites ) {
@@ -54,8 +58,9 @@ public class Renderer
 			return true;
 		}
 		
-		public RenderNode( RenderNode background, int bgX, int bgY, int bgSize, int bgDistance, Sprite[] sprites, ImageHandle image, RenderNode n0, RenderNode n1, RenderNode n2, RenderNode n3 ) {
+		public RenderNode( RenderNode background, int bgX, int bgY, int bgSize, int bgDistance, Sprite[] sprites, ImageHandle[] tileImages, RenderNode n0, RenderNode n1, RenderNode n2, RenderNode n3 ) {
 			assert spritesSortedProperly(sprites);
+			assert tileImages != null;
 			
 			this.background = background;
 			this.backgroundX0 = bgX;
@@ -63,7 +68,7 @@ public class Renderer
 			this.backgroundSize = bgSize;
 			this.backgroundDistance = bgDistance;
 			this.sprites = sprites;
-			this.image = image;
+			this.tileImages = tileImages;
 			this.n0 = n0;
 			this.n1 = n1;
 			this.n2 = n2;
@@ -78,7 +83,7 @@ public class Renderer
 			for( Sprite s : additionalSprites ) newSprites[i++] = s;
 			return new RenderNode(
 				background, backgroundX0, backgroundY0, backgroundSize, backgroundDistance,
-				newSprites, image, n0, n1, n2, n3
+				newSprites, tileImages, n0, n1, n2, n3
 			);
 		}
 	}
@@ -110,8 +115,8 @@ public class Renderer
 		if( n.background != null ) {
 			drawPortal( n.background, x-n.backgroundX0, y-n.backgroundY0, n.backgroundSize, distance+n.backgroundDistance, g, scale, centerX, centerY);
 		}
-		if( n.image != null ) {
-			g.drawImage(n.image.optimized(screenNodeSize,screenNodeSize), screenX, screenY, null);
+		for( ImageHandle ih : n.tileImages ) {
+			g.drawImage(ih.optimized(screenNodeSize,screenNodeSize), screenX, screenY, null);
 		}
 		float halfSize = nodeSize/2;
 		if( n.n0 != null ) drawPortal( n.n0, x+0       , y+0       , halfSize, distance, g, scale, centerX, centerY);
