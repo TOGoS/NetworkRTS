@@ -8,6 +8,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import javax.swing.JPanel;
 
@@ -34,7 +35,7 @@ public class RenderDemo2
 		public final int size;
 		public final byte[] tileIds;
 		public final BlockType[] blockTypes;
-		public final boolean[] tileVisibility;
+		public final byte[] tileVisibility;
 		public Layer background;
 		
 		public Layer( int size, byte[] tileIds, BlockType[] blockTypes, Layer background, boolean defaultVisibility  ) {
@@ -42,7 +43,7 @@ public class RenderDemo2
 			assert tileIds.length >= size;
 			this.tileIds = tileIds;
 			this.blockTypes = blockTypes;
-			this.tileVisibility = new boolean[size*size];
+			this.tileVisibility = new byte[size*size];
 			this.background = background;
 			fillVisibility(defaultVisibility);
 		}
@@ -53,18 +54,18 @@ public class RenderDemo2
 		protected boolean cornerVisibility( int x, int y ) {
 			if( x > 0 ) {
 				if( y > 0 ) {
-					if( tileVisibility[size*(y-1)+(x-1)] ) return true;
+					if( tileVisibility[size*(y-1)+(x-1)] > 0 ) return true;
 				}
 				if( y < size ) {
-					if( tileVisibility[size*(y  )+(x-1)] ) return true;
+					if( tileVisibility[size*(y  )+(x-1)] > 0 ) return true;
 				}
 			}
 			if( x < size ) {
 				if( y > 0 ) {
-					if( tileVisibility[size*(y-1)+(x  )] ) return true;
+					if( tileVisibility[size*(y-1)+(x  )] > 0 ) return true;
 				}
 				if( y < size ) {
-					if( tileVisibility[size*(y  )+(x  )] ) return true;
+					if( tileVisibility[size*(y  )+(x  )] > 0 ) return true;
 				}
 			}
 			return false;
@@ -80,7 +81,7 @@ public class RenderDemo2
 		protected boolean regionIsVisiblyEmpty( int x, int y, int s ) {
 			for( int dy=0; dy<s; ++dy ) for( int dx=0; dx<s; ++dx ) {
 				int idx = x+dx + (y+dy)*size;
-				if( tileIds[idx] != 0 || !tileVisibility[idx] ) return false;
+				if( tileIds[idx] != 0 || tileVisibility[idx] == 0 ) return false;
 			}
 			return true;
 		}
@@ -107,16 +108,25 @@ public class RenderDemo2
 			
 			if( s == 1 ) {
 				int idx = size*y + x;
-				ImageHandle ih = ihc.getShaded(blockTypes[tileIds[idx]].imageName,
-					cornerVisibility(x  ,y  ) ? brightness : 0,
-					cornerVisibility(x+1,y  ) ? brightness : 0,
-					cornerVisibility(x  ,y+1) ? brightness : 0,
-					cornerVisibility(x+1,y+1) ? brightness : 0
+				ImageHandle ih = ihc.getShaded(
+					blockTypes[tileIds[idx]].imageName,
+					brightness,
+					cornerVisibility(x  ,y  ) ? 1 : 0,
+					cornerVisibility(x+1,y  ) ? 1 : 0,
+					cornerVisibility(x  ,y+1) ? 1 : 0,
+					cornerVisibility(x+1,y+1) ? 1 : 0
 				);
-				if( ih.hasTranslucentPixels ) {
-					return new RenderNode( bgRenderNode, x, y, size, 1, RenderNode.EMPTY_SPRITE_LIST, ih.single, null, null, null, null );
-				} else {
+				if( "transparent:16x16".equals(blockTypes[tileIds[idx]].imageName) ) {
+					//assert !ih.isCompletelyOpaque;
+				}
+				if( ih.isCompletelyOpaque ) {
 					return ih.asOpaqueRenderNode();
+				} else {
+					return new RenderNode(
+						bgRenderNode, x, y, size, 1,
+						RenderNode.EMPTY_SPRITE_LIST, ih.isCompletelyTransparent ? ImageHandle.EMPTY_ARRAY : ih.single,
+						null, null, null, null
+					);
 				}
 			}
 			
@@ -134,39 +144,43 @@ public class RenderDemo2
 		
 		public RenderNode toRenderNode( ImageHandleCache ihc, float brightness ) {
 			return toRenderNode(
-				background == null ? null : background.toRenderNode( ihc, brightness * 3/4), brightness,
+				background == null ? null : background.toRenderNode( ihc, brightness * 2 / 3), brightness,
 				ihc, 0, 0, size
 			);
 		}
 		
-		protected void calculateVisibility( int x, int y ) {
+		protected void calculateVisibility( int x, int y, int visibility ) {
 			if( x < 0 || y < 0 || x >= size || y >= size ) return;
 			int idx = y*size+x;
-			if( tileVisibility[idx] ) return; // already visited
+			if( tileVisibility[idx] > visibility ) return; // already visited
 			if( blockTypes[tileIds[idx]].opaque ) return;
-			tileVisibility[idx] = true;
-			calculateVisibility( x+1, y );
-			calculateVisibility( x, y+1 );
-			calculateVisibility( x-1, y );
-			calculateVisibility( x, y-1 );
+			tileVisibility[idx] = (byte)visibility;
+			if( visibility <= 0 ) return;
+			calculateVisibility( x+1, y, visibility-1 );
+			calculateVisibility( x, y+1, visibility-1 );
+			calculateVisibility( x-1, y, visibility-1 );
+			calculateVisibility( x, y-1, visibility-1 );
 		}
 		
-		public void fillVisibility( boolean value ) {
+		public void fillVisibility( byte value ) {
 			for( int i=size*size-1; i>=0; --i ) tileVisibility[i] = value;
 		}
+		public void fillVisibility( boolean value ) {
+			fillVisibility(value ? (byte)1 : 0);
+		}
 		
-		public void recalculateVisibilityFrom( int x, int y ) {
+		public void recalculateVisibilityFrom( int x, int y, int visibility ) {
 			fillVisibility(false);
-			calculateVisibility(x,y);
+			calculateVisibility(x,y,visibility);
 		}
 	}
 	
 	static class Entity {
-		final long id;
+		final UUID id;
 		final float x, y, vx, vy, w, h;
 		final String imageName;
 		
-		public Entity( long id, float x, float y, float vx, float vy, float w, float h, String imageName ) {
+		public Entity( UUID id, float x, float y, float vx, float vy, float w, float h, String imageName ) {
 			this.id = id;
 			this.x = x; this.y = y;
 			this.vx = vx; this.vy = vy;
@@ -176,6 +190,8 @@ public class RenderDemo2
 	}
 	
 	static class Room {
+		final UUID id; 
+		
 		final int size;
 		final byte[] tileIds;
 		final BlockType[] blockTypes;
@@ -183,9 +199,10 @@ public class RenderDemo2
 		final RenderNode background;
 		float backgroundDistance;
 		
-		public Room( int size, byte[] tileIds, BlockType[] blockTypes, List<Entity> entities, RenderNode background, float backgroundDistance ) {
+		public Room( UUID id, int size, byte[] tileIds, BlockType[] blockTypes, List<Entity> entities, RenderNode background, float backgroundDistance ) {
 			assert tileIds.length >= size*size;
 			
+			this.id = id;
 			this.size = size;
 			this.tileIds = tileIds;
 			this.blockTypes = blockTypes;
@@ -202,21 +219,21 @@ public class RenderDemo2
 				float newVX = e.vx;
 				float newVY = e.vy + 9.8f*time;
 				
-				if( blockTypes[tileIds[(int)e.x + size*(int)(newY + e.h)]].hard ) {
-					if( newVY > 0 ) newVY = 0;
-					newY = (int)(newY + e.h)-e.h;
+				if( blockTypes[tileIds[(int)e.x + size*(int)(newY + e.h/2)]].hard ) {
+					if( newVY > 0 ) newVY = -newVY*0.95f;
+					newY = (int)(newY + e.h/2)-e.h/2;
 				}
 				
 				updatedEntities.add(new Entity(
 					e.id, newX, newY, newVX, newVY, e.w, e.h, e.imageName
 				));
 			}
-			return new Room( size, tileIds, blockTypes, updatedEntities, background, backgroundDistance );
+			return new Room( ROOM0_ID, size, tileIds, blockTypes, updatedEntities, background, backgroundDistance );
 		}
 		
 		public RenderNode toRenderNode( float viewX, float viewY, ImageHandleCache ihc ) {
 			Layer l = new Layer( size, tileIds, blockTypes );
-			l.recalculateVisibilityFrom( (int)viewX, (int)viewY );
+			l.recalculateVisibilityFrom( (int)viewX, (int)viewY, 10 );
 			
 			Sprite[] sprites = new Sprite[entities.size()];
 			int i=0;
@@ -226,19 +243,20 @@ public class RenderDemo2
 			
 			return l.toRenderNode( background, 1, ihc, 0, 0, size ).withSprite(sprites);
 		}
-		
-		public Entity findEntity( long id ) {
+	
+		public Entity findEntity( UUID id ) {
 			for( Entity e : entities ) {
-				if( e.id == id ) return e;
+				if( e.id.equals(id) ) return e;
 			}
 			return null;
 		}
 	}
 	
-	static long PLAYER_ID = 0x113322;
+	static UUID PLAYER_ID = UUID.randomUUID();
+	static UUID ROOM0_ID = UUID.randomUUID();
 	
 	static BlockType[] blockTypes = new BlockType[] {
-		new BlockType( null, false, false ),
+		new BlockType( "transparent:16x16", false, false ),
 		new BlockType( "tile-images/2.png", true, true ),
 		new BlockType( "tile-images/2cheese.png", false, true )
 	};
@@ -304,11 +322,6 @@ public class RenderDemo2
 		1, 0, 0, 0, 2, 1, 0, 1,
 		1, 1, 1, 1, 1, 1, 1, 1,
 	}, blockTypes, bgLayer1, false);
-	static RenderNode n;
-	static {
-		testLayer.recalculateVisibilityFrom(2,6);
-		n = testLayer.toRenderNode( ihc, 1 );
-	}
 	
 	static class TestCanvas extends JPanel {
 		private static final long serialVersionUID = 1L;
@@ -329,7 +342,7 @@ public class RenderDemo2
 		
 		@Override public void paint( Graphics g ) {
 			int nodeSize = 8;
-			float scale = 512;
+			float scale = 256;
 			
 			//float dx = (float)(Math.cos(ts * 0.01));
 			//float dy = (float)(Math.sin(ts * 0.01));
@@ -368,11 +381,10 @@ public class RenderDemo2
 		ArrayList<Entity> roomEntities = new ArrayList<Entity>();
 		roomEntities.add(new Entity(PLAYER_ID, 3.5f, 3.5f, 0, 0, 0.8f, 0.8f, "tile-images/dude.png"));
 		
-		Room room = new Room(testLayer.size, testLayer.tileIds, testLayer.blockTypes, roomEntities,
+		Room room = new Room(ROOM0_ID, testLayer.size, testLayer.tileIds, testLayer.blockTypes, roomEntities,
 			bgLayer1.toRenderNode(ihc, 0.75f), 1);
 
 		f.setVisible(true);
-		long ts = 0;
 		while( f.isVisible() ) {
 			Thread.sleep(10);
 			tc.setRoom(room);
