@@ -11,23 +11,6 @@ import java.awt.image.BufferedImage;
  */
 public class Renderer
 {
-	public static class Sprite {
-		final float x, y, w, h, distance;
-		final ImageHandle image;
-		
-		public Sprite( float x, float y, float distance, ImageHandle image, float w, float h ) {
-			this.x = x; this.y = y;
-			this.distance = distance;
-			this.image = image;
-			this.w = w; this.h = h;
-		}
-
-		public BufferedImage getImage( float optimizedForScale ) {
-			// Don't bother optimizing unless in the parent node's plane
-			return distance == 0 ? image.optimized((int)(w*optimizedForScale),(int)(h*optimizedForScale)) : image.image;
-		}
-	}
-	
 	public static class RenderNode {
 		public static final Sprite[] EMPTY_SPRITE_LIST = new Sprite[0];
 		public static final RenderNode EMPTY = new RenderNode(
@@ -49,11 +32,14 @@ public class Renderer
 		final ImageHandle[] tileImages;
 		final RenderNode n0, n1, n2, n3;
 		
+		/**
+		 * z should increase monotonically
+		 */
 		static boolean spritesSortedProperly( Sprite[] sprites ) {
-			float prevDist = Float.POSITIVE_INFINITY;
+			float prevDist = Float.NEGATIVE_INFINITY;
 			for( Sprite s : sprites ) {
-				if( s.distance > prevDist ) return false;
-				prevDist = s.distance;
+				if( s.z < prevDist ) return false;
+				prevDist = s.z;
 			}
 			return true;
 		}
@@ -86,6 +72,11 @@ public class Renderer
 				newSprites, tileImages, n0, n1, n2, n3
 			);
 		}
+	}
+	
+	public BufferedImage getSpriteImage( Sprite s, float optimizedForScale ) {
+		// Don't bother optimizing unless in the parent node's plane
+		return s.z == 0 ? s.image.optimized((int)(s.w*optimizedForScale),(int)(s.h*optimizedForScale)) : s.image.image;
 	}
 	
 	/** 
@@ -125,10 +116,10 @@ public class Renderer
 		if( n.n3 != null ) drawPortal( n.n3, x+halfSize, y+halfSize, halfSize, distance, g, scale, centerX, centerY);
 		for( int si=0; si<n.sprites.length; ++si ) {
 			Sprite s = n.sprites[si];
-			float sdscale = scale/(distance+s.distance);
+			float sdscale = scale/(distance-s.z);
 			int sScreenX = (int)(centerX + (x+s.x)*sdscale);
 			int sScreenY = (int)(centerY + (y+s.y)*sdscale);
-			BufferedImage sImg = s.getImage(sdscale);
+			BufferedImage sImg = getSpriteImage(s, sdscale);
 			g.drawImage(sImg,
 				sScreenX, sScreenY,
 				(int)(sScreenX+s.w*sdscale), (int)(sScreenY+s.w*sdscale),

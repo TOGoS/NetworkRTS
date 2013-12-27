@@ -15,7 +15,7 @@ import javax.swing.JPanel;
 import togos.networkrts.experimental.qt2drender.ImageHandle;
 import togos.networkrts.experimental.qt2drender.Renderer;
 import togos.networkrts.experimental.qt2drender.Renderer.RenderNode;
-import togos.networkrts.experimental.qt2drender.Renderer.Sprite;
+import togos.networkrts.experimental.qt2drender.Sprite;
 
 public class RenderDemo2
 {
