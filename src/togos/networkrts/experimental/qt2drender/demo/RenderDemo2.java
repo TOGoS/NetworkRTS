@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import javax.swing.JPanel;
 
+import togos.networkrts.experimental.qt2drender.AWTDisplay;
 import togos.networkrts.experimental.qt2drender.ImageHandle;
 import togos.networkrts.experimental.qt2drender.Renderer;
 import togos.networkrts.experimental.qt2drender.Renderer.RenderNode;
@@ -327,6 +328,7 @@ public class RenderDemo2
 		private static final long serialVersionUID = 1L;
 		
 		Renderer r = new Renderer();
+		AWTDisplay disp = new AWTDisplay(100);
 		long ts = 0;
 		
 		public TestCanvas() {
@@ -341,6 +343,7 @@ public class RenderDemo2
 		}
 		
 		@Override public void paint( Graphics g ) {
+			disp.init(g, getWidth(), getHeight());
 			int nodeSize = 8;
 			float scale = 256;
 			
@@ -357,7 +360,7 @@ public class RenderDemo2
 			
 			g.setColor(Color.BLACK);
 			g.fillRect(0, 0, getWidth(), getHeight());
-			r.drawPortal( n, -player.x, -player.y, nodeSize, 4, g, scale, getWidth()/2, getHeight()/2 );
+			r.drawPortal( n, -player.x, -player.y, nodeSize, 4, disp, scale, getWidth()/2, getHeight()/2 );
 		}
 		
 		public void setTs(long ts) {

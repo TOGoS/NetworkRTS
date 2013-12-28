@@ -1,7 +1,5 @@
 package togos.networkrts.experimental.qt2drender;
 
-import java.awt.Graphics;
-import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
 /**
@@ -89,7 +87,7 @@ public class Renderer
 	 * @param centerX
 	 * @param centerY
 	 */
-	public void drawPortal( RenderNode n, float x, float y, float nodeSize, float distance, Graphics g, float scale, float centerX, float centerY ) {
+	public void drawPortal( RenderNode n, float x, float y, float nodeSize, float distance, Display g, float scale, float centerX, float centerY ) {
 		// clip to actual region on screen being drawn at
 		
 		float dscale = scale/distance; // Scale, taking distance into account
@@ -100,14 +98,14 @@ public class Renderer
 		
 		if( !g.hitClip(screenX, screenY, screenNodeSize, screenNodeSize) ) return;
 		
-		Rectangle oldClip = g.getClipBounds(new Rectangle());
-		g.clipRect( screenX, screenY, screenNodeSize, screenNodeSize );
+		g.saveClip();
+		g.clip( screenX, screenY, screenNodeSize, screenNodeSize );
 		
 		if( n.background != null ) {
 			drawPortal( n.background, x-n.backgroundX0, y-n.backgroundY0, n.backgroundSize, distance+n.backgroundDistance, g, scale, centerX, centerY);
 		}
 		for( ImageHandle ih : n.tileImages ) {
-			g.drawImage(ih.optimized(screenNodeSize,screenNodeSize), screenX, screenY, null);
+			g.draw(ih, screenX, screenY, screenNodeSize, screenNodeSize);
 		}
 		float halfSize = nodeSize/2;
 		if( n.n0 != null ) drawPortal( n.n0, x+0       , y+0       , halfSize, distance, g, scale, centerX, centerY);
@@ -117,16 +115,9 @@ public class Renderer
 		for( int si=0; si<n.sprites.length; ++si ) {
 			Sprite s = n.sprites[si];
 			float sdscale = scale/(distance-s.z);
-			int sScreenX = (int)(centerX + (x+s.x)*sdscale);
-			int sScreenY = (int)(centerY + (y+s.y)*sdscale);
-			BufferedImage sImg = getSpriteImage(s, sdscale);
-			g.drawImage(sImg,
-				sScreenX, sScreenY,
-				(int)(sScreenX+s.w*sdscale), (int)(sScreenY+s.w*sdscale),
-				0, 0, sImg.getWidth(), sImg.getHeight(),
-				null);
+			g.draw(s.image, centerX + (x+s.x)*sdscale, centerY + (y+s.y)*sdscale, s.w*sdscale, s.h*sdscale);
 		}
-		g.setClip(oldClip.x, oldClip.y, oldClip.width, oldClip.height);
+		g.restoreClip();
 	}
 }
 
