@@ -1,7 +1,6 @@
 package togos.networkrts.util;
 
 import java.lang.ref.SoftReference;
-import java.util.concurrent.Callable;
 
 public class ResourceHandle<T>
 {
@@ -27,7 +26,7 @@ public class ResourceHandle<T>
 		return true;
 	}
 	
-	public <E extends Throwable> T getValue( Callable<T> populator ) {
+	public <E extends Throwable> T getValue( Getter<T> populator ) {
 		T value = getValue();
 		if( value != null ) return value;
 		
@@ -44,7 +43,7 @@ public class ResourceHandle<T>
 			}
 		}
 		try {
-			setValue(value = populator.call());
+			setValue(value = populator.get(uri));
 		} catch( Exception e ) {
 			System.err.println("Error populating "+uri);
 			e.printStackTrace();
@@ -69,7 +68,7 @@ public class ResourceHandle<T>
 	public synchronized void setValue( T v ) {
 		beingPopulated = false;
 		error = null;
-		ref = new SoftReference(v);
+		ref = new SoftReference<T>(v);
 		notifyAll();
 	}
 	
@@ -77,6 +76,6 @@ public class ResourceHandle<T>
 		return uri.hashCode();
 	}
 	@Override public boolean equals(Object o) {
-		return o instanceof ResourceHandle && uri.equals(((ResourceHandle)o).getUri());
+		return o instanceof ResourceHandle && uri.equals(((ResourceHandle<?>)o).getUri());
 	}
 }

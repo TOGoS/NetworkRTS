@@ -1,10 +1,14 @@
 package togos.networkrts.experimental.qt2drender.demo;
 
-import java.util.concurrent.Callable;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
 
+import togos.blob.InputStreamable;
+import togos.networkrts.experimental.qt2drender.Display;
 import togos.networkrts.experimental.qt2drender.ImageHandle;
-import togos.networkrts.experimental.qt2drender.Sprite;
 import togos.networkrts.experimental.qt2drender.Renderer.RenderNode;
+import togos.networkrts.experimental.qt2drender.Sprite;
+import togos.networkrts.util.Getter;
 import togos.networkrts.util.ResourceHandle;
 
 public class NetRenderDemo
@@ -86,33 +90,54 @@ public class NetRenderDemo
 	}
 	
 	static class RenderContext {
-		Callable<ImageHandle[]> imagePaletteResolver;
+		Getter<InputStreamable> blobResolver;
+		
+		protected <T> Getter<T> makeGetter( final Class<T> c ) {
+			return new Getter<T>() {
+				@Override public T get(String uri) throws Exception {
+					InputStreamable blob = blobResolver.get(uri);
+					InputStream is = blob.openInputStream();
+					try {
+						ObjectInputStream ois = new ObjectInputStream(is);
+						return c.cast(ois.readObject());
+					} finally {
+						is.close();
+					}
+				}
+			};
+		}
+		
+		Getter<ImageHandle[]> imagePaletteResolver = makeGetter(ImageHandle[].class);
+		Getter<RenderNode> renderNodeResolver = makeGetter(RenderNode.class);
 		
 		public ImageHandle[] getImagePalette( ResourceHandle<ImageHandle[]> handle ) {
 			return handle.getValue(imagePaletteResolver);
 		}
-	}
-	
-	protected static int addSprites( Sprite[] src, int srcOffset, Sprite[] dest, int destOffset, float ceilZ ) {
 		
-	}
-	
-	protected static RenderNode toRenderNode( RenderContext ctx, VizState vs, Sprite[] scratch, int x, int y ) {
-		int spriteIndex = 0;
-		int layerIndex = 0;
-		int spriteCount = 0;
+		public RenderNode getRenderNode( ResourceHandle<RenderNode> handle ) {
+			return handle.getValue(renderNodeResolver);
+		}
 		
-		for( int i=0; i<vs.tileLayers.length; ++i )
+		public RenderNode[] getRenderNodes( BackgroundLink[] links ) {
+			RenderNode[] nodes = new RenderNode[links.length];
+			for( int i=0; i<links.length; ++i ) {
+				nodes[i] = getRenderNode(links[i].background);
+			}
+			return nodes;
+		}
+	}
+	
+	public static void draw( VizState vs, RenderContext ctx, Display disp, float scale, float scx, float csy, float x, float y, float distance ) {
+		ImageHandle[] tileImages = ctx.getImagePalette(vs.tilePalette);
+		RenderNode[] backgroundNodes = ctx.getRenderNodes(vs.backgroundPalette);
 		
-	}
-	
-	protected static RenderNode toRenderNode( RenderContext ctx, VizState vs, Sprite[] scratch, int x, int y, int size ) {
-		if( size == 1 ) return toRenderNode( ctx, vs, scratch, x, y );
-			
-	}
-	
-	public static RenderNode toRenderNode( RenderContext ctx, VizState vs ) {
-		Sprite[] scratch = new Sprite[vs.sprites.length];
-		return toRenderNode( ctx, vs, 0, 0, vs.size );
+		// TODO
+		// Draw all backgrounds
+		// Draw foreground layers
+		// Draw gradient around visibilty edge
+		
+		for( int ty=0; ty<vs.size; ++ty ) for( int tx=0; tx<vs.size; ++tx ) {
+			// uhm
+		}
 	}
 }
