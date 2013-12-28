@@ -1,6 +1,7 @@
 package togos.networkrts.util;
 
 import java.lang.ref.SoftReference;
+import java.util.concurrent.Callable;
 
 public class ResourceHandle<T>
 {
@@ -10,7 +11,7 @@ public class ResourceHandle<T>
 	}
 	
 	protected boolean beingPopulated;
-	protected boolean hadUnrecoverablePopulationError;
+	protected Exception error;
 	protected volatile SoftReference<T> ref;
 	
 	public String getUri() {
@@ -19,11 +20,38 @@ public class ResourceHandle<T>
 	
 	public synchronized boolean lockForPopulation() {
 		if( beingPopulated ) return false;
-		if( hadUnrecoverablePopulationError ) return false;
+		if( error != null ) return false;
 		if( ref != null && ref.get() != null ) return false;
 		
 		beingPopulated = true;
 		return true;
+	}
+	
+	public <E extends Throwable> T getValue( Callable<T> populator ) {
+		T value = getValue();
+		if( value != null ) return value;
+		
+		while( !lockForPopulation() ) {
+			synchronized( this ) {
+				while(beingPopulated) try {
+					wait();
+				} catch( InterruptedException e ) {
+					Thread.currentThread().interrupt();
+				}
+				value = (ref == null ? null : ref.get());
+				// Value may have been lost already
+				if( value != null || error != null ) return value;
+			}
+		}
+		try {
+			setValue(value = populator.call());
+		} catch( Exception e ) {
+			System.err.println("Error populating "+uri);
+			e.printStackTrace();
+			setError(e);
+		}
+		
+		return value;
 	}
 	
 	public T getValue() {
@@ -31,16 +59,18 @@ public class ResourceHandle<T>
 		return ref == null ? null : ref.get();
 	}
 	
-	public synchronized void setPopulationError() {
+	public synchronized void setError( Exception e ) {
 		beingPopulated = false;
-		hadUnrecoverablePopulationError = true;
+		error = e;
 		ref = null;
+		notifyAll();
 	}
 	
 	public synchronized void setValue( T v ) {
 		beingPopulated = false;
-		hadUnrecoverablePopulationError = false;
+		error = null;
 		ref = new SoftReference(v);
+		notifyAll();
 	}
 	
 	@Override public int hashCode() {
