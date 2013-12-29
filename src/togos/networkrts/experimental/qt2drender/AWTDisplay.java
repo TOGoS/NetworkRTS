@@ -25,16 +25,17 @@ public class AWTDisplay implements Display
 		g.setClip(0, 0, width, height);
 	}
 	
-	@Override public void draw(ImageHandle ih, float x, float y, float w, float h) {
-		// TODO: Round more better
-		int intWidth = (int)w;
-		int intHeight = (int)h;
-		BufferedImage bImg = ih.optimized(intWidth, intHeight);
-		g.drawImage(bImg, (int)x, (int)y, (int)x+intWidth, (int)y+intHeight, 0, 0, bImg.getWidth(), bImg.getHeight(), null);
+	@Override public void draw(ImageHandle img, float x, float y, float w, float h) {
+		int iw = (int)Math.ceil(w);
+		int ih = (int)Math.ceil(h);
+		BufferedImage bImg = img.optimized(iw, ih);
+		g.drawImage(bImg, (int)x, (int)y, (int)x+iw, (int)y+ih, 0, 0, bImg.getWidth(), bImg.getHeight(), null);
 	}
 	
 	@Override public void clip(float x, float y, float w, float h) {
-		g.clipRect((int)x, (int)y, (int)w, (int)h);
+		int iw = (int)Math.ceil((x+w)-(int)x);
+		int ih = (int)Math.ceil((y+h)-(int)y);
+		g.clipRect((int)x, (int)y, iw, ih);
 	}
 	
 	@Override public void saveClip() {

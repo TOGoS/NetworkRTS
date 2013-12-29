@@ -2,7 +2,6 @@ package togos.networkrts.experimental.qt2drender.demo;
 
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -11,7 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Random;
 import java.util.UUID;
 
 import javax.imageio.ImageIO;
@@ -36,12 +34,11 @@ public class NetRenderDemo
 		 * Poisition of the background world
 		 * relative to the vizstate's top-left corner
 		 */
-		public final float x, y, distance;
+		public final float centerX, centerY, size, distance;
 		public final ResourceHandle<RenderNode> background;
-		public final float size;
 		
-		public BackgroundLink( float x, float y, float dist, ResourceHandle<RenderNode> background, float size ) {
-			this.x = x; this.y = y; this.distance = dist;
+		public BackgroundLink( float x, float y, float size, float dist, ResourceHandle<RenderNode> background ) {
+			this.centerX = x; this.centerY = y; this.distance = dist;
 			this.background = background; this.size = size;
 		}
 	}

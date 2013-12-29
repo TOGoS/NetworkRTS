@@ -360,7 +360,7 @@ public class RenderDemo2
 			
 			g.setColor(Color.BLACK);
 			g.fillRect(0, 0, getWidth(), getHeight());
-			r.drawPortal( n, -player.x, -player.y, nodeSize, 4, disp, scale, getWidth()/2, getHeight()/2 );
+			r.drawPortal( n, nodeSize, -player.x, -player.y, 4, disp, scale, getWidth()/2, getHeight()/2 );
 		}
 		
 		public void setTs(long ts) {

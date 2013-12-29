@@ -22,7 +22,7 @@ public class Renderer
 		 * Position of background node's top-left corner relative
 		 * to this node's top-left corner
 		 */
-		final int backgroundX0, backgroundY0, backgroundSize;
+		final int backgroundCenterX, backgroundCenterY, backgroundSize;
 		final int backgroundDistance;
 		
 		final Sprite[] sprites;
@@ -47,8 +47,8 @@ public class Renderer
 			assert tileImages != null;
 			
 			this.background = background;
-			this.backgroundX0 = bgX;
-			this.backgroundY0 = bgY;
+			this.backgroundCenterX = bgX;
+			this.backgroundCenterY = bgY;
 			this.backgroundSize = bgSize;
 			this.backgroundDistance = bgDistance;
 			this.sprites = sprites;
@@ -66,7 +66,7 @@ public class Renderer
 			for( Sprite s : sprites ) newSprites[i++] = s;
 			for( Sprite s : additionalSprites ) newSprites[i++] = s;
 			return new RenderNode(
-				background, backgroundX0, backgroundY0, backgroundSize, backgroundDistance,
+				background, backgroundCenterX, backgroundCenterY, backgroundSize, backgroundDistance,
 				newSprites, tileImages, n0, n1, n2, n3
 			);
 		}
@@ -77,47 +77,43 @@ public class Renderer
 		return s.z == 0 ? s.image.optimized((int)(s.w*optimizedForScale),(int)(s.h*optimizedForScale)) : s.image.image;
 	}
 	
-	/** 
-	 * @param n node to draw
-	 * @param x position to draw node on the screen if it were at distance=1
-	 * @param y position to draw node on the screen if it were at distance=1
-	 * @param nodeSize size to draw node if it were at distance=1
-	 * @param distance
-	 * @param g
-	 * @param centerX
-	 * @param centerY
-	 */
-	public static void drawPortal( RenderNode n, float x, float y, float nodeSize, float distance, Display g, float scale, float centerX, float centerY ) {
+	public static void drawPortal(
+		RenderNode n, float nodeSize, float wcx, float wcy, float distance,
+		Display disp, float scx, float scy, float scale
+	) {
 		// clip to actual region on screen being drawn at
 		
 		float dscale = scale/distance; // Scale, taking distance into account
 		
-		int screenNodeSize = (int)Math.ceil((double)nodeSize*dscale);
-		int screenX = (int)(centerX + x*dscale);
-		int screenY = (int)(centerY + y*dscale);
+		float screenNodeSize = nodeSize*dscale;
+		float screenX = scx - dscale*nodeSize/2;
+		float screenY = scy - dscale*nodeSize/2;
 		
-		if( !g.hitClip(screenX, screenY, screenNodeSize, screenNodeSize) ) return;
+		if( !disp.hitClip(screenX, screenY, screenNodeSize, screenNodeSize) ) return;
 		
-		g.saveClip();
-		g.clip( screenX, screenY, screenNodeSize, screenNodeSize );
+		disp.saveClip();
+		disp.clip( screenX, screenY, screenNodeSize, screenNodeSize );
 		
 		if( n.background != null ) {
-			drawPortal( n.background, x-n.backgroundX0, y-n.backgroundY0, n.backgroundSize, distance+n.backgroundDistance, g, scale, centerX, centerY);
+			drawPortal(
+				n.background, n.backgroundSize, wcx+n.backgroundCenterX, wcy+n.backgroundCenterY, distance+n.backgroundDistance,
+				disp, scale, scx, scy
+			);
 		}
 		for( ImageHandle ih : n.tileImages ) {
-			g.draw(ih, screenX, screenY, screenNodeSize, screenNodeSize);
+			disp.draw(ih, screenX, screenY, screenNodeSize, screenNodeSize);
 		}
 		float halfSize = nodeSize/2;
-		if( n.n0 != null ) drawPortal( n.n0, x+0       , y+0       , halfSize, distance, g, scale, centerX, centerY);
-		if( n.n1 != null ) drawPortal( n.n1, x+halfSize, y+0       , halfSize, distance, g, scale, centerX, centerY);
-		if( n.n2 != null ) drawPortal( n.n2, x+0       , y+halfSize, halfSize, distance, g, scale, centerX, centerY);
-		if( n.n3 != null ) drawPortal( n.n3, x+halfSize, y+halfSize, halfSize, distance, g, scale, centerX, centerY);
+		if( n.n0 != null ) drawPortal( n.n0, halfSize, wcx-halfSize, wcy-halfSize, distance, disp, scale, scx, scy);
+		if( n.n1 != null ) drawPortal( n.n1, halfSize, wcx+halfSize, wcy-halfSize, distance, disp, scale, scx, scy);
+		if( n.n2 != null ) drawPortal( n.n2, halfSize, wcx-halfSize, wcy+halfSize, distance, disp, scale, scx, scy);
+		if( n.n3 != null ) drawPortal( n.n3, halfSize, wcx+halfSize, wcy+halfSize, distance, disp, scale, scx, scy);
 		for( int si=0; si<n.sprites.length; ++si ) {
 			Sprite s = n.sprites[si];
 			float sdscale = scale/(distance-s.z);
-			g.draw(s.image, centerX + (x+s.x)*sdscale, centerY + (y+s.y)*sdscale, s.w*sdscale, s.h*sdscale);
+			disp.draw(s.image, scy + (wcx+s.x)*sdscale, scy + (wcy+s.y)*sdscale, s.w*sdscale, s.h*sdscale);
 		}
-		g.restoreClip();
+		disp.restoreClip();
 	}
 }
 
