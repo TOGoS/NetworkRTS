@@ -18,12 +18,15 @@ public class Renderer
 		);
 		
 		final RenderNode background;
+		
+		/** Size of background node in world units */
+		final float backgroundSize;
 		/**
-		 * Position of background node's top-left corner relative
-		 * to this node's top-left corner
+		 * Position of background node's center relative to this node's center
 		 */
-		final int backgroundCenterX, backgroundCenterY, backgroundSize;
-		final int backgroundDistance;
+		final float backgroundCenterX, backgroundCenterY;
+		/** Distance behind this node of background node */
+		final float backgroundDistance;
 		
 		final Sprite[] sprites;
 		
@@ -42,14 +45,14 @@ public class Renderer
 			return true;
 		}
 		
-		public RenderNode( RenderNode background, int bgX, int bgY, int bgSize, int bgDistance, Sprite[] sprites, ImageHandle[] tileImages, RenderNode n0, RenderNode n1, RenderNode n2, RenderNode n3 ) {
+		public RenderNode( RenderNode background, float bgSize, float bgX, float bgY, float bgDistance, Sprite[] sprites, ImageHandle[] tileImages, RenderNode n0, RenderNode n1, RenderNode n2, RenderNode n3 ) {
 			assert spritesSortedProperly(sprites);
 			assert tileImages != null;
 			
 			this.background = background;
+			this.backgroundSize = bgSize;
 			this.backgroundCenterX = bgX;
 			this.backgroundCenterY = bgY;
-			this.backgroundSize = bgSize;
 			this.backgroundDistance = bgDistance;
 			this.sprites = sprites;
 			this.tileImages = tileImages;
@@ -66,7 +69,7 @@ public class Renderer
 			for( Sprite s : sprites ) newSprites[i++] = s;
 			for( Sprite s : additionalSprites ) newSprites[i++] = s;
 			return new RenderNode(
-				background, backgroundCenterX, backgroundCenterY, backgroundSize, backgroundDistance,
+				background, backgroundSize, backgroundCenterX, backgroundCenterY, backgroundDistance,
 				newSprites, tileImages, n0, n1, n2, n3
 			);
 		}
@@ -76,9 +79,20 @@ public class Renderer
 		// Don't bother optimizing unless in the parent node's plane
 		return s.z == 0 ? s.image.optimized((int)(s.w*optimizedForScale),(int)(s.h*optimizedForScale)) : s.image.image;
 	}
-	
+
+	/**
+	 * @param n node to be drawn
+	 * @param nodeSize width and height (in world units) of node
+	 * @param ncx node center X, in world units, relative to the center of the display
+	 * @param ncy node center Y, in world units, relative to the center of the display
+	 * @param distance distance from display to node (positive for nodes that are in front of the camera)
+	 * @param disp display to be drawn on
+	 * @param scx screen center X, in pixels, relative to the left side of the display 
+	 * @param scy screen center Y, in pixels, relative to the top of the display
+	 * @param scale how big to draw everything.  at scale = 1, a 1 world-unit node at distance 1 will be 1 pixel wide.
+	 */
 	public static void drawPortal(
-		RenderNode n, float nodeSize, float wcx, float wcy, float distance,
+		RenderNode n, float nodeSize, float ncx, float ncy, float distance,
 		Display disp, float scx, float scy, float scale
 	) {
 		// clip to actual region on screen being drawn at
@@ -86,8 +100,8 @@ public class Renderer
 		float dscale = scale/distance; // Scale, taking distance into account
 		
 		float screenNodeSize = nodeSize*dscale;
-		float screenX = scx - dscale*nodeSize/2;
-		float screenY = scy - dscale*nodeSize/2;
+		float screenX = scx + (ncx-nodeSize/2)*dscale;
+		float screenY = scy + (ncy-nodeSize/2)*dscale;
 		
 		if( !disp.hitClip(screenX, screenY, screenNodeSize, screenNodeSize) ) return;
 		
@@ -96,22 +110,23 @@ public class Renderer
 		
 		if( n.background != null ) {
 			drawPortal(
-				n.background, n.backgroundSize, wcx+n.backgroundCenterX, wcy+n.backgroundCenterY, distance+n.backgroundDistance,
-				disp, scale, scx, scy
+				n.background, n.backgroundSize, ncx+n.backgroundCenterX, ncy+n.backgroundCenterY, distance+n.backgroundDistance,
+				disp, scx, scy, scale
 			);
 		}
 		for( ImageHandle ih : n.tileImages ) {
 			disp.draw(ih, screenX, screenY, screenNodeSize, screenNodeSize);
 		}
-		float halfSize = nodeSize/2;
-		if( n.n0 != null ) drawPortal( n.n0, halfSize, wcx-halfSize, wcy-halfSize, distance, disp, scale, scx, scy);
-		if( n.n1 != null ) drawPortal( n.n1, halfSize, wcx+halfSize, wcy-halfSize, distance, disp, scale, scx, scy);
-		if( n.n2 != null ) drawPortal( n.n2, halfSize, wcx-halfSize, wcy+halfSize, distance, disp, scale, scx, scy);
-		if( n.n3 != null ) drawPortal( n.n3, halfSize, wcx+halfSize, wcy+halfSize, distance, disp, scale, scx, scy);
+		float halfSize = nodeSize/2f;
+		float quarterSize = halfSize/2;
+		if( n.n0 != null ) drawPortal( n.n0, halfSize, ncx-quarterSize, ncy-quarterSize, distance, disp, scx, scy, scale);
+		if( n.n1 != null ) drawPortal( n.n1, halfSize, ncx+quarterSize, ncy-quarterSize, distance, disp, scx, scy, scale);
+		if( n.n2 != null ) drawPortal( n.n2, halfSize, ncx-quarterSize, ncy+quarterSize, distance, disp, scx, scy, scale);
+		if( n.n3 != null ) drawPortal( n.n3, halfSize, ncx+quarterSize, ncy+quarterSize, distance, disp, scx, scy, scale);
 		for( int si=0; si<n.sprites.length; ++si ) {
 			Sprite s = n.sprites[si];
 			float sdscale = scale/(distance-s.z);
-			disp.draw(s.image, scy + (wcx+s.x)*sdscale, scy + (wcy+s.y)*sdscale, s.w*sdscale, s.h*sdscale);
+			disp.draw(s.image, scx + (ncx+s.x)*sdscale, scy + (ncy+s.y)*sdscale, s.w*sdscale, s.h*sdscale);
 		}
 		disp.restoreClip();
 	}

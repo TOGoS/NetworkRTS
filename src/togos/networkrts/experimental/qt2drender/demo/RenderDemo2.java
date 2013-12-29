@@ -92,13 +92,16 @@ public class RenderDemo2
 			ImageHandleCache ihc,
 			int x, int y, int s
 		) {
+			float halfLayerSize = size/2f;
+			float halfNodeSize = s/2f;
+			
 			if( regionIsInvisible(x,y,s) ) {
 				return RenderNode.EMPTY;
 			}
 			if( regionIsVisiblyEmpty(x, y, s) ) {
 				if( bgRenderNode != null ) {
 					return new RenderNode(
-						bgRenderNode, x, y, size, 1,
+						bgRenderNode, size, halfLayerSize-(x+halfNodeSize), halfLayerSize-(y+halfNodeSize), 1,
 						RenderNode.EMPTY_SPRITE_LIST, ImageHandle.EMPTY_ARRAY,
 						null, null, null, null
 					);
@@ -124,7 +127,7 @@ public class RenderDemo2
 					return ih.asOpaqueRenderNode();
 				} else {
 					return new RenderNode(
-						bgRenderNode, x, y, size, 1,
+						bgRenderNode, size, halfLayerSize-(x+0.5f), halfLayerSize-(y+0.5f), 1,
 						RenderNode.EMPTY_SPRITE_LIST, ih.isCompletelyTransparent ? ImageHandle.EMPTY_ARRAY : ih.single,
 						null, null, null, null
 					);
@@ -236,10 +239,11 @@ public class RenderDemo2
 			Layer l = new Layer( size, tileIds, blockTypes );
 			l.recalculateVisibilityFrom( (int)viewX, (int)viewY, 10 );
 			
+			float halfSize = size/2f;
 			Sprite[] sprites = new Sprite[entities.size()];
 			int i=0;
 			for( Entity e : entities ) {
-				sprites[i++] = new Sprite( e.x-e.w/2, e.y-e.h/2, 0, ihc.get(e.imageName), e.w, e.h );		
+				sprites[i++] = new Sprite( e.x-e.w/2-halfSize, e.y-e.h/2-halfSize, 0, ihc.get(e.imageName), e.w, e.h );		
 			}
 			
 			return l.toRenderNode( background, 1, ihc, 0, 0, size ).withSprite(sprites);
@@ -327,7 +331,6 @@ public class RenderDemo2
 	static class TestCanvas extends JPanel {
 		private static final long serialVersionUID = 1L;
 		
-		Renderer r = new Renderer();
 		AWTDisplay disp = new AWTDisplay(100);
 		long ts = 0;
 		
@@ -345,6 +348,7 @@ public class RenderDemo2
 		@Override public void paint( Graphics g ) {
 			disp.init(g, getWidth(), getHeight());
 			int nodeSize = 8;
+			float distance = 4;
 			float scale = 256;
 			
 			//float dx = (float)(Math.cos(ts * 0.01));
@@ -360,7 +364,8 @@ public class RenderDemo2
 			
 			g.setColor(Color.BLACK);
 			g.fillRect(0, 0, getWidth(), getHeight());
-			r.drawPortal( n, nodeSize, -player.x, -player.y, 4, disp, scale, getWidth()/2, getHeight()/2 );
+			float halfRoomSize = room.size/2f;
+			Renderer.drawPortal( n, nodeSize, -player.x+halfRoomSize, -player.y+halfRoomSize, distance, disp, getWidth()/2, getHeight()/2, scale );
 		}
 		
 		public void setTs(long ts) {
