@@ -1,9 +1,27 @@
 package togos.networkrts.experimental.qt2drender.demo;
 
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.Random;
+import java.util.UUID;
 
+import javax.imageio.ImageIO;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+
+import togos.blob.FileInputStreamable;
 import togos.blob.InputStreamable;
+import togos.networkrts.experimental.qt2drender.AWTDisplay;
+import togos.networkrts.experimental.qt2drender.Blackifier;
 import togos.networkrts.experimental.qt2drender.Display;
 import togos.networkrts.experimental.qt2drender.ImageHandle;
 import togos.networkrts.experimental.qt2drender.Renderer.RenderNode;
@@ -29,13 +47,13 @@ public class NetRenderDemo
 	}
 	
 	static class VizState {
-		public final float offsetX, offsetY;
+		public final float centerX, centerY;
 		public final int size; // edge length in tiles
 		public final BackgroundLink[] backgroundPalette;
 		public final byte[] cellBackgrounds;
 		public final ResourceHandle<ImageHandle[]> tilePalette;
 		public final byte[][] tileLayers;
-		public final boolean[] cellVisibility;
+		public final boolean[] cornerVisibility;
 		/**
 		 * Should be sorted by z.
 		 */
@@ -64,25 +82,25 @@ public class NetRenderDemo
 			assert tileLayers != null;
 			for( byte[] layer : tileLayers ) {
 				assert layer != null;
-				assert layer.length == size;
+				assert layer.length == size*size;
 				// Can't check validity of tile indexes
 				// since tile palette isn't available yet
 			}
-			assert cellVisibility.length == size;
+			assert cornerVisibility.length == (size+1)*(size+1);
 			return true;
 		}
 		
 		public VizState(
-			float offsetX, float offsetY, int size,
+			float centerX, float centerY, int size,
 			BackgroundLink[] backgroundPalette, byte[] cellBackgrounds,
-			ResourceHandle<ImageHandle[]> tilePalette, byte[][] tileLayers, float[] tileLayerHeights,
-			boolean[] cellVisibility, Sprite[] sprites
+			ResourceHandle<ImageHandle[]> tilePalette, byte[][] tileLayers,
+			boolean[] cornerVisibility, Sprite[] sprites
 		) {
-			this.offsetX = offsetX; this.offsetY = offsetY;
+			this.centerX = centerX; this.centerY = centerY;
 			this.size = size;
 			this.backgroundPalette = backgroundPalette; this.cellBackgrounds = cellBackgrounds;
 			this.tilePalette = tilePalette; this.tileLayers = tileLayers;
-			this.cellVisibility = cellVisibility;
+			this.cornerVisibility = cornerVisibility;
 			this.sprites = sprites;
 			
 			assert assertProperlyFormed();
@@ -121,13 +139,41 @@ public class NetRenderDemo
 		public RenderNode[] getRenderNodes( BackgroundLink[] links ) {
 			RenderNode[] nodes = new RenderNode[links.length];
 			for( int i=0; i<links.length; ++i ) {
-				nodes[i] = getRenderNode(links[i].background);
+				nodes[i] = links[i] == null ? null : getRenderNode(links[i].background);
 			}
 			return nodes;
 		}
+		
+		ImageHandle[] fogImages = new ImageHandle[16];
+		public ImageHandle getFogImage( boolean v0, boolean v1, boolean v2, boolean v3 ) {
+			int idx = (v0?1:0) | (v1?2:0) | (v2?4:0) | (v3?8:0);
+			if( fogImages[idx] == null ) {
+				fogImages[idx] = createFogImage(16, v0, v1, v2, v3);
+			}
+			return fogImages[idx];
+		}
+		
+		public ImageHandle createFogImage( int size, boolean v0, boolean v1, boolean v2, boolean v3 ) {
+			BufferedImage bImg = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+			return new ImageHandle(Blackifier.shade(bImg, 1, v0?1:0, v1?1:0, v2?1:0, v3?1:0));
+		}
 	}
 	
-	public static void draw( VizState vs, RenderContext ctx, Display disp, float scale, float scx, float csy, float x, float y, float distance ) {
+	protected static boolean cellIsCompletelyInvisible( VizState vs, int x, int y ) {
+		int sp1 = vs.size+1;
+		int idx0 = sp1*y+x;
+		int idx1 = idx0+1;
+		int idx2 = idx0+sp1;
+		int idx3 = idx1+sp1;
+		return
+			!vs.cornerVisibility[idx0] && !vs.cornerVisibility[idx1] &&
+			!vs.cornerVisibility[idx2] && !vs.cornerVisibility[idx3];
+	}
+	
+	public static void draw(
+		VizState vs, float cwx, float cwy, float distance,
+		Display disp, float csx, float csy, float scale, RenderContext ctx
+	) {
 		ImageHandle[] tileImages = ctx.getImagePalette(vs.tilePalette);
 		RenderNode[] backgroundNodes = ctx.getRenderNodes(vs.backgroundPalette);
 		
@@ -136,8 +182,146 @@ public class NetRenderDemo
 		// Draw foreground layers
 		// Draw gradient around visibilty edge
 		
-		for( int ty=0; ty<vs.size; ++ty ) for( int tx=0; tx<vs.size; ++tx ) {
-			// uhm
+		/* TODO draw background.
+		 * may want to refactor so signature of drawPortal is more sensible
+		for( int ti=0, ty=0; ty<vs.size; ++ty ) for( int tx=0; tx<vs.size; ++tx, ++ti ) {
+			BackgroundLink bgLink = vs.backgroundPalette[vs.cellBackgrounds[ti]&0xFF];
+			RenderNode bg = backgroundNodes[vs.cellBackgrounds[ti]&0xFF];
+			float bgDistance = distance + bgLink.distance;
+			//Renderer.drawPortal(bg, wcx vs.size, y, bgLink.size, bgDistance, disp, scale, cwx, cwy);
 		}
+		*/
+		
+		final float cellSize = scale/distance;
+		int spriteIdx = 0;
+		for( int l=0; l<vs.tileLayers.length; ++l ) {
+			for( int y=0; y<vs.size; ++y ) for( int x=0; x<vs.size; ++x ) {
+				if( cellIsCompletelyInvisible(vs,x,y) ) continue;
+				disp.draw(
+					tileImages[vs.tileLayers[l][y*vs.size+x]],
+					csx + (cellSize*(x-cwx)), csy + (cellSize*(y-cwy)),
+					cellSize, cellSize
+				);
+			}
+			while( spriteIdx < vs.sprites.length && vs.sprites[spriteIdx].z < l+1 ) {
+				Sprite s = vs.sprites[spriteIdx]; 
+				disp.draw(
+					s.image,
+					csx + (cellSize*(s.x-cwx)), csy + (cellSize*(s.y-cwy)),
+					s.w, s.h
+				);
+				++spriteIdx;
+			}
+		}
+		
+		for( int y=0; y<vs.size; ++y ) for( int x=0; x<vs.size; ++x ) {
+			int sp1 = vs.size+1;
+			int idx0 = sp1*y+x;
+			int idx1 = idx0+1;
+			int idx2 = idx0+sp1;
+			int idx3 = idx1+sp1;
+			disp.draw(
+				ctx.getFogImage(
+					vs.cornerVisibility[idx0], vs.cornerVisibility[idx1],
+					vs.cornerVisibility[idx2], vs.cornerVisibility[idx3]
+				),
+				csx + (cellSize*(x-cwx)), csy + (cellSize*(y-cwy)),
+				cellSize, cellSize
+			);
+		}
+	}
+	
+	static class VizStateCanvas extends JPanel {
+		AWTDisplay disp = new AWTDisplay(96);
+		RenderContext ctx = new RenderContext();
+		public VizStateCanvas() {
+		}
+		
+		protected VizState vs;
+		public void setState( VizState vs ) {
+			this.vs = vs;
+			repaint();
+		}
+		@Override public void paint( Graphics g ) {
+			g.setColor(Color.BLACK);
+			g.fillRect(0,0,getWidth(),getHeight());
+			disp.init(g, getWidth(), getHeight());
+			VizState vs = this.vs;
+			if( vs == null ) return;
+			draw(vs, vs.centerX, vs.centerY, 1, disp, getWidth()/2, getHeight()/2, 32, ctx);
+		}
+	}
+	
+	static class Storage implements Getter<InputStreamable> {
+		// TODO: replace with one of those urn:bitprint: thingers
+		public String storeObject( Object obj ) throws IOException {
+			String name = UUID.randomUUID().toString();
+			File f = new File(name);
+			FileOutputStream fos = new FileOutputStream(f);
+			try {
+				ObjectOutputStream oos = new ObjectOutputStream(fos);
+				oos.writeObject(obj);
+				oos.close();
+			} finally {
+				fos.close();
+			}
+			return name;
+		}
+		
+		@Override public InputStreamable get(String uri) throws Exception {
+			return new FileInputStreamable(new File(uri));
+		}
+	}
+	
+	public static void main( String[] args ) throws IOException {
+		final JFrame f = new JFrame("NetRenderDemo");
+		final VizStateCanvas vsc = new VizStateCanvas();
+		vsc.setPreferredSize(new Dimension(800,600));
+		f.add(vsc);
+		f.pack();
+		f.setVisible(true);
+		f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+		int size = 5;
+		BackgroundLink[] bgLinks = new BackgroundLink[1];
+		//for( int i=size*size-1; i>=0; --i ) bgLinks[i]
+		
+		byte[] cellBackgrounds = new byte[size*size];
+		for( int i=size*size-1; i>=0; --i ) cellBackgrounds[i] = 0;
+		
+		//Storage stor = new Storage();
+		
+		ImageHandle ih0 = new ImageHandle(ImageIO.read(new File("tile-images/1.png")));
+		ImageHandle ih1 = new ImageHandle(ImageIO.read(new File("tile-images/2.png")));
+		
+		//String thang = stor.storeObject(new ImageHandle[]{ih});
+		ResourceHandle<ImageHandle[]> tilePalette = new ResourceHandle<ImageHandle[]>("urn:foo",
+			new ImageHandle[]{ih0, ih1});
+		
+		byte[][] tileLayers = new byte[1][size*size];
+		tileLayers[0] = new byte[] {
+			1, 1, 1, 1, 1,
+			1, 0, 1, 1, 1,
+			1, 0, 0, 1, 1,
+			1, 1, 0, 1, 1,
+			1, 1, 1, 1, 1,
+		};
+		
+		boolean[] cornerVisibility = new boolean[] {
+			false, true , false, false, false, false,
+			false, true , true , false, false, false,
+			false, true , true , true , false, false,
+			false, true , true , true , false, false,
+			false, false, true , true , false, false,
+			false, false, false, false, false, false,
+		};
+		Sprite[] sprites = new Sprite[0];
+		
+		vsc.setState(new VizState(
+			2, 2, 5,
+			bgLinks, cellBackgrounds,
+			tilePalette, tileLayers, 
+			cornerVisibility, sprites
+		));
 	}
 }

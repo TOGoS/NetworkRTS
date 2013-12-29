@@ -87,7 +87,7 @@ public class Renderer
 	 * @param centerX
 	 * @param centerY
 	 */
-	public void drawPortal( RenderNode n, float x, float y, float nodeSize, float distance, Display g, float scale, float centerX, float centerY ) {
+	public static void drawPortal( RenderNode n, float x, float y, float nodeSize, float distance, Display g, float scale, float centerX, float centerY ) {
 		// clip to actual region on screen being drawn at
 		
 		float dscale = scale/distance; // Scale, taking distance into account

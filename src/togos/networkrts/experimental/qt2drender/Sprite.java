@@ -1,9 +1,9 @@
 package togos.networkrts.experimental.qt2drender;
 
 public class Sprite {
-	final float x, y, z, w, h;
+	public final float x, y, z, w, h;
 	// TODO: Should be an animation
-	final ImageHandle image;
+	public final ImageHandle image;
 	
 	public Sprite( float x, float y, float z, ImageHandle image, float w, float h ) {
 		this.x = x; this.y = y;

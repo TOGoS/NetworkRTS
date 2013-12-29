@@ -3,13 +3,18 @@ package togos.networkrts.experimental.qt2drender;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 import togos.networkrts.experimental.qt2drender.Renderer.RenderNode;
 
-public class ImageHandle
+public class ImageHandle implements Serializable
 {
+	// TODO: mayube image handles should just have URIs
+	// and then be lazily populated
+	private static final long serialVersionUID = 1L;
+
 	public static final ImageHandle[] EMPTY_ARRAY = new ImageHandle[0];
 	
 	public final BufferedImage image;

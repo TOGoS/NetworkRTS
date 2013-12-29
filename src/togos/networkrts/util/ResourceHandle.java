@@ -8,6 +8,11 @@ public class ResourceHandle<T>
 	public ResourceHandle( String uri ) {
 		this.uri = uri;
 	}
+	public ResourceHandle( String uri, T value ) {
+		this(uri);
+		assert value != null;
+		this.ref = new SoftReference<T>(value);
+	}
 	
 	protected boolean beingPopulated;
 	protected Exception error;
