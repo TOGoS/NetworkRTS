@@ -1,5 +1,8 @@
 package togos.networkrts.experimental.qt2drender;
 
+import togos.networkrts.experimental.qt2drender.VizState.BackgroundLink;
+import togos.networkrts.experimental.qt2drender.demo.NetRenderDemo;
+import togos.networkrts.experimental.qt2drender.demo.NetRenderDemo.RenderContext;
 import togos.networkrts.util.ResourceNotFound;
 
 /**
@@ -59,26 +62,81 @@ public class Renderer
 		}
 		disp.restoreClip();
 	}
+
+	/**
+	 * @param vs
+	 * @param wcx X position at which to draw VizState, in world units, relative to display center
+	 * @param wcy Y position at which to draw VizState, in world units, relative to display center
+	 * @param distance
+	 * @param disp
+	 * @param scx
+	 * @param scy
+	 * @param scale
+	 * @param ctx
+	 * @throws ResourceNotFound
+	 */
+	public static void draw(
+		VizState vs, float wcx, float wcy, float distance,
+		Display disp, float scx, float scy, float scale, NetRenderDemo.RenderContext ctx
+	) throws ResourceNotFound {
+		ImageHandle[] tileImages = ctx.getImagePalette(vs.tilePalette);
+		QTRenderNode[] backgroundNodes = ctx.getRenderNodes(vs.backgroundPalette);
+		
+		float dscale = scale/distance;
+		
+		for( int ti=0, ty=0; ty<vs.size; ++ty ) for( int tx=0; tx<vs.size; ++tx, ++ti ) {
+			VizState.BackgroundLink bgLink = vs.backgroundPalette[vs.cellBackgrounds[ti]&0xFF];
+			if( bgLink == null ) continue;
+			QTRenderNode bg = backgroundNodes[vs.cellBackgrounds[ti]&0xFF];
+			float bgDistance = distance + bgLink.distance;
+			disp.saveClip();
+			disp.clip(
+				scx + (dscale*(wcx+tx-vs.originX)), scy + (dscale*(wcy+ty-vs.originY)),
+				dscale, dscale
+			);
+			drawPortal(
+				bg, bgLink.size, wcx+bgLink.x, wcy+bgLink.y, bgDistance,
+				disp, scx, scy, scale
+			);
+			disp.restoreClip();
+		}
+		
+		final float cellSize = scale/distance;
+		int spriteIdx = 0;
+		for( int l=0; l<vs.tileLayers.length; ++l ) {
+			for( int ty=0; ty<vs.size; ++ty ) for( int tx=0; tx<vs.size; ++tx ) {
+				if( NetRenderDemo.cellIsCompletelyInvisible(vs,tx,ty) ) continue;
+				disp.draw(
+					tileImages[vs.tileLayers[l][ty*vs.size+tx]],
+					scx + (cellSize*(tx+wcx-vs.originX)), scy + (cellSize*(ty+wcy-vs.originY)),
+					cellSize, cellSize
+				);
+			}
+			while( spriteIdx < vs.sprites.length && vs.sprites[spriteIdx].z < l+1 ) {
+				Sprite s = vs.sprites[spriteIdx]; 
+				disp.draw(
+					s.image,
+					scx + (cellSize*(wcx+s.x-vs.originX)), scy + (cellSize*(wcy+s.y-vs.originY)),
+					s.w, s.h
+				);
+				++spriteIdx;
+			}
+		}
+		
+		for( int ty=0; ty<vs.size; ++ty ) for( int tx=0; tx<vs.size; ++tx ) {
+			int sp1 = vs.size+1;
+			int idx0 = sp1*ty+tx;
+			int idx1 = idx0+1;
+			int idx2 = idx0+sp1;
+			int idx3 = idx1+sp1;
+			disp.draw(
+				ctx.getFogImage(
+					vs.cornerVisibility[idx0], vs.cornerVisibility[idx1],
+					vs.cornerVisibility[idx2], vs.cornerVisibility[idx3]
+				),
+				scx + (cellSize*(wcx+tx-vs.originX)), scy + (cellSize*(wcy+ty-vs.originY)),
+				cellSize, cellSize
+			);
+		}
+	}
 }
-
-
-
-/*
-
- XXXXXXXX
- XXXXXXXX
- XXXXXXXX
- XXXXXXXX
- XX####XX
- XX####XX
- XXXXXXXX
- XX####XX ___ center
- XX####XX
- XXXXXXXX
- XX####XX
- XX####XX
- XXXXXXXX
- XXXXXXXX
- XXXXXXXX
- XXXXXXXX
-*/

@@ -18,7 +18,6 @@ import javax.swing.JPanel;
 import togos.blob.InputStreamable;
 import togos.networkrts.experimental.qt2drender.AWTDisplay;
 import togos.networkrts.experimental.qt2drender.Blackifier;
-import togos.networkrts.experimental.qt2drender.Display;
 import togos.networkrts.experimental.qt2drender.ImageHandle;
 import togos.networkrts.experimental.qt2drender.QTRenderNode;
 import togos.networkrts.experimental.qt2drender.Renderer;
@@ -70,9 +69,10 @@ public class NetRenderDemo
 			public BufferedImage get(String uri) throws ResourceNotFound {
 				Matcher m;
 				if( (m = FOG_PATTERN.matcher(uri)).matches() ) {
-					int fog = Integer.parseInt(m.group(1));
-					return createFogImage(Integer.parseInt(m.group(1)),
-						(fog&1) == 0, (fog&2) == 0, (fog&4) == 0, (fog&8) == 0
+					int size = Integer.parseInt(m.group(1));
+					int fog = Integer.parseInt(m.group(2));
+					return createFogImage(size,
+						(fog&1) != 0, (fog&2) != 0, (fog&4) != 0, (fog&8) != 0
 					);
 				}
 				
@@ -124,7 +124,7 @@ public class NetRenderDemo
 		}
 	}
 	
-	protected static boolean cellIsCompletelyInvisible( VizState vs, int x, int y ) {
+	public static boolean cellIsCompletelyInvisible( VizState vs, int x, int y ) {
 		int sp1 = vs.size+1;
 		int idx0 = sp1*y+x;
 		int idx1 = idx0+1;
@@ -133,76 +133,6 @@ public class NetRenderDemo
 		return
 			!vs.cornerVisibility[idx0] && !vs.cornerVisibility[idx1] &&
 			!vs.cornerVisibility[idx2] && !vs.cornerVisibility[idx3];
-	}
-	
-	public static void draw(
-		VizState vs, float wcx, float wcy, float distance,
-		Display disp, float scx, float scy, float scale, RenderContext ctx
-	) throws ResourceNotFound {
-		ImageHandle[] tileImages = ctx.getImagePalette(vs.tilePalette);
-		QTRenderNode[] backgroundNodes = ctx.getRenderNodes(vs.backgroundPalette);
-		
-		float dscale = scale/distance;
-		
-		// TODO
-		// Draw all backgrounds
-		// Draw foreground layers
-		// Draw gradient around visibilty edge
-		
-		for( int ti=0, ty=0; ty<vs.size; ++ty ) for( int tx=0; tx<vs.size; ++tx, ++ti ) {
-			VizState.BackgroundLink bgLink = vs.backgroundPalette[vs.cellBackgrounds[ti]&0xFF];
-			if( bgLink == null ) continue;
-			QTRenderNode bg = backgroundNodes[vs.cellBackgrounds[ti]&0xFF];
-			float bgDistance = distance + bgLink.distance;
-			disp.saveClip();
-			disp.clip(
-				scx + (dscale*(tx-wcx)), scy + (dscale*(ty-wcy)),
-				dscale, dscale
-			);
-			Renderer.drawPortal(
-				bg, bgLink.size, wcx+bgLink.centerX, wcy+bgLink.centerY, bgDistance,
-				disp, scx, scy, scale
-			);
-			disp.restoreClip();
-		}
-		
-		final float cellSize = scale/distance;
-		int spriteIdx = 0;
-		for( int l=0; l<vs.tileLayers.length; ++l ) {
-			for( int y=0; y<vs.size; ++y ) for( int x=0; x<vs.size; ++x ) {
-				if( cellIsCompletelyInvisible(vs,x,y) ) continue;
-				disp.draw(
-					tileImages[vs.tileLayers[l][y*vs.size+x]],
-					scx + (cellSize*(x-wcx)), scy + (cellSize*(y-wcy)),
-					cellSize, cellSize
-				);
-			}
-			while( spriteIdx < vs.sprites.length && vs.sprites[spriteIdx].z < l+1 ) {
-				Sprite s = vs.sprites[spriteIdx]; 
-				disp.draw(
-					s.image,
-					scx + (cellSize*(s.x-wcx)), scy + (cellSize*(s.y-wcy)),
-					s.w, s.h
-				);
-				++spriteIdx;
-			}
-		}
-		
-		for( int y=0; y<vs.size; ++y ) for( int x=0; x<vs.size; ++x ) {
-			int sp1 = vs.size+1;
-			int idx0 = sp1*y+x;
-			int idx1 = idx0+1;
-			int idx2 = idx0+sp1;
-			int idx3 = idx1+sp1;
-			disp.draw(
-				ctx.getFogImage(
-					vs.cornerVisibility[idx0], vs.cornerVisibility[idx1],
-					vs.cornerVisibility[idx2], vs.cornerVisibility[idx3]
-				),
-				scx + (cellSize*(x-wcx)), scy + (cellSize*(y-wcy)),
-				cellSize, cellSize
-			);
-		}
 	}
 	
 	static class VizStateCanvas extends JPanel {
@@ -237,7 +167,7 @@ public class NetRenderDemo
 			VizState vs = this.vs;
 			if( vs == null ) return;
 			try {
-				draw(vs, vs.centerX, vs.centerY, distance, disp, getWidth()/2, getHeight()/2, scale, ctx);
+				Renderer.draw(vs, vs.focusX, vs.focusY, distance, disp, getWidth()/2, getHeight()/2, scale, ctx);
 			} catch( ResourceNotFound e ) {
 				e.printStackTrace();
 			}
@@ -267,8 +197,8 @@ public class NetRenderDemo
 			new VizState.BackgroundLink(new ResourceHandle<QTRenderNode>(bgNodeUrn), 5, 0, 0, 1)
 		};
 		byte[] cellBackgrounds = new byte[] {
-			0, 0, 0, 0, 0,
-			0, 1, 0, 0, 0,
+			1, 1, 0, 0, 0,
+			1, 1, 0, 0, 0,
 			0, 1, 1, 0, 0,
 			0, 0, 1, 0, 0,
 			0, 0, 0, 0, 0
@@ -282,15 +212,15 @@ public class NetRenderDemo
 		
 		byte[][] tileLayers = new byte[1][size*size];
 		tileLayers[0] = new byte[] {
-			1, 1, 1, 1, 1,
-			1, 0, 1, 1, 1,
+			0, 0, 1, 1, 1,
+			0, 0, 1, 1, 1,
 			1, 0, 0, 1, 1,
 			1, 1, 0, 1, 1,
 			1, 1, 1, 1, 1,
 		};
 		
 		boolean[] cornerVisibility = new boolean[] {
-			false, true , false, false, false, false,
+			false, false, false, false, false, false,
 			false, true , true , false, false, false,
 			false, true , true , true , false, false,
 			false, true , true , true , false, false,
@@ -300,7 +230,9 @@ public class NetRenderDemo
 		Sprite[] sprites = new Sprite[0];
 		
 		return new VizState(
-			(float)(2.5+2*Math.sin(ts/100f)), (float)(2.5+2*Math.cos(ts/50f)), 5,
+			5,
+			2.5f, 2.5f,
+			(float)Math.sin(ts/20f), (float)Math.cos(ts/19f),
 			bgLinks, cellBackgrounds,
 			tilePalette, tileLayers, 
 			cornerVisibility, sprites
@@ -319,6 +251,7 @@ public class NetRenderDemo
 		long ts = 0;
 		while(true) {
 			vsc.setState(makeVizState(blobRepo, ts++));
+			Thread.sleep(10);
 		}
 	}
 }

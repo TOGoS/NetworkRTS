@@ -14,19 +14,26 @@ public class VizState implements Serializable
 		public final ResourceHandle<QTRenderNode> background;
 		public final float size;
 		/**
-		 * Poisition of the background world
-		 * relative to the vizstate's center
+		 * Position of the center of the background node
+		 * relative to the vizstate's origin in world units
 		 */
-		public final float centerX, centerY, distance;
+		public final float x, y, distance;
 		
 		public BackgroundLink( ResourceHandle<QTRenderNode> background, float size, float x, float y, float dist ) {
 			this.background = background; this.size = size;
-			this.centerX = x; this.centerY = y; this.distance = dist;
+			this.x = x; this.y = y; this.distance = dist;
 		}
 	}
-
-	public final float centerX, centerY;
+	
 	public final int size; // edge length in tiles
+	/**
+	 * Position within vizstate data that should be considered 0, 0
+	 */
+	public final float originX, originY;
+	/**
+	 * Position (relative to origin) that should generally be centered on the screen.
+	 */
+	public final float focusX, focusY;
 	public final VizState.BackgroundLink[] backgroundPalette;
 	public final byte[] cellBackgrounds;
 	public final ResourceHandle<ImageHandle[]> tilePalette;
@@ -69,13 +76,14 @@ public class VizState implements Serializable
 	}
 	
 	public VizState(
-		float centerX, float centerY, int size,
+		int size, float originX, float originY, float focusX, float focusY,
 		VizState.BackgroundLink[] backgroundPalette, byte[] cellBackgrounds,
 		ResourceHandle<ImageHandle[]> tilePalette, byte[][] tileLayers,
 		boolean[] cornerVisibility, Sprite[] sprites
 	) {
-		this.centerX = centerX; this.centerY = centerY;
 		this.size = size;
+		this.originX = originX; this.originY = originY;
+		this.focusX = focusX; this.focusY = focusY;
 		this.backgroundPalette = backgroundPalette; this.cellBackgrounds = cellBackgrounds;
 		this.tilePalette = tilePalette; this.tileLayers = tileLayers;
 		this.cornerVisibility = cornerVisibility;
