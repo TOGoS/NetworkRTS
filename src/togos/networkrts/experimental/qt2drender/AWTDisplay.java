@@ -26,6 +26,7 @@ public class AWTDisplay implements Display
 	}
 	
 	@Override public void draw(ImageHandle img, float x, float y, float w, float h) {
+		if( img.isCompletelyTransparent ) return;
 		int iw = (int)Math.ceil(w);
 		int ih = (int)Math.ceil(h);
 		BufferedImage bImg = img.optimized(iw, ih);

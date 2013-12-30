@@ -22,6 +22,7 @@ import togos.networkrts.experimental.qt2drender.AWTDisplay;
 import togos.networkrts.experimental.qt2drender.Blackifier;
 import togos.networkrts.experimental.qt2drender.Display;
 import togos.networkrts.experimental.qt2drender.ImageHandle;
+import togos.networkrts.experimental.qt2drender.Renderer;
 import togos.networkrts.experimental.qt2drender.Renderer.RenderNode;
 import togos.networkrts.experimental.qt2drender.Sprite;
 import togos.networkrts.util.Getter;
@@ -30,16 +31,17 @@ import togos.networkrts.util.ResourceHandle;
 public class NetRenderDemo
 {
 	static class BackgroundLink {
+		public final ResourceHandle<RenderNode> background;
+		public final float size;
 		/**
 		 * Poisition of the background world
-		 * relative to the vizstate's top-left corner
+		 * relative to the vizstate's center
 		 */
-		public final float centerX, centerY, size, distance;
-		public final ResourceHandle<RenderNode> background;
+		public final float centerX, centerY, distance;
 		
-		public BackgroundLink( float x, float y, float size, float dist, ResourceHandle<RenderNode> background ) {
-			this.centerX = x; this.centerY = y; this.distance = dist;
+		public BackgroundLink( ResourceHandle<RenderNode> background, float size, float x, float y, float dist ) {
 			this.background = background; this.size = size;
+			this.centerX = x; this.centerY = y; this.distance = dist;
 		}
 	}
 	
@@ -168,8 +170,8 @@ public class NetRenderDemo
 	}
 	
 	public static void draw(
-		VizState vs, float cwx, float cwy, float distance,
-		Display disp, float csx, float csy, float scale, RenderContext ctx
+		VizState vs, float wcx, float wcy, float distance,
+		Display disp, float scx, float scy, float scale, RenderContext ctx
 	) {
 		ImageHandle[] tileImages = ctx.getImagePalette(vs.tilePalette);
 		RenderNode[] backgroundNodes = ctx.getRenderNodes(vs.backgroundPalette);
@@ -179,15 +181,16 @@ public class NetRenderDemo
 		// Draw foreground layers
 		// Draw gradient around visibilty edge
 		
-		/* TODO draw background.
-		 * may want to refactor so signature of drawPortal is more sensible
 		for( int ti=0, ty=0; ty<vs.size; ++ty ) for( int tx=0; tx<vs.size; ++tx, ++ti ) {
 			BackgroundLink bgLink = vs.backgroundPalette[vs.cellBackgrounds[ti]&0xFF];
+			if( bgLink == null ) continue;
 			RenderNode bg = backgroundNodes[vs.cellBackgrounds[ti]&0xFF];
 			float bgDistance = distance + bgLink.distance;
-			//Renderer.drawPortal(bg, wcx vs.size, y, bgLink.size, bgDistance, disp, scale, cwx, cwy);
+			Renderer.drawPortal(
+				bg, bgLink.size, wcx+bgLink.centerX, wcy+bgLink.centerY, distance+bgLink.distance,
+				disp, scx, scy, scale
+			);
 		}
-		*/
 		
 		final float cellSize = scale/distance;
 		int spriteIdx = 0;
@@ -196,7 +199,7 @@ public class NetRenderDemo
 				if( cellIsCompletelyInvisible(vs,x,y) ) continue;
 				disp.draw(
 					tileImages[vs.tileLayers[l][y*vs.size+x]],
-					csx + (cellSize*(x-cwx)), csy + (cellSize*(y-cwy)),
+					scx + (cellSize*(x-wcx)), scy + (cellSize*(y-wcy)),
 					cellSize, cellSize
 				);
 			}
@@ -204,7 +207,7 @@ public class NetRenderDemo
 				Sprite s = vs.sprites[spriteIdx]; 
 				disp.draw(
 					s.image,
-					csx + (cellSize*(s.x-cwx)), csy + (cellSize*(s.y-cwy)),
+					scx + (cellSize*(s.x-wcx)), scy + (cellSize*(s.y-wcy)),
 					s.w, s.h
 				);
 				++spriteIdx;
@@ -222,7 +225,7 @@ public class NetRenderDemo
 					vs.cornerVisibility[idx0], vs.cornerVisibility[idx1],
 					vs.cornerVisibility[idx2], vs.cornerVisibility[idx3]
 				),
-				csx + (cellSize*(x-cwx)), csy + (cellSize*(y-cwy)),
+				scx + (cellSize*(x-wcx)), scy + (cellSize*(y-wcy)),
 				cellSize, cellSize
 			);
 		}
@@ -288,7 +291,7 @@ public class NetRenderDemo
 		
 		//Storage stor = new Storage();
 		
-		ImageHandle ih0 = new ImageHandle(ImageIO.read(new File("tile-images/1.png")));
+		ImageHandle ih0 = new ImageHandle(new BufferedImage(1,1,BufferedImage.TYPE_INT_ARGB));
 		ImageHandle ih1 = new ImageHandle(ImageIO.read(new File("tile-images/2.png")));
 		
 		//String thang = stor.storeObject(new ImageHandle[]{ih});
