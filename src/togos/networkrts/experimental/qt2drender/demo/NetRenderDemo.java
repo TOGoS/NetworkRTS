@@ -176,6 +176,8 @@ public class NetRenderDemo
 		ImageHandle[] tileImages = ctx.getImagePalette(vs.tilePalette);
 		RenderNode[] backgroundNodes = ctx.getRenderNodes(vs.backgroundPalette);
 		
+		float dscale = scale/distance;
+		
 		// TODO
 		// Draw all backgrounds
 		// Draw foreground layers
@@ -186,10 +188,16 @@ public class NetRenderDemo
 			if( bgLink == null ) continue;
 			RenderNode bg = backgroundNodes[vs.cellBackgrounds[ti]&0xFF];
 			float bgDistance = distance + bgLink.distance;
+			disp.saveClip();
+			disp.clip(
+				scx + (dscale*(tx-wcx)), scy + (dscale*(ty-wcy)),
+				dscale, dscale
+			);
 			Renderer.drawPortal(
-				bg, bgLink.size, wcx+bgLink.centerX, wcy+bgLink.centerY, distance+bgLink.distance,
+				bg, bgLink.size, wcx+bgLink.centerX, wcy+bgLink.centerY, bgDistance,
 				disp, scx, scy, scale
 			);
+			disp.restoreClip();
 		}
 		
 		final float cellSize = scale/distance;
@@ -283,13 +291,26 @@ public class NetRenderDemo
 		f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
 		int size = 5;
-		BackgroundLink[] bgLinks = new BackgroundLink[1];
 		//for( int i=size*size-1; i>=0; --i ) bgLinks[i]
-		
-		byte[] cellBackgrounds = new byte[size*size];
-		for( int i=size*size-1; i>=0; --i ) cellBackgrounds[i] = 0;
-		
+				
 		//Storage stor = new Storage();
+		
+		ImageHandle bgIh = new ImageHandle(Blackifier.shade(ImageIO.read(new File("tile-images/1.png")), 0.7f, 1, 1, 1, 1));
+		RenderNode bgNode = new RenderNode(null, 0, 0, 0, 0, RenderNode.EMPTY_SPRITE_LIST,
+			bgIh.single, null, null, null, null
+		);
+
+		BackgroundLink[] bgLinks = new BackgroundLink[] {
+			null,
+			new BackgroundLink(new ResourceHandle<RenderNode>("kq",bgNode), 5, 0, 0, 1)
+		};
+		byte[] cellBackgrounds = new byte[] {
+			0, 0, 0, 0, 0,
+			0, 1, 0, 0, 0,
+			0, 1, 1, 0, 0,
+			0, 0, 1, 0, 0,
+			0, 0, 0, 0, 0
+		};
 		
 		ImageHandle ih0 = new ImageHandle(new BufferedImage(1,1,BufferedImage.TYPE_INT_ARGB));
 		ImageHandle ih1 = new ImageHandle(ImageIO.read(new File("tile-images/2.png")));
