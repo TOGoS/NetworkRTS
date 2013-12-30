@@ -220,6 +220,16 @@ public class NetRenderDemo
 			this.vs = vs;
 			repaint();
 		}
+		
+		float distance = 4, scale = 128;
+		public void setDistance( float d ) {
+			distance = d;
+			repaint();
+		}
+		public void setScale( float s ) {
+			scale = s;
+			repaint();
+		}
 		@Override public void paint( Graphics g ) {
 			g.setColor(Color.BLACK);
 			g.fillRect(0,0,getWidth(),getHeight());
@@ -227,14 +237,16 @@ public class NetRenderDemo
 			VizState vs = this.vs;
 			if( vs == null ) return;
 			try {
-				draw(vs, vs.centerX, vs.centerY, 1, disp, getWidth()/2, getHeight()/2, 32, ctx);
+				draw(vs, vs.centerX, vs.centerY, distance, disp, getWidth()/2, getHeight()/2, scale, ctx);
 			} catch( ResourceNotFound e ) {
 				e.printStackTrace();
 			}
 		}
 	}
 	
-	public static VizState makeVizState( BlobRepository br ) throws IOException, ResourceNotFound {
+	public static VizState makeVizState( BlobRepository br, long ts )
+		throws IOException, ResourceNotFound
+	{
 		int size = 5;
 		//for( int i=size*size-1; i>=0; --i ) bgLinks[i]
 				
@@ -288,7 +300,7 @@ public class NetRenderDemo
 		Sprite[] sprites = new Sprite[0];
 		
 		return new VizState(
-			2, 2, 5,
+			(float)(2.5+2*Math.sin(ts/100f)), (float)(2.5+2*Math.cos(ts/50f)), 5,
 			bgLinks, cellBackgrounds,
 			tilePalette, tileLayers, 
 			cornerVisibility, sprites
@@ -302,8 +314,11 @@ public class NetRenderDemo
 		f.add(vsc);
 		f.pack();
 		f.setVisible(true);
-		f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
-		vsc.setState(makeVizState(blobRepo));
+		long ts = 0;
+		while(true) {
+			vsc.setState(makeVizState(blobRepo, ts++));
+		}
 	}
 }

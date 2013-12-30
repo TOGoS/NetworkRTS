@@ -23,7 +23,7 @@ public class GameServer
 	
 	public VizState getVizState() throws ResourceNotFound {
 		try {
-			return NetRenderDemo.makeVizState(blobRepo);
+			return NetRenderDemo.makeVizState(blobRepo, 0);
 		} catch( IOException e ) {
 			throw new RuntimeException(e);
 		}
