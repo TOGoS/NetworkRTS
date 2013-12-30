@@ -7,7 +7,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import togos.networkrts.experimental.qt2drender.Renderer.RenderNode;
 
 public class ImageHandle implements Serializable
 {
@@ -66,10 +65,10 @@ public class ImageHandle implements Serializable
 		return scale;
 	}
 
-	RenderNode renderNode = null;
-	public synchronized RenderNode asOpaqueRenderNode() {
+	QTRenderNode renderNode = null;
+	public synchronized QTRenderNode asOpaqueRenderNode() {
 		if( renderNode == null ) {
-			renderNode = new RenderNode( null, 0, 0, 0, 0, RenderNode.EMPTY_SPRITE_LIST, this.single, null, null, null, null );			
+			renderNode = new QTRenderNode( null, 0, 0, 0, 0, QTRenderNode.EMPTY_SPRITE_LIST, this.single, null, null, null, null );			
 		}
 		return renderNode;
 	}

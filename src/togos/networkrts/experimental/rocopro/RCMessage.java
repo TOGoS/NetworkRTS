@@ -6,7 +6,7 @@ public class RCMessage implements Serializable
 {
 	private static final long serialVersionUID = 1L;
 
-	enum MessageType {
+	public enum MessageType {
 		OPEN_SUBSCRIPTION,
 		CLOSE_SUBSCRIPTION, 
 		GET,
@@ -16,13 +16,13 @@ public class RCMessage implements Serializable
 		ACK
 	};
 	
-	final int channelId;
-	final int order;
+	public final int channelId;
+	public final int order;
 	/** True if the sender would like an ACK in response */
-	final MessageType messageType;
-	final String resourceName;
-	final Object payload;
-	final boolean requestingAck;
+	public final MessageType messageType;
+	public final String resourceName;
+	public final Object payload;
+	public final boolean requestingAck;
 	
 	public RCMessage(
 		int channelId, int order, MessageType messageType, String resourceName,

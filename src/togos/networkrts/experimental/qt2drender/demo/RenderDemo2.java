@@ -14,8 +14,8 @@ import javax.swing.JPanel;
 
 import togos.networkrts.experimental.qt2drender.AWTDisplay;
 import togos.networkrts.experimental.qt2drender.ImageHandle;
+import togos.networkrts.experimental.qt2drender.QTRenderNode;
 import togos.networkrts.experimental.qt2drender.Renderer;
-import togos.networkrts.experimental.qt2drender.Renderer.RenderNode;
 import togos.networkrts.experimental.qt2drender.Sprite;
 
 public class RenderDemo2
@@ -87,8 +87,8 @@ public class RenderDemo2
 			return true;
 		}
 		
-		public RenderNode toRenderNode(
-			RenderNode bgRenderNode, float brightness,
+		public QTRenderNode toRenderNode(
+			QTRenderNode bgRenderNode, float brightness,
 			ImageHandleCache ihc,
 			int x, int y, int s
 		) {
@@ -96,17 +96,17 @@ public class RenderDemo2
 			float halfNodeSize = s/2f;
 			
 			if( regionIsInvisible(x,y,s) ) {
-				return RenderNode.EMPTY;
+				return QTRenderNode.EMPTY;
 			}
 			if( regionIsVisiblyEmpty(x, y, s) ) {
 				if( bgRenderNode != null ) {
-					return new RenderNode(
+					return new QTRenderNode(
 						bgRenderNode, size, halfLayerSize-(x+halfNodeSize), halfLayerSize-(y+halfNodeSize), 1,
-						RenderNode.EMPTY_SPRITE_LIST, ImageHandle.EMPTY_ARRAY,
+						QTRenderNode.EMPTY_SPRITE_LIST, ImageHandle.EMPTY_ARRAY,
 						null, null, null, null
 					);
 				} else {
-					return RenderNode.EMPTY;
+					return QTRenderNode.EMPTY;
 				}
 			}
 			
@@ -126,9 +126,9 @@ public class RenderDemo2
 				if( ih.isCompletelyOpaque ) {
 					return ih.asOpaqueRenderNode();
 				} else {
-					return new RenderNode(
+					return new QTRenderNode(
 						bgRenderNode, size, halfLayerSize-(x+0.5f), halfLayerSize-(y+0.5f), 1,
-						RenderNode.EMPTY_SPRITE_LIST, ih.isCompletelyTransparent ? ImageHandle.EMPTY_ARRAY : ih.single,
+						QTRenderNode.EMPTY_SPRITE_LIST, ih.isCompletelyTransparent ? ImageHandle.EMPTY_ARRAY : ih.single,
 						null, null, null, null
 					);
 				}
@@ -137,8 +137,8 @@ public class RenderDemo2
 			// TODO: could handle case where this area is mostly translucent special
 			
 			int b = s/2;
-			return new RenderNode( null, 0, 0, 0, 0,
-				RenderNode.EMPTY_SPRITE_LIST, ImageHandle.EMPTY_ARRAY,
+			return new QTRenderNode( null, 0, 0, 0, 0,
+				QTRenderNode.EMPTY_SPRITE_LIST, ImageHandle.EMPTY_ARRAY,
 				toRenderNode( bgRenderNode, brightness, ihc, x+0, y+0, s/2),
 				toRenderNode( bgRenderNode, brightness, ihc, x+b, y+0, s/2),
 				toRenderNode( bgRenderNode, brightness, ihc, x+0, y+b, s/2),
@@ -146,7 +146,7 @@ public class RenderDemo2
 			);
 		}
 		
-		public RenderNode toRenderNode( ImageHandleCache ihc, float brightness ) {
+		public QTRenderNode toRenderNode( ImageHandleCache ihc, float brightness ) {
 			return toRenderNode(
 				background == null ? null : background.toRenderNode( ihc, brightness * 2 / 3), brightness,
 				ihc, 0, 0, size
@@ -200,10 +200,10 @@ public class RenderDemo2
 		final byte[] tileIds;
 		final BlockType[] blockTypes;
 		final List<Entity> entities;
-		final RenderNode background;
+		final QTRenderNode background;
 		float backgroundDistance;
 		
-		public Room( UUID id, int size, byte[] tileIds, BlockType[] blockTypes, List<Entity> entities, RenderNode background, float backgroundDistance ) {
+		public Room( UUID id, int size, byte[] tileIds, BlockType[] blockTypes, List<Entity> entities, QTRenderNode background, float backgroundDistance ) {
 			assert tileIds.length >= size*size;
 			
 			this.id = id;
@@ -235,7 +235,7 @@ public class RenderDemo2
 			return new Room( ROOM0_ID, size, tileIds, blockTypes, updatedEntities, background, backgroundDistance );
 		}
 		
-		public RenderNode toRenderNode( float viewX, float viewY, ImageHandleCache ihc ) {
+		public QTRenderNode toRenderNode( float viewX, float viewY, ImageHandleCache ihc ) {
 			Layer l = new Layer( size, tileIds, blockTypes );
 			l.recalculateVisibilityFrom( (int)viewX, (int)viewY, 10 );
 			
@@ -360,7 +360,7 @@ public class RenderDemo2
 			Entity player = room.findEntity(PLAYER_ID);
 			if( player == null ) return;
 			
-			RenderNode n = room.toRenderNode( (int)player.x, (int)player.y, ihc );
+			QTRenderNode n = room.toRenderNode( (int)player.x, (int)player.y, ihc );
 			
 			g.setColor(Color.BLACK);
 			g.fillRect(0, 0, getWidth(), getHeight());

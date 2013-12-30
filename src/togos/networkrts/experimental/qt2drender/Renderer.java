@@ -9,72 +9,6 @@ import java.awt.image.BufferedImage;
  */
 public class Renderer
 {
-	public static class RenderNode {
-		public static final Sprite[] EMPTY_SPRITE_LIST = new Sprite[0];
-		public static final RenderNode EMPTY = new RenderNode(
-			null, 0, 0, 0, 0,
-			EMPTY_SPRITE_LIST, ImageHandle.EMPTY_ARRAY,
-			null, null, null, null
-		);
-		
-		final RenderNode background;
-		
-		/** Size of background node in world units */
-		final float backgroundSize;
-		/**
-		 * Position of background node's center relative to this node's center
-		 */
-		final float backgroundCenterX, backgroundCenterY;
-		/** Distance behind this node of background node */
-		final float backgroundDistance;
-		
-		final Sprite[] sprites;
-		
-		final ImageHandle[] tileImages;
-		final RenderNode n0, n1, n2, n3;
-		
-		/**
-		 * z should increase monotonically
-		 */
-		static boolean spritesSortedProperly( Sprite[] sprites ) {
-			float prevDist = Float.NEGATIVE_INFINITY;
-			for( Sprite s : sprites ) {
-				if( s.z < prevDist ) return false;
-				prevDist = s.z;
-			}
-			return true;
-		}
-		
-		public RenderNode( RenderNode background, float bgSize, float bgX, float bgY, float bgDistance, Sprite[] sprites, ImageHandle[] tileImages, RenderNode n0, RenderNode n1, RenderNode n2, RenderNode n3 ) {
-			assert spritesSortedProperly(sprites);
-			assert tileImages != null;
-			
-			this.background = background;
-			this.backgroundSize = bgSize;
-			this.backgroundCenterX = bgX;
-			this.backgroundCenterY = bgY;
-			this.backgroundDistance = bgDistance;
-			this.sprites = sprites;
-			this.tileImages = tileImages;
-			this.n0 = n0;
-			this.n1 = n1;
-			this.n2 = n2;
-			this.n3 = n3;
-		}
-		
-		public RenderNode withSprite( Sprite...additionalSprites ) {
-			if( additionalSprites.length == 0 ) return this;
-			Sprite[] newSprites = new Sprite[sprites.length+additionalSprites.length];
-			int i=0;
-			for( Sprite s : sprites ) newSprites[i++] = s;
-			for( Sprite s : additionalSprites ) newSprites[i++] = s;
-			return new RenderNode(
-				background, backgroundSize, backgroundCenterX, backgroundCenterY, backgroundDistance,
-				newSprites, tileImages, n0, n1, n2, n3
-			);
-		}
-	}
-	
 	public BufferedImage getSpriteImage( Sprite s, float optimizedForScale ) {
 		// Don't bother optimizing unless in the parent node's plane
 		return s.z == 0 ? s.image.optimized((int)(s.w*optimizedForScale),(int)(s.h*optimizedForScale)) : s.image.image;
@@ -92,7 +26,7 @@ public class Renderer
 	 * @param scale how big to draw everything.  at scale = 1, a 1 world-unit node at distance 1 will be 1 pixel wide.
 	 */
 	public static void drawPortal(
-		RenderNode n, float nodeSize, float ncx, float ncy, float distance,
+		QTRenderNode n, float nodeSize, float ncx, float ncy, float distance,
 		Display disp, float scx, float scy, float scale
 	) {
 		// clip to actual region on screen being drawn at
