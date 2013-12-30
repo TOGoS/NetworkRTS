@@ -1,9 +1,16 @@
 package togos.networkrts.experimental.qt2drender;
 
+import java.io.Serializable;
+
 import togos.networkrts.util.ResourceHandle;
 
-public class VizState {
-	public static class BackgroundLink {
+public class VizState implements Serializable
+{
+	private static final long serialVersionUID = 1L;
+
+	public static class BackgroundLink implements Serializable {
+		private static final long serialVersionUID = 1L;
+		
 		public final ResourceHandle<QTRenderNode> background;
 		public final float size;
 		/**
@@ -40,14 +47,14 @@ public class VizState {
 	}
 	
 	protected boolean assertProperlyFormed() {
-		assert isPowerOf2(size);
+		//assert isPowerOf2(size);
 		assert backgroundPalette != null;
 		assert cellBackgrounds != null;
-		assert cellBackgrounds.length == size;
+		assert cellBackgrounds.length == size*size;
 		for( byte _bg : cellBackgrounds ) {
 			int bg = _bg&0xFF;
 			assert bg < backgroundPalette.length;
-			assert backgroundPalette[bg] != null;
+			// assert backgroundPalette[bg] != null;
 		}
 		assert tilePalette != null;
 		assert tileLayers != null;

@@ -1,6 +1,11 @@
 package togos.networkrts.experimental.qt2drender;
 
-public class QTRenderNode {
+import java.io.Serializable;
+
+public class QTRenderNode implements Serializable
+{
+	private static final long serialVersionUID = 1L;
+	
 	public static final Sprite[] EMPTY_SPRITE_LIST = new Sprite[0];
 	public static final QTRenderNode EMPTY = new QTRenderNode(
 		null, 0, 0, 0, 0,

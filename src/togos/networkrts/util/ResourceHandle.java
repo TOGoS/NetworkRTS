@@ -1,9 +1,12 @@
 package togos.networkrts.util;
 
+import java.io.Serializable;
 import java.lang.ref.SoftReference;
 
-public class ResourceHandle<T>
+public class ResourceHandle<T> implements Serializable
 {
+	private static final long serialVersionUID = 1L;
+	
 	protected final String uri;
 	public ResourceHandle( String uri ) {
 		this.uri = uri;
@@ -14,9 +17,9 @@ public class ResourceHandle<T>
 		this.ref = new SoftReference<T>(value);
 	}
 	
-	protected boolean beingPopulated;
-	protected Exception error;
-	protected volatile SoftReference<T> ref;
+	transient protected boolean beingPopulated;
+	transient protected Exception error;
+	transient protected volatile SoftReference<T> ref;
 	
 	public String getUri() {
 		return uri;
@@ -31,7 +34,8 @@ public class ResourceHandle<T>
 		return true;
 	}
 	
-	public <E extends Throwable> T getValue( Getter<T> populator ) {
+	public <E extends Throwable> T getValue( Getter<T> populator )
+	{
 		T value = getValue();
 		if( value != null ) return value;
 		

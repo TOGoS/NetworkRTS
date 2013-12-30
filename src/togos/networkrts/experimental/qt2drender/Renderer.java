@@ -1,6 +1,6 @@
 package togos.networkrts.experimental.qt2drender;
 
-import java.awt.image.BufferedImage;
+import togos.networkrts.util.ResourceNotFound;
 
 /**
  * The goal is for this to be a general-purpose renderer
@@ -9,11 +9,6 @@ import java.awt.image.BufferedImage;
  */
 public class Renderer
 {
-	public BufferedImage getSpriteImage( Sprite s, float optimizedForScale ) {
-		// Don't bother optimizing unless in the parent node's plane
-		return s.z == 0 ? s.image.optimized((int)(s.w*optimizedForScale),(int)(s.h*optimizedForScale)) : s.image.image;
-	}
-
 	/**
 	 * @param n node to be drawn
 	 * @param nodeSize width and height (in world units) of node
@@ -28,7 +23,7 @@ public class Renderer
 	public static void drawPortal(
 		QTRenderNode n, float nodeSize, float ncx, float ncy, float distance,
 		Display disp, float scx, float scy, float scale
-	) {
+	) throws ResourceNotFound {
 		// clip to actual region on screen being drawn at
 		
 		float dscale = scale/distance; // Scale, taking distance into account

@@ -4,11 +4,16 @@ import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
+import togos.networkrts.util.Getter;
+import togos.networkrts.util.ResourceNotFound;
+
 public class AWTDisplay implements Display
 {
 	protected final Rectangle[] clipStack;
-	public AWTDisplay( int clipStackSize ) {
+	protected final Getter<BufferedImage> imageSource;
+	public AWTDisplay( int clipStackSize, Getter<BufferedImage> imageSource ) {
 		clipStack = new Rectangle[clipStackSize];
+		this.imageSource = imageSource;
 		for( int i=0; i<clipStackSize; ++i ) clipStack[i] = new Rectangle();
 	}
 	
@@ -25,11 +30,13 @@ public class AWTDisplay implements Display
 		g.setClip(0, 0, width, height);
 	}
 	
-	@Override public void draw(ImageHandle img, float x, float y, float w, float h) {
-		if( img.isCompletelyTransparent ) return;
+	@Override public void draw(ImageHandle img, float x, float y, float w, float h)
+		throws ResourceNotFound 
+	{
+		if( img.isCompletelyTransparent(imageSource) ) return;
 		int iw = (int)Math.ceil(w);
 		int ih = (int)Math.ceil(h);
-		BufferedImage bImg = img.optimized(iw, ih);
+		BufferedImage bImg = img.optimized(imageSource, iw, ih);
 		g.drawImage(bImg, (int)x, (int)y, (int)x+iw, (int)y+ih, 0, 0, bImg.getWidth(), bImg.getHeight(), null);
 	}
 	

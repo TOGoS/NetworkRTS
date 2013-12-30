@@ -9,6 +9,7 @@ public class FileInputStreamable implements InputStreamable
 {
 	protected final File file;
 	public FileInputStreamable( File f ) {
+		assert f != null;
 		this.file = f;
 	}
 	
