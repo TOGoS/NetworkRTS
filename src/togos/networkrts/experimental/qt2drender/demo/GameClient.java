@@ -37,6 +37,7 @@ public class GameClient
 			} else {
 				System.err.println("Client: Don't know what to do with INFO "+m.resourceName);
 			}
+			break;
 		default:
 			System.err.println("Client: Don't know what to do with "+m.messageType);
 		}
