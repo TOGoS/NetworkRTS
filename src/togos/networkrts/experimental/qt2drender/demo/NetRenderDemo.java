@@ -135,7 +135,7 @@ public class NetRenderDemo
 			!vs.cornerVisibility[idx2] && !vs.cornerVisibility[idx3];
 	}
 	
-	static class VizStateCanvas extends JPanel {
+	public static class VizStateCanvas extends JPanel {
 		private static final long serialVersionUID = 1L;
 		
 		final RenderContext ctx;

@@ -9,10 +9,10 @@ public class InteractiveSimulationRunner
 	public final Simulation sim;
 	public final float realtimeMillisecondsPerSimulationTick;
 	
-	public InteractiveSimulationRunner( BlockingQueue<Message> incomingMessageQueue, Simulation sim ) {
+	public InteractiveSimulationRunner( BlockingQueue<Message> incomingMessageQueue, Simulation sim, float realtimeMsPerGameTick ) {
 		this.incomingMessageQueue = incomingMessageQueue;
 		this.sim = sim;
-		this.realtimeMillisecondsPerSimulationTick = 10;
+		this.realtimeMillisecondsPerSimulationTick = realtimeMsPerGameTick;
 	}
 	
 	public void run() {

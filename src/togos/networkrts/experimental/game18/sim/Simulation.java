@@ -97,7 +97,7 @@ public class Simulation
 				}
 			}
 		}.start();
-		new InteractiveSimulationRunner(imq, sim).run();
+		new InteractiveSimulationRunner(imq, sim, 100).run();
 		System.exit(0);
 	}
 }
