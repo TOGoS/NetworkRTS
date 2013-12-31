@@ -1,9 +1,13 @@
 package togos.networkrts.experimental.game18.sim;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
+import togos.networkrts.experimental.qt2drender.ImageHandle;
+import togos.networkrts.experimental.qt2drender.VizState;
 import togos.networkrts.experimental.qt2drender.VizState.BackgroundLink;
+import togos.networkrts.experimental.qt2drender.demo.ImageHandlePool;
 
 public class Room implements SimNode
 {
@@ -245,5 +249,78 @@ public class Room implements SimNode
 		}
 		
 		return null;
+	}
+	
+	////
+	
+	static class TileMapper {
+		ImageHandlePool ihp;
+		ArrayList<ImageHandle> imagePalette = new ArrayList<ImageHandle>();
+		HashMap<String,Integer> map = new HashMap<String,Integer>();
+		
+		public byte imageUriToIndex( String imageUri ) {
+			Integer i = map.get(imageUri);
+			if( i != null ) return i.byteValue();
+			if( imagePalette.size() >= 0xFF ) {
+				throw new RuntimeException("Can't fit any more images into palette");
+			}
+			i = imagePalette.size();
+			map.put(imageUri, i);
+			imagePalette.add(ihp.get(imageUri));
+			return i.byteValue();
+		}
+	}
+	
+	protected static void _projectView(
+		SimNode root, long roomId, Room r, int x, int y, int viz0,
+		int bWidth, int bHeight, int bx, int by, int[] visibility, Room[] rooms, int[] cellIndexes
+	) {
+		int bIdx = by*bWidth+bx;
+		
+		// Ignore cells that have already been marked with >= viz0 visibility
+		if( viz0 <= visibility[bIdx] ) return;
+		
+		if( r == null || r.id != roomId ) {
+			r = root.get(roomId, Room.class);
+		}
+
+		int tileX = x+r.originX, tileY = y+r.originY;
+
+		// Bail if out of bounds
+		if( tileX < 0 || tileY < 0 || tileX >= r.width || tileY >= r.height ) return;
+		
+		int tileIndex = tileX + tileY*r.height;
+		rooms[bIdx] = r;
+		visibility[bIdx] = viz0;		
+		//cellIndexes[bIdx] = ;
+		
+		// TODO
+		throw new UnsupportedOperationException();
+	}
+	
+	protected static void projectView(
+		SimNode root, long roomId, int x, int y, int viz0,
+		int bWidth, int bHeight, int bx, int by, int[] visibility, Room[] rooms, int[] cellIndexes
+	) {
+		_projectView(
+			root, roomId, null, x, y, viz0,
+			bWidth, bHeight, bx, by, visibility, rooms, cellIndexes
+		);
+	}
+	
+	public static VizState toVizState( ImageHandlePool ihp, SimNode root, long roomId, float eyeX, float eyeY, float eyeZ, int vizDist ) {
+		int size = vizDist*2+1;
+		int minZ, maxZ;
+		Room[] rooms = new Room[size*size];
+		int[] cellIndex = new int[size*size];
+		int[] visibility = new int[size*size];
+		
+		Room r = root.get(roomId, Room.class);
+		
+		
+		byte[][] tileLayers = new byte[r.depth][size*size];
+		
+		// TODO: collect sprites somehow
+		throw new UnsupportedOperationException();
 	}
 }
