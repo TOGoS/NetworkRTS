@@ -1,15 +1,11 @@
 package togos.networkrts.repo;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.imageio.ImageIO;
 
 import togos.blob.FileInputStreamable;
 import togos.blob.InputStreamable;
@@ -53,9 +49,10 @@ public class BlobRepository
 		return "urn:bitprint:"+bpBase32;
 	}
 	
-	protected File tempFile() throws IOException {
+	public File tempFile() throws IOException {
 		if( !repoDir.isDirectory() ) repoDir.mkdirs();
-		return File.createTempFile(".temp", "", repoDir);
+		File temp = File.createTempFile(".temp", "", repoDir);
+		return temp;
 	}
 	
 	protected void mkParentDirs( File f ) {
@@ -73,27 +70,6 @@ public class BlobRepository
 		} finally {
 			fos.close();
 		}
-		return store(temp, true);
-	}
-	
-	public String storeSerialized( Object obj ) throws IOException {
-		File temp = tempFile();
-		mkParentDirs(temp);
-		FileOutputStream fos = new FileOutputStream(temp);
-		try {
-			ObjectOutputStream oos = new ObjectOutputStream(fos); 
-			oos.writeObject(obj);
-			oos.close();
-		} finally {
-			fos.close();
-		}
-		return store(temp, true);
-	}
-	
-	public String storeImage( BufferedImage img ) throws IOException {
-		File temp = tempFile();
-		mkParentDirs(temp);
-		ImageIO.write(img, "png", temp);
 		return store(temp, true);
 	}
 	

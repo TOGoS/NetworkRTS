@@ -16,6 +16,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 
 import togos.blob.InputStreamable;
+import togos.networkrts.experimental.game18.demo.DemoUtil;
 import togos.networkrts.experimental.qt2drender.AWTDisplay;
 import togos.networkrts.experimental.qt2drender.Blackifier;
 import togos.networkrts.experimental.qt2drender.ImageHandle;
@@ -27,11 +28,10 @@ import togos.networkrts.repo.BlobRepository;
 import togos.networkrts.util.Getter;
 import togos.networkrts.util.ResourceHandle;
 import togos.networkrts.util.ResourceNotFound;
+import togos.networkrts.util.StorageUtil;
 
 public class NetRenderDemo
 {
-	static final BlobRepository blobRepo = new BlobRepository(new File(".ccouch"));
-	
 	public static class RenderContext {
 		protected final Getter<InputStreamable> blobResolver;
 		
@@ -122,8 +122,8 @@ public class NetRenderDemo
 		protected ImageHandle createFogImageHandle( int size, int fogged ) {
 			return new ImageHandle("fog:"+size+","+fogged);
 		}
-	}
 	
+	}
 	public static boolean cellIsCompletelyInvisible( VizState vs, int x, int y ) {
 		int sp1 = vs.size+1;
 		int idx0 = sp1*y+x;
@@ -185,12 +185,12 @@ public class NetRenderDemo
 		BufferedImage tile1 = ImageIO.read(new File("tile-images/1.png"));
 		BufferedImage tile1Shaded = Blackifier.shade(tile1, 0.7f, 1, 1, 1, 1);
 		
-		ImageHandle bgIh = new ImageHandle(br.storeImage(tile1Shaded));
+		ImageHandle bgIh = new ImageHandle(StorageUtil.storeImage(br, tile1Shaded));
 		QTRenderNode bgNode = new QTRenderNode(null, 0, 0, 0, 0, QTRenderNode.EMPTY_SPRITE_LIST,
 			bgIh.getSingle(), null, null, null, null
 		);
 
-		String bgNodeUrn = br.storeSerialized(bgNode);
+		String bgNodeUrn = StorageUtil.storeSerialized(br, bgNode);
 		
 		VizState.BackgroundLink[] bgLinks = new VizState.BackgroundLink[] {
 			null,
@@ -204,11 +204,11 @@ public class NetRenderDemo
 			0, 0, 0, 0, 0
 		};
 		
-		ImageHandle ih0 = new ImageHandle(br.storeImage(new BufferedImage(1,1,BufferedImage.TYPE_INT_ARGB)));
-		ImageHandle ih1 = new ImageHandle(br.storeImage(ImageIO.read(new File("tile-images/2.png"))));
+		ImageHandle ih0 = new ImageHandle(StorageUtil.storeImage(br, new BufferedImage(1,1,BufferedImage.TYPE_INT_ARGB)));
+		ImageHandle ih1 = new ImageHandle(StorageUtil.storeImage(br, ImageIO.read(new File("tile-images/2.png"))));
 		
 		//String thang = stor.storeObject(new ImageHandle[]{ih});
-		ResourceHandle<ImageHandle[]> tilePalette = new ResourceHandle<ImageHandle[]>(br.storeSerialized(new ImageHandle[]{ih0, ih1}));
+		ResourceHandle<ImageHandle[]> tilePalette = new ResourceHandle<ImageHandle[]>(StorageUtil.storeSerialized(br, new ImageHandle[]{ih0, ih1}));
 		
 		byte[][] tileLayers = new byte[1][size*size];
 		tileLayers[0] = new byte[] {
@@ -241,7 +241,7 @@ public class NetRenderDemo
 	
 	public static void main( String[] args ) throws Exception {
 		final JFrame f = new JFrame("NetRenderDemo");
-		final VizStateCanvas vsc = new VizStateCanvas(new RenderContext(blobRepo.toBlobResolver()));
+		final VizStateCanvas vsc = new VizStateCanvas(new RenderContext(DemoUtil.DEFAULT_BLOB_REPO.toBlobResolver()));
 		vsc.setPreferredSize(new Dimension(800,600));
 		f.add(vsc);
 		f.pack();
@@ -250,7 +250,7 @@ public class NetRenderDemo
 		
 		long ts = 0;
 		while(true) {
-			vsc.setState(makeVizState(blobRepo, ts++));
+			vsc.setState(makeVizState(DemoUtil.DEFAULT_BLOB_REPO, ts++));
 			Thread.sleep(10);
 		}
 	}

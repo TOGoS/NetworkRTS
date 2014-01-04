@@ -5,20 +5,21 @@ import java.util.WeakHashMap;
 
 public class ResourceHandlePool
 {
-	protected final WeakHashMap<ResourceHandle,WeakReference<ResourceHandle>> refs = new WeakHashMap<ResourceHandle,WeakReference<ResourceHandle>>();
+	protected final WeakHashMap<ResourceHandle<?>,WeakReference<ResourceHandle<?>>> refs = new WeakHashMap<ResourceHandle<?>,WeakReference<ResourceHandle<?>>>();
 	
-	public synchronized ResourceHandle intern( ResourceHandle link ) {
-		WeakReference<ResourceHandle> internedRef = refs.get(link);
+	public synchronized <T> ResourceHandle<T> intern( ResourceHandle<T> link ) {
+		@SuppressWarnings({ "rawtypes", "unchecked" })
+		WeakReference<ResourceHandle<T>> internedRef = (WeakReference<ResourceHandle<T>>)(WeakReference)refs.get(link);
 		if( internedRef != null ) {
 			// Might disappear if collection occurs ~right here~
-			ResourceHandle interned = internedRef.get();
+			ResourceHandle<T> interned = internedRef.get();
 			if( interned != null ) return interned;
 		}
-		refs.put(link, new WeakReference<ResourceHandle>(link));
+		refs.put(link, new WeakReference<ResourceHandle<?>>(link));
 		return link;
 	}
 	
-	public ResourceHandle get( String urn ) {
-		return intern(new ResourceHandle(urn));
+	public <T> ResourceHandle<T> get( String urn ) {
+		return intern(new ResourceHandle<T>(urn));
 	}
 }

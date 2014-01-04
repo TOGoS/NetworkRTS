@@ -1,25 +1,32 @@
 package togos.networkrts.experimental.game18.sim;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import togos.networkrts.experimental.game18.StorageContext;
 import togos.networkrts.experimental.qt2drender.ImageHandle;
+import togos.networkrts.experimental.qt2drender.Sprite;
 import togos.networkrts.experimental.qt2drender.VizState;
 import togos.networkrts.experimental.qt2drender.VizState.BackgroundLink;
-import togos.networkrts.experimental.qt2drender.demo.ImageHandlePool;
+import togos.networkrts.util.ResourceHandle;
+import togos.networkrts.util.StorageUtil;
 
 public class Room implements SimNode
 {
-	static class Neighbor {
-		final long id;
-		final int offsetX, offsetY, offsetZ;
+	public static class Neighbor {
+		public final long roomId;
+		public final int offsetX, offsetY, offsetZ, width, height, depth;
 		
-		public Neighbor( long id, int offsetX, int offsetY, int offsetZ ) {
-			this.id = id;
+		public Neighbor( long roomId, int offsetX, int offsetY, int offsetZ, int width, int height, int depth ) {
+			this.roomId = roomId;
 			this.offsetX = offsetX;
 			this.offsetY = offsetY;
 			this.offsetZ = offsetZ;
+			this.width   = width;
+			this.height  = height;
+			this.depth   = depth;
 		}
 	}
 	
@@ -28,7 +35,7 @@ public class Room implements SimNode
 		public Thing update( Thing t, SimNode rootNode, long timestamp, Message m, List<Message> messageQueue );
 	}
 	
-	static class BoringestThingBehavior<Thing> implements ThingBehavior<Thing> {
+	public static class BoringestThingBehavior<Thing> implements ThingBehavior<Thing> {
 		public static final BoringestThingBehavior<?> instance = new BoringestThingBehavior<Object>();
 		@SuppressWarnings("unchecked")
 		public static final <Thing> BoringestThingBehavior<Thing> getInstance() {
@@ -45,7 +52,7 @@ public class Room implements SimNode
 		}
 	}
 	
-	static class Tile implements SimNode {
+	public static class Tile implements SimNode {
 		final long id;
 		final String imageUri;
 		// TODO: Eventually tiles should have much more complex physics and behavior
@@ -59,7 +66,7 @@ public class Room implements SimNode
 		final boolean isOpaque;
 		public final ThingBehavior<Tile> behavior;
 		
-		final Tile[] single = new Tile[] { this };
+		public final Tile[] single = new Tile[] { this };
 		
 		public Tile( long id, String imageUri, boolean isSolid, boolean isOpaque, ThingBehavior<Tile> behavior ) {
 			this.id = id;
@@ -86,7 +93,7 @@ public class Room implements SimNode
 		}
 	}
 	
-	static class DynamicThing implements SimNode {
+	public static class DynamicThing implements SimNode {
 		public final long id;
 		public final float x, y, z;
 		// TODO: I suppose I would eventually like non-square things...
@@ -124,12 +131,13 @@ public class Room implements SimNode
 		}
 	}
 	
-	final long id;
-	final int width, height, depth;
-	final int originX, originY;
-	final BackgroundLink backgroundLink;
-	final Tile[][] tiles;
-	final DynamicThing[] dynamicThings;
+	public final long id;
+	public final int width, height, depth;
+	public final int originX, originY;
+	public final Neighbor[] neighbors;
+	public final BackgroundLink backgroundLink;
+	public final Tile[][] tiles;
+	public final DynamicThing[] dynamicThings;
 	
 	protected final long minId, maxId;
 	protected final boolean anyTilesHaveInterestingBehavior;
@@ -137,11 +145,12 @@ public class Room implements SimNode
 	
 	public Room(
 		long id, int width, int height, int depth, int originX, int originY,
-		BackgroundLink backgroundLink, Tile[][] tiles, DynamicThing[] dynamicThings
+		Neighbor[] neighbors, BackgroundLink backgroundLink, Tile[][] tiles, DynamicThing[] dynamicThings
 	) {
 		this.id = id;
 		this.width = width; this.height = height; this.depth = depth;
 		this.originX = originX; this.originY = originY;
+		this.neighbors = neighbors;
 		this.backgroundLink = backgroundLink;
 		this.tiles = tiles; this.dynamicThings = dynamicThings;
 		
@@ -223,7 +232,7 @@ public class Room implements SimNode
 			newDynamicThingList == null ? dynamicThings : newDynamicThingList.toArray(new DynamicThing[newDynamicThingList.size()]);
 		
 		return (newTiles != tiles || newDynamicThings != dynamicThings) ?
-			new Room( id, width, height, depth, originX, originY, backgroundLink, tiles, dynamicThings ) : this;
+			new Room( id, width, height, depth, originX, originY, neighbors, backgroundLink, newTiles, newDynamicThings ) : this;
 	}
 	
 	protected Room updateSelf( SimNode rootNode, long timestamp, Message m, List<Message> messageDest ) {
@@ -253,10 +262,23 @@ public class Room implements SimNode
 	
 	////
 	
-	static class TileMapper {
-		ImageHandlePool ihp;
+	public static class TileMapper {
+		final StorageContext storageContext;
 		ArrayList<ImageHandle> imagePalette = new ArrayList<ImageHandle>();
 		HashMap<String,Integer> map = new HashMap<String,Integer>();
+		
+		public TileMapper( StorageContext ctx ) {
+			this.storageContext = ctx;
+		}		
+		
+		public ResourceHandle<ImageHandle[]> getImagePaletteHandle() {
+			ImageHandle[] ih = imagePalette.toArray(new ImageHandle[imagePalette.size()]);
+			try {
+				return storageContext.resourceHandlePool.get(StorageUtil.storeSerialized(storageContext.blobRepository, ih));
+			} catch( IOException e ) {
+				throw new RuntimeException(e);
+			}
+		}
 		
 		public byte imageUriToIndex( String imageUri ) {
 			Integer i = map.get(imageUri);
@@ -266,36 +288,83 @@ public class Room implements SimNode
 			}
 			i = imagePalette.size();
 			map.put(imageUri, i);
-			imagePalette.add(ihp.get(imageUri));
+			imagePalette.add(storageContext.imageHandlePool.get(imageUri));
 			return i.byteValue();
 		}
 	}
 	
 	protected static void _projectView(
 		SimNode root, long roomId, Room r, int x, int y, int viz0,
-		int bWidth, int bHeight, int bx, int by, int[] visibility, Room[] rooms, int[] cellIndexes
+		int bWidth, int bHeight, int bx, int by, int[] visibility, Room[] rooms, int[] cellIndexes,
+		boolean adjustToNeighbor
 	) {
-		int bIdx = by*bWidth+bx;
+		assert viz0 >= 0;
+		
+		int bIdx = by*bWidth+bx; // output Buffer index
+		
+		// Bail if out of outbut buffer bounds
+		if( bx < 0 || by < 0 || bx >= bWidth || by >= bHeight ) return;
 		
 		// Ignore cells that have already been marked with >= viz0 visibility
 		if( viz0 <= visibility[bIdx] ) return;
 		
+		// Load the room if needed
 		if( r == null || r.id != roomId ) {
 			r = root.get(roomId, Room.class);
 		}
-
+		
+		// Figure tile x, y within room
 		int tileX = x+r.originX, tileY = y+r.originY;
-
-		// Bail if out of bounds
+		
+		// If out of bounds, figure out which neighbor that actually is
+		if( tileX < 0 || tileY < 0 || tileX >= r.width || tileY >= r.height && adjustToNeighbor ) {
+			for( Neighbor n : r.neighbors ) {
+				if(
+					x >= n.offsetX && y >= n.offsetY &&
+					x < n.offsetX+n.width && y < n.offsetY+n.height
+				) {
+					_projectView(
+						root, n.roomId, r, x-n.offsetX, y-n.offsetY, viz0,
+						bWidth, bHeight, bx, by, visibility, rooms, cellIndexes, false
+					);
+					return; 
+				}
+			}
+			return;
+		}
+		
+		// Bail if out of room bounds
 		if( tileX < 0 || tileY < 0 || tileX >= r.width || tileY >= r.height ) return;
 		
-		int tileIndex = tileX + tileY*r.height;
+		int cellIndex = tileX + tileY*r.height;
 		rooms[bIdx] = r;
-		visibility[bIdx] = viz0;		
-		//cellIndexes[bIdx] = ;
+		visibility[bIdx] = viz0;
+		cellIndexes[bIdx] = cellIndex;
 		
-		// TODO
-		throw new UnsupportedOperationException();
+		// If this is our last stop, then stop
+		if( viz0 == 0 ) return;
+		
+		// If any tiles here are opaque, then stop
+		for( int l=0; l<r.tiles.length; ++l ) {
+			for( int z=0; z<r.depth; ++z ) {
+				int tileIndex = cellIndex + r.width*r.height*z;
+				Tile[] stack = r.tiles[tileIndex];
+				for( Tile t : stack ) {
+					if( t.isOpaque ) return;
+				}
+			}
+		}
+		
+		// Otherwise recurse onto all the neighbors
+		
+		for( int i=0; i<4; ++i ) {
+			int dx = (i&1) == 0 ? +1 : -1;
+			int dy = (i&2) == 0 ? +1 : -1;
+			_projectView(
+				root, roomId, r, x+dx, y+dy, viz0,
+				bWidth, bHeight, bx+dx, by+dy, visibility, rooms, cellIndexes, true
+			);
+		}
 	}
 	
 	protected static void projectView(
@@ -304,23 +373,65 @@ public class Room implements SimNode
 	) {
 		_projectView(
 			root, roomId, null, x, y, viz0,
-			bWidth, bHeight, bx, by, visibility, rooms, cellIndexes
+			bWidth, bHeight, bx, by, visibility, rooms, cellIndexes,
+			false
 		);
 	}
 	
-	public static VizState toVizState( ImageHandlePool ihp, SimNode root, long roomId, float eyeX, float eyeY, float eyeZ, int vizDist ) {
-		int size = vizDist*2+1;
-		int minZ, maxZ;
-		Room[] rooms = new Room[size*size];
-		int[] cellIndex = new int[size*size];
-		int[] visibility = new int[size*size];
+	public static VizState toVizState( TileMapper tileMapper, SimNode root, long roomId, float eyeX, float eyeY, float eyeZ, int vizDist ) {
+		int bSize = vizDist*2+1;
+		Room[] rooms = new Room[bSize*bSize];
+		int[] cellIndexes = new int[bSize*bSize];
+		int[] visibility = new int[bSize*bSize];
 		
 		Room r = root.get(roomId, Room.class);
 		
+		projectView(
+			root, roomId, (int)eyeX, (int)eyeY, vizDist,
+			bSize, bSize, vizDist, vizDist, visibility, rooms, cellIndexes
+		);
 		
-		byte[][] tileLayers = new byte[r.depth][size*size];
+		int maxRoomDepth = 0;
+		
+		// Assume all rooms start at the same Z
+		for( int i=0; i<rooms.length; ++i ) {
+			Room rx = rooms[i];
+			if( rx == null ) continue;
+			if( rx.depth > maxRoomDepth ) maxRoomDepth = rx.depth;
+		}
+		
+		// TODO: VizState isn't equipped to handle multiple tiles per cell!!!
+		byte[][] tileLayers = new byte[maxRoomDepth][bSize*bSize];
+		for( int i=0; i<rooms.length; ++i ) {
+			Room rx = rooms[i];
+			if( rx == null ) continue;
+			for( int z=0; z<rx.depth; ++z ) {
+				Tile[] stack = r.tiles[r.width*r.height*z + cellIndexes[i]];
+				if( stack.length >= 1 ) {
+					// ... so just getting the first tile in the stack
+					tileLayers[z][i] = tileMapper.imageUriToIndex(stack[0].imageUri);
+				}
+			}
+		}
+		
+		boolean[] cornerVisibility = new boolean[(bSize+1)*(bSize+1)];
+		for( int y=1; y<bSize; ++y ) for( int x=1; x<bSize; ++x ) {
+			cornerVisibility[y*(bSize+1)+x] = true ||
+				(visibility[(y-1)*bSize+(x-1)] > 0) &&
+				(visibility[(y-1)*bSize+(x  )] > 0) &&
+				(visibility[(y  )*bSize+(x-1)] > 0) &&
+				(visibility[(y  )*bSize+(x  )] > 0);
+		}
 		
 		// TODO: collect sprites somehow
-		throw new UnsupportedOperationException();
+		
+		Sprite[] sprites = new Sprite[0];
+
+		return new VizState(
+			bSize, vizDist+0.5f, vizDist+0.5f, 0, 0,
+			new BackgroundLink[1], new byte[bSize*bSize],
+			tileMapper.getImagePaletteHandle(), tileLayers,
+			cornerVisibility, sprites
+		);
 	}
 }
