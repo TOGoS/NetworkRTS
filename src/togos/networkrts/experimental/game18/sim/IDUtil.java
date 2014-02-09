@@ -1,7 +1,7 @@
 package togos.networkrts.experimental.game18.sim;
 
 
-public class Util
+public class IDUtil
 {
 	public static final long MIN_ID = 0;
 	public static final long MAX_ID = -1;

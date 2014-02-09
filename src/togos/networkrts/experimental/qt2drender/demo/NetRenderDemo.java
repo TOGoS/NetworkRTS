@@ -89,15 +89,15 @@ public class NetRenderDemo
 			}
 		};
 		
-		public ImageHandle[] getImagePalette( ResourceHandle<ImageHandle[]> handle ) {
+		public ImageHandle[] getImagePalette( ResourceHandle<ImageHandle[]> handle ) throws ResourceNotFound {
 			return handle.getValue(imagePaletteResolver);
 		}
 		
-		public QTRenderNode getRenderNode( ResourceHandle<QTRenderNode> handle ) {
+		public QTRenderNode getRenderNode( ResourceHandle<QTRenderNode> handle ) throws ResourceNotFound {
 			return handle.getValue(renderNodeResolver);
 		}
 		
-		public QTRenderNode[] getRenderNodes( VizState.BackgroundLink[] links ) {
+		public QTRenderNode[] getRenderNodes( VizState.BackgroundLink[] links ) throws ResourceNotFound {
 			QTRenderNode[] nodes = new QTRenderNode[links.length];
 			for( int i=0; i<links.length; ++i ) {
 				nodes[i] = links[i] == null ? null : getRenderNode(links[i].background);
@@ -241,7 +241,7 @@ public class NetRenderDemo
 	
 	public static void main( String[] args ) throws Exception {
 		final JFrame f = new JFrame("NetRenderDemo");
-		final VizStateCanvas vsc = new VizStateCanvas(new RenderContext(DemoUtil.DEFAULT_BLOB_REPO.toBlobResolver()));
+		final VizStateCanvas vsc = new VizStateCanvas(new RenderContext(DemoUtil.DEFAULT_BLOB_REPO.toBlobGetter()));
 		vsc.setPreferredSize(new Dimension(800,600));
 		f.add(vsc);
 		f.pack();

@@ -2,7 +2,7 @@ package togos.networkrts.experimental.game18.sim;
 
 public final class Message
 {
-	public static final Message NONE = new Message(Util.MAX_ID, Util.MIN_ID, MessageType.NOOP, "no message");
+	public static final Message NONE = new Message(IDUtil.MAX_ID, IDUtil.MIN_ID, MessageType.NOOP, "no message");
 	
 	enum MessageType {
 		NOOP,

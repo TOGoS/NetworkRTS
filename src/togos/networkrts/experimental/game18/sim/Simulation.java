@@ -51,7 +51,7 @@ public class Simulation
 				nextThump += thumpInterval;
 			}
 			
-			if( !Util.rangeContains(m.minId, m.maxId, id) ) m = Message.NONE;
+			if( !IDUtil.rangeContains(m.minId, m.maxId, id) ) m = Message.NONE;
 			
 			switch( m.type ) {
 			case INFORMATIONAL:

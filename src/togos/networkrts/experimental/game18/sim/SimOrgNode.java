@@ -15,8 +15,8 @@ public class SimOrgNode implements SimNode
 	
 	public SimOrgNode( SimNode[] childs ) {
 		assert childs != null;
-		long minId = Util.MAX_ID;
-		long maxId = Util.MIN_ID;
+		long minId = IDUtil.MAX_ID;
+		long maxId = IDUtil.MIN_ID;
 		long nextAutoUpdateTime = Long.MAX_VALUE;
 		this.childs = childs;
 		for( SimNode n : childs ) {
@@ -31,7 +31,7 @@ public class SimOrgNode implements SimNode
 	}
 		
 	@Override public SimOrgNode update( SimNode rootNode, long timestamp, Message m, List<Message> messageDest ) {
-		if( timestamp < nextAutoUpdateTime && !Util.rangesIntersect(m.minId, m.maxId, minId, maxId) ) return this;
+		if( timestamp < nextAutoUpdateTime && !IDUtil.rangesIntersect(m.minId, m.maxId, minId, maxId) ) return this;
 		
 		for( int i=0; i<childs.length; ++i ) {
 			SimNode newChild = childs[i].update( rootNode, timestamp, m, messageDest );
@@ -60,7 +60,7 @@ public class SimOrgNode implements SimNode
 	@Override public long getMaxId() { return maxId; }
 
 	@Override public <T> T get( long id, Class<T> expectedClass ) {
-		if( !Util.rangeContains(minId, maxId, id) ) return null;
+		if( !IDUtil.rangeContains(minId, maxId, id) ) return null;
 		
 		for( SimNode n : childs ) {
 			T t = n.get(id, expectedClass);

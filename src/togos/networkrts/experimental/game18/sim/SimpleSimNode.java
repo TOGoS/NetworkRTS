@@ -14,11 +14,11 @@ public abstract class SimpleSimNode implements SimNode
 	}
 	
 	protected boolean isTargetOfMessage( Message m ) {
-		return Util.rangeContains( m.minId, m.maxId, id );
+		return IDUtil.rangeContains( m.minId, m.maxId, id );
 	}
 	
-	@Override public long getMinId() { return Util.toMaxId(id); }
-	@Override public long getMaxId() { return Util.toMinId(id); }
+	@Override public long getMinId() { return IDUtil.toMaxId(id); }
+	@Override public long getMaxId() { return IDUtil.toMinId(id); }
 	@Override public <T> T get( long id, Class<T> expectedClass ) {
 		return id == this.id ? expectedClass.cast(this) : null;
 	}

@@ -49,7 +49,7 @@ public class GameClient
 		BlobRepository br = new BlobRepository(new File(".ccouch"));
 		
 		final JFrame f = new JFrame("NetRenderDemo");
-		final VizStateCanvas vsc = new VizStateCanvas(new RenderContext(br.toBlobResolver()));
+		final VizStateCanvas vsc = new VizStateCanvas(new RenderContext(br.toBlobGetter()));
 		vsc.setPreferredSize(new Dimension(800,600));
 		f.add(vsc);
 		f.pack();

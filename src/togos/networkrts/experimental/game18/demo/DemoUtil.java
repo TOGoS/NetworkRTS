@@ -18,7 +18,7 @@ public class DemoUtil
 	
 	public static void showVizStateWindow( VizState vs ) {
 		final JFrame f = new JFrame("VizState view");
-		final VizStateCanvas vsc = new VizStateCanvas(new RenderContext(DEFAULT_BLOB_REPO.toBlobResolver()));
+		final VizStateCanvas vsc = new VizStateCanvas(new RenderContext(DEFAULT_BLOB_REPO.toBlobGetter()));
 		vsc.setPreferredSize(new Dimension(800,600));
 		f.add(vsc);
 		f.pack();

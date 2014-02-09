@@ -77,10 +77,10 @@ public class Room implements SimNode
 		}
 
 		@Override public long getMinId() {
-			return id == Util.NO_ID ? Util.MAX_ID : id;
+			return id == IDUtil.NO_ID ? IDUtil.MAX_ID : id;
 		}
 		@Override public long getMaxId() {
-			return id == Util.NO_ID ? Util.MIN_ID : id;
+			return id == IDUtil.NO_ID ? IDUtil.MIN_ID : id;
 		}
 		@Override public long getNextAutoUpdateTime() {
 			return behavior.getNextAutoUpdateTime(this);
@@ -115,10 +115,10 @@ public class Room implements SimNode
 		}
 
 		@Override public long getMinId() {
-			return id == Util.NO_ID ? Util.MAX_ID : id;
+			return id == IDUtil.NO_ID ? IDUtil.MAX_ID : id;
 		}
 		@Override public long getMaxId() {
-			return id == Util.NO_ID ? Util.MIN_ID : id;
+			return id == IDUtil.NO_ID ? IDUtil.MIN_ID : id;
 		}
 		@Override public long getNextAutoUpdateTime() {
 			return behavior.getNextAutoUpdateTime(this);
@@ -155,21 +155,21 @@ public class Room implements SimNode
 		this.tiles = tiles; this.dynamicThings = dynamicThings;
 		
 		long nextAutoUpdateTime = Long.MAX_VALUE;
-		long minId = Util.toMinId(id);
-		long maxId = Util.toMaxId(id);
+		long minId = IDUtil.toMinId(id);
+		long maxId = IDUtil.toMaxId(id);
 		boolean anyInterestingTileBehavior = false;
 		
 		for( Tile[] stack : tiles ) for( Tile t : stack ) {
 			if( t.behavior != BoringestThingBehavior.instance ) {
 				anyInterestingTileBehavior = true;
 			}
-			maxId = Util.maxId( maxId, t.id );
-			minId = Util.minId( minId, t.id );
+			maxId = IDUtil.maxId( maxId, t.id );
+			minId = IDUtil.minId( minId, t.id );
 			nextAutoUpdateTime = Math.min(nextAutoUpdateTime, t.getNextAutoUpdateTime() );
 		}
 		for( DynamicThing t : dynamicThings ) {
-			maxId = Util.maxId( maxId, t.id );
-			minId = Util.minId( minId, t.id );
+			maxId = IDUtil.maxId( maxId, t.id );
+			minId = IDUtil.minId( minId, t.id );
 			nextAutoUpdateTime = Math.min(nextAutoUpdateTime, t.getNextAutoUpdateTime() );
 		}
 		
@@ -241,9 +241,9 @@ public class Room implements SimNode
 	}
 	
 	@Override public Room update( SimNode rootNode, long timestamp, Message m, List<Message> messageDest ) {
-		if( timestamp < nextAutoUpdateTime && !Util.rangesIntersect(m.minId, m.maxId, minId, maxId) ) return this;
+		if( timestamp < nextAutoUpdateTime && !IDUtil.rangesIntersect(m.minId, m.maxId, minId, maxId) ) return this;
 		
-		Room newRoom = Util.rangeContains(m.minId, m.maxId, id) ? updateSelf(rootNode, timestamp, m, messageDest) : this;
+		Room newRoom = IDUtil.rangeContains(m.minId, m.maxId, id) ? updateSelf(rootNode, timestamp, m, messageDest) : this;
 		return newRoom.updateComponents( rootNode, timestamp, m, messageDest );
 	}
 	@Override public <T> T get( long id, Class<T> expectedClass ) {

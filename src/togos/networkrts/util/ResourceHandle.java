@@ -34,7 +34,20 @@ public class ResourceHandle<T> implements Serializable
 		return true;
 	}
 	
+	protected void rethrow( Exception e ) throws ResourceNotFound {
+		if( e instanceof ResourceNotFound ) {
+			throw (ResourceNotFound)e;
+		} else if( e instanceof RuntimeException ) {
+			throw (RuntimeException)e;
+		} else if( e instanceof InterruptedException ) {
+			Thread.currentThread().interrupt();
+		} else {
+			throw new RuntimeException(e);
+		}
+	}
+	
 	public <E extends Throwable> T getValue( Getter<T> populator )
+		throws ResourceNotFound
 	{
 		T value = getValue();
 		if( value != null ) return value;
@@ -54,14 +67,17 @@ public class ResourceHandle<T> implements Serializable
 		try {
 			setValue(value = populator.get(uri));
 		} catch( Exception e ) {
-			System.err.println("Error populating "+uri);
-			e.printStackTrace();
 			setError(e);
+			rethrow(e);
 		}
 		
 		return value;
 	}
 	
+	/**
+	 * Get the value if it's already populated.
+	 * Return null if it hasn't been populated, including if an error occurred while trying to populate.
+	 */
 	public T getValue() {
 		SoftReference<T> ref = this.ref;
 		return ref == null ? null : ref.get();

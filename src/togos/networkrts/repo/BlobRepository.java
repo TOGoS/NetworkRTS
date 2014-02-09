@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,6 +18,35 @@ public class BlobRepository
 	protected File repoDir;
 	public BlobRepository( File repoDir ) {
 		this.repoDir = repoDir;
+	}
+	
+	public String store( InputStream is ) throws IOException {
+		BitprintDigest dig = new BitprintDigest();
+		File tempFile = tempFile();
+		FileOutputStream fos = new FileOutputStream(tempFile);
+		try {
+			byte[] buffer = new byte[65536];
+			int r;
+			while( (r = is.read(buffer)) > 0 ) {
+				dig.update(buffer, 0, r);
+				fos.write(buffer, 0, r);
+			}
+		} finally {
+			is.close();
+			fos.close();
+		}
+		
+		String bpBase32 = BitprintDigest.format(dig.digest());
+		
+		File dest = new File(repoDir, "data/auto/"+bpBase32.substring(0,2)+"/"+bpBase32.substring(0,32));
+		if( dest.exists() ) {
+			tempFile.delete();
+		} else {
+			mkParentDirs(dest);
+			tempFile.renameTo(dest);
+		}
+		
+		return "urn:bitprint:"+bpBase32;
 	}
 	
 	public String store( File f, boolean removeSource ) throws IOException {
@@ -41,8 +71,13 @@ public class BlobRepository
 			mkParentDirs(dest);
 			if( removeSource && f.renameTo(dest) ) {
 			} else {
-				// Copy ain't implamentid
-				throw new IOException("Failed to copy "+f+" into "+dest);
+				// Then we shall have to do some things again...
+				try {
+					fis = new FileInputStream(f);
+					return store( fis );
+				} finally {
+					fis.close();
+				}
 			}
 		}
 		
@@ -97,7 +132,7 @@ public class BlobRepository
 		return null;
 	}
 	
-	public Getter<InputStreamable> toBlobResolver() {
+	public Getter<InputStreamable> toBlobGetter() {
 		return new Getter<InputStreamable>() {
 			@Override
 			public InputStreamable get(String uri) throws ResourceNotFound {
