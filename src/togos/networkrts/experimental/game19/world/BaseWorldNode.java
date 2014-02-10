@@ -16,7 +16,7 @@ public abstract class BaseWorldNode implements WorldNode
 	}
 	
 	@Override public long getMinId() { return minId; }
-	@Override public long getMaxId() { return minId; }
+	@Override public long getMaxId() { return maxId; }
 	@Override public long getNextAutoUpdateTime() { return this.nextAutoUpdateTime; }
 	
 	protected abstract WorldNode _update( int x, int y, int sizePower, long time, Message[] messages, List<Action> results );

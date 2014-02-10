@@ -6,7 +6,7 @@ public class Message
 {
 	public static final Message[] EMPTY_LIST = new Message[0];
 	
-	enum MessageType {
+	public enum MessageType {
 		WALK_ATTEMPTED,
 		GETTING_PUSHED,
 		INCOMING_PACKET

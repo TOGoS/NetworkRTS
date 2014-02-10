@@ -3,10 +3,14 @@ package togos.networkrts.experimental.game19.demo;
 import java.awt.Color;
 import java.awt.Frame;
 import java.awt.Graphics;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
@@ -16,12 +20,16 @@ import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.WorldNode;
+import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.beh.NoBehavior;
 import togos.networkrts.experimental.game19.world.beh.RandomWalkBehavior;
+import togos.networkrts.experimental.game19.world.beh.WalkingBehavior;
 import togos.networkrts.experimental.game19.world.encoding.WorldConverter;
 import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
 import togos.networkrts.experimental.game19.world.gen.WorldUtil;
 import togos.networkrts.experimental.game19.world.sim.Simulator;
+import togos.networkrts.experimental.shape.RectIntersector;
+import togos.networkrts.experimental.shape.TBoundless;
 import togos.networkrts.experimental.shape.TCircle;
 import togos.networkrts.repo.BlobRepository;
 import togos.networkrts.ui.ImageCanvas;
@@ -67,6 +75,7 @@ public class ServerClientDemo
 	
 	static class Client {
 		SceneCanvas sceneCanvas;
+		public Queue<Message> messageQueue;
 		
 		public Client( Getter<BufferedImage> imageSource ) {
 			sceneCanvas = new SceneCanvas(imageSource);
@@ -91,10 +100,55 @@ public class ServerClientDemo
 	}
 	
 	public static void main( String[] args ) throws Exception {
+		final ConcurrentLinkedQueue<Message> messageQueue = new ConcurrentLinkedQueue<Message>(); 
+		
 		BlobRepository repo = new BlobRepository(new File(".ccouch"));
 		ImageGetter imageGetter = new ImageGetter(repo.toBlobGetter());
 		final Client c = new Client(imageGetter);
 		c.startUi();
+		c.sceneCanvas.addKeyListener(new KeyListener() {
+			boolean[] keysDown = new boolean[4];
+			int oldDir = -2;
+			
+			protected void keySomething( int keyCode, boolean state ) {
+				int dkCode;
+				switch( keyCode ) {
+				case KeyEvent.VK_W: dkCode = 3; break;
+				case KeyEvent.VK_A: dkCode = 2; break;
+				case KeyEvent.VK_S: dkCode = 1; break;
+				case KeyEvent.VK_D: dkCode = 0; break;
+				default: return; // Not a key we care about
+				}
+				
+				keysDown[dkCode] = state;
+				int dir = -1;
+				if( keysDown[0] && !keysDown[2] ) {
+					dir = 0;
+				} else if( keysDown[2] && !keysDown[0] ) {
+					dir = 4;
+				} else if( keysDown[1] && !keysDown[3] ) {
+					dir = 2;
+				} else if( keysDown[3] && !keysDown[1] ) {
+					dir = 6;
+				}
+				
+				if( dir != oldDir ) {
+					messageQueue.add(new Message(0x0202, 0x0202, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(dir) ));
+					oldDir = dir;
+				}
+			}
+			
+			@Override public void keyPressed(KeyEvent kevt) {
+				keySomething(kevt.getKeyCode(), true);
+			}
+
+			@Override public void keyReleased(KeyEvent kevt) {
+				keySomething(kevt.getKeyCode(), false);
+			}
+
+			@Override public void keyTyped(KeyEvent arg0) {}
+		});
+		c.messageQueue = messageQueue;
 		
 		Thread simulatorThread = new Thread("World updater") {
 			@Override public void run() {
@@ -110,6 +164,7 @@ public class ServerClientDemo
 				ResourceContext rc = new ResourceContext(new File(".ccouch"));
 				Block bricks = new Block(rc.storeImageHandle(new File("tile-images/dumbrick1.png")), Block.FLAG_SOLID, NoBehavior.instance);
 				Block dude = new Block(rc.storeImageHandle(new File("tile-images/dude.png")), Block.FLAG_SOLID, new RandomWalkBehavior(0x0102, 1));
+				Block player = new Block(rc.storeImageHandle(new File("tile-images/dude.png")), Block.FLAG_SOLID, new WalkingBehavior(0x0202, 0, 1, -1));
 				
 				int worldSizePower = 24;
 				int worldDataOrigin = -(1<<(worldSizePower-1));
@@ -120,13 +175,18 @@ public class ServerClientDemo
 				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -2, -2, dude, null);
 				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -3, -2, dude, null);
 				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -2, dude, null);
+				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -0, player, null);
 				final Simulator sim = new Simulator();
 				sim.setRoot( n, worldDataOrigin, worldDataOrigin, worldSizePower );
 				
 				long simTime = 0;
 				while(true) {
-					System.err.println("Update to "+simTime+"...");
-					sim.update(simTime, Message.EMPTY_LIST);
+					Message m;
+					while( (m = messageQueue.poll()) != null ) {
+						sim.enqueueMessage(m);
+					}
+					
+					sim.update(simTime);
 					n = sim.getRootNode();
 					
 					LayerData layerData = new LayerData( 16, 16, 1 );

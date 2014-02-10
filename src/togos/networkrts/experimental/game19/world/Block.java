@@ -22,4 +22,8 @@ public class Block
 	public Block( ImageHandle imageHandle ) {
 		this( imageHandle, 0, NoBehavior.instance );
 	}
+	
+	public Block withBehavior( BlockBehavior beh ) {
+		return new Block( imageHandle, flags, beh );
+	}
 }

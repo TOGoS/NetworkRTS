@@ -43,7 +43,12 @@ public class Simulator implements ActionContext
 		}
 	}
 	
-	public void update( long time, Message[] messages ) {
+	List<Message> incomingMessages = new ArrayList<Message>();
+	
+	public void update( long time ) {
+		Message[] messages = incomingMessages.toArray(new Message[incomingMessages.size()]);
+		incomingMessages.clear();
+		
 		List<Action> actions = new ArrayList<Action>();
 		rootNode = rootNode.update( rootX, rootY, rootSizePower, time, messages, actions );
 		for( Action act : actions ) act.apply(this);
@@ -61,7 +66,6 @@ public class Simulator implements ActionContext
 	}
 	
 	@Override public void enqueueMessage( Message m ) {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("Not yet implemented!");
+		incomingMessages.add(m);
 	}
 }
