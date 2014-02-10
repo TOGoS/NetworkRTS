@@ -59,7 +59,12 @@ public class RandomWalkBehavior implements BlockBehavior
 			int ry = ctx.getRootY();
 			int rsp = ctx.getRootSizePower();
 			
-			ctx.setRootNode( WorldUtil.updateNodeContaining( rn, rx, ry, rsp, x0, y0, x1+1, y1+1, this) );
+			int x0 = Math.min(this.x0, this.x1);
+			int x1 = Math.max(this.x0, this.x1)+1;
+			int y0 = Math.min(this.y0, this.y1);
+			int y1 = Math.max(this.y0, this.y1)+1;
+			
+			ctx.setRootNode( WorldUtil.updateNodeContaining( rn, rx, ry, rsp, x0, y0, x1, y1, this) );
 		}
 
 		@Override public WorldNode update( WorldNode node, int nodeX, int nodeY, int nodeSizePower ) {
@@ -68,11 +73,7 @@ public class RandomWalkBehavior implements BlockBehavior
 				System.err.println("No destination block stack >:/");
 				return node;
 			}
-			System.err.println("Trying to walk to "+x1+","+y1);
-			if( destinationChecker.cellIsSuitable(x1, y1, bs) ) {
-				System.err.println("It's clear!  Mving to "+x1+","+y1);
-			} else {
-				System.err.println("Arr, blocked!");
+			if( !destinationChecker.cellIsSuitable(x1, y1, bs) ) {
 				return node;
 			}
 			
