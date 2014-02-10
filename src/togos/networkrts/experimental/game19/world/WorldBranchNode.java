@@ -8,13 +8,14 @@ public class WorldBranchNode extends BaseWorldNode
 	
 	private WorldBranchNode( WorldNode[] subNodes, long minId, long maxId, long nextAutoUpdateTime ) {
 		super( minId, maxId, nextAutoUpdateTime );
+		assert subNodes.length == 4;
 		this.subNodes = subNodes;
 	}
 	
 	public static WorldBranchNode create( WorldNode[] subNodes ) {
 		long aut = Long.MAX_VALUE;
-		long minId = WorldNode.GENERIC_NODE_ID;
-		long maxId = WorldNode.GENERIC_NODE_ID;
+		long minId = IDs.GENERIC_NODE_ID;
+		long maxId = IDs.GENERIC_NODE_ID;
 		for( WorldNode n : subNodes ) {
 			long baut = n.getNextAutoUpdateTime();
 			if( baut < aut ) aut = baut;
@@ -24,17 +25,38 @@ public class WorldBranchNode extends BaseWorldNode
 		return new WorldBranchNode( subNodes, minId, maxId, aut );
 	}
 	
+	/**
+	 * Creates a new node unless all subnodes would be identical
+	 * to the corresponding ones in oldNode, in which case the old node
+	 * will be returned
+	 */
+	public static WorldNode createBasedOn( WorldNode[] newSubNodes, WorldNode oldNode ) {
+		WorldNode[] oldSubNodes = oldNode.getSubNodes();
+		for( int i=0; i<4; ++i ) {
+			if( newSubNodes[i] != oldSubNodes[i] ) {
+				return create(newSubNodes);
+			}
+		}
+		return oldNode;
+	}
+	
+	public static WorldNode createHomogeneousQuad( WorldNode subNode ) {
+		return create( new WorldNode[] { subNode, subNode, subNode, subNode } );
+	}
+	
 	@Override public boolean isLeaf() { return false; }
 	@Override public BlockStack getBlockStack() { return BlockStack.EMPTY; }
 	@Override public WorldNode[] getSubNodes() { return subNodes; }
+	
 	@Override protected WorldNode _update(
-		int x, int y, int size, long time,
+		int x, int y, int sizePower, long time,
 		Message[] messages, List<Action> results
 	) {
 		WorldNode[] newSubNodes = new WorldNode[4];
-		int subSize = size>>1;
-		for( int sy=0, si=0; sy<2; ++sy) for( int sx=0; sy<2; ++sx, ++si ) {
-			newSubNodes[si] = subNodes[si].update( x+(sx*subSize), y+(sy*subSize), subSize, time, messages, results );
+		int subSizePower = sizePower-1;
+		int subSize = 1<<subSizePower;
+		for( int sy=0, si=0; sy<2; ++sy) for( int sx=0; sx<2; ++sx, ++si ) {
+			newSubNodes[si] = subNodes[si].update( x+(sx*subSize), y+(sy*subSize), subSizePower, time, messages, results );
 		}
 		return WorldBranchNode.create( newSubNodes ); 
 	}

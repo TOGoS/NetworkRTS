@@ -4,8 +4,6 @@ import java.util.List;
 
 public interface WorldNode
 {
-	/** All nodes have an ID of 1 so they can receive messages */
-	public static final long GENERIC_NODE_ID = 1;
 	public static final WorldNode[] EMPTY_LIST = new WorldNode[0];
 	
 	public boolean isLeaf();
@@ -15,5 +13,5 @@ public interface WorldNode
 	public BlockStack getBlockStack();
 	public WorldNode[] getSubNodes();
 	
-	public WorldNode update( int x, int y, int size, long time, Message[] messages, List<Action> results );
+	public WorldNode update( int x, int y, int sizePower, long time, Message[] messages, List<Action> results );
 }

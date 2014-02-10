@@ -3,6 +3,7 @@ package togos.networkrts.experimental.game19.world;
 import java.util.List;
 
 import togos.networkrts.experimental.game18.sim.IDUtil;
+import togos.networkrts.experimental.shape.RectIntersector;
 
 public abstract class BaseWorldNode implements WorldNode
 {
@@ -18,22 +19,25 @@ public abstract class BaseWorldNode implements WorldNode
 	@Override public long getMaxId() { return minId; }
 	@Override public long getNextAutoUpdateTime() { return this.nextAutoUpdateTime; }
 	
-	protected abstract WorldNode _update( int x, int y, int size, long time, Message[] messages, List<Action> results );
+	protected abstract WorldNode _update( int x, int y, int sizePower, long time, Message[] messages, List<Action> results );
 	
-	@Override public WorldNode update( int x, int y, int size, long time, Message[] messages, List<Action> results ) {
-		boolean anyMessagesRelevant = false;
+	@Override public WorldNode update( int x, int y, int sizePower, long time, Message[] messages, List<Action> results ) {
+		int relevantMessageCount = 0;
+		int size = 1<<sizePower;
 		for( Message m : messages ) {
-			if( !IDUtil.rangesIntersect(minId, maxId, m.minId, m.maxId) ) continue;
-			if( m.maxX <= x || m.maxY <= y || m.minX >= x+size || m.minY >= y+size ) continue;
-			anyMessagesRelevant = true;
+			boolean relevance =
+				IDUtil.rangesIntersect(minId, maxId, m.minId, m.maxId) &&
+				m.targetShape.rectIntersection( x, y, size, size ) != RectIntersector.INCLUDES_NONE;
+			relevantMessageCount += relevance ? 1 : 0;
 		}
-		if( !anyMessagesRelevant ) {
+		if( relevantMessageCount == 0 ) {
 			if( time < nextAutoUpdateTime ) {
 				return this;
 			}
 			messages = Message.EMPTY_LIST;
 		}
+		// TODO: if relevantMessageCount < messages.length, could filter, here.
 		
-		return _update( x, y, size, time, messages, results );
+		return _update( x, y, sizePower, time, messages, results );
 	}
 }

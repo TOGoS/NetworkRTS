@@ -12,4 +12,8 @@ public class LayerData {
 		this.width = w; this.height = h; this.depth = d;
 		this.blockStacks = blockStacks;
 	}
+	
+	public LayerData( int w, int h, int d ) {
+		this( w, h, d, new BlockStack[w*h*d] );
+	}
 }

@@ -13,7 +13,7 @@ public class ImageCanvas extends Canvas
 		setImage(null);
 	}
 	
-	BufferedImage image;
+	volatile BufferedImage image;
 	public void setImage( BufferedImage img ) {
 		this.image = img;
 		setPreferredSize( img == null ? new Dimension(512,384) : new Dimension(img.getWidth(), img.getHeight()));

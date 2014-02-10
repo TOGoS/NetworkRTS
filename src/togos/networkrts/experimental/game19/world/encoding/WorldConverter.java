@@ -4,7 +4,7 @@ import togos.networkrts.experimental.game19.scene.LayerData;
 import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.WorldNode;
 
-public class WorldView
+public class WorldConverter
 {
 	public static void nodeToBlockArray( WorldNode n, int nx, int ny, int nsize, BlockStack[] blockStacks, int bx, int by, int bw, int bh, int bo ) {
 		if( nx >= bx + bw || nx + nsize <= bx || ny >= by + bh || ny + nsize <= by ) return;
@@ -15,7 +15,7 @@ public class WorldView
 		} else {
 			int subSize = nsize>>1;
 			WorldNode[] subNodes = n.getSubNodes();
-			for( int sy=0, si=0; sy<2; ++sy) for( int sx=0; sy<2; ++sx, ++si ) {
+			for( int sy=0, si=0; sy<2; ++sy) for( int sx=0; sx<2; ++sx, ++si ) {
 				nodeToBlockArray( subNodes[si], nx+(sx*subSize), ny+(sy*subSize), subSize, blockStacks, bx, by, bw, bh, bo );
 			}
 		}
