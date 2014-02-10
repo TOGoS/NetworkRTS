@@ -110,12 +110,18 @@ public class ServerClientDemo
 				ResourceContext rc = new ResourceContext(new File(".ccouch"));
 				Block bricks = new Block(rc.storeImageHandle(new File("tile-images/dumbrick1.png")), Block.FLAG_SOLID, NoBehavior.instance);
 				Block dude = new Block(rc.storeImageHandle(new File("tile-images/dude.png")), Block.FLAG_SOLID, new RandomWalkBehavior(0x0102, 1));
-				WorldNode n = WorldUtil.createSolid(bricks.stack, 8);
-				n = WorldUtil.fillShape( n, -128, -128, 8, new TCircle( -2, -2, 4 ), new SolidNodeFiller( BlockStack.EMPTY ));
-				n = WorldUtil.fillShape( n, -128, -128, 8, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStack.EMPTY ));
-				n = WorldUtil.updateBlockStackAt( n, -128, -128, 8, -2, -2, dude, null);
+				
+				int worldSizePower = 24;
+				int worldDataOrigin = -(1<<(worldSizePower-1));
+				
+				WorldNode n = WorldUtil.createSolid(bricks.stack, worldSizePower);
+				n = WorldUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( -2, -2, 4 ), new SolidNodeFiller( BlockStack.EMPTY ));
+				n = WorldUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStack.EMPTY ));
+				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -2, -2, dude, null);
+				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -3, -2, dude, null);
+				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -2, dude, null);
 				final Simulator sim = new Simulator();
-				sim.setRoot( n, -128, -128, 8 );
+				sim.setRoot( n, worldDataOrigin, worldDataOrigin, worldSizePower );
 				
 				long simTime = 0;
 				while(true) {
@@ -124,7 +130,7 @@ public class ServerClientDemo
 					n = sim.getRootNode();
 					
 					LayerData layerData = new LayerData( 16, 16, 1 );
-					WorldConverter.nodeToLayerData( n, -128, -128, 0, 256, layerData, -8, -8, 16, 16 );
+					WorldConverter.nodeToLayerData( n, worldDataOrigin, worldDataOrigin, 0, 1<<worldSizePower, layerData, -8, -8, 16, 16 );
 					Layer l = new Layer( layerData, -8, -8, null, 0, 0, 0 );
 					Scene s = new Scene( l, 0, 0, 1 );
 					c.setScene(s);
