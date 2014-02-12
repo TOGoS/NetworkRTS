@@ -8,7 +8,16 @@ import togos.networkrts.experimental.game19.world.WorldNode;
 import togos.networkrts.experimental.game19.world.gen.NodeUpdater;
 import togos.networkrts.experimental.game19.world.gen.WorldUtil;
 
-class MoveBlockAction implements Action, NodeUpdater {
+/**
+ * Removes and re-adds a specific snapshot of a block
+ * if destinationChecker returns true at the destination.
+ * 
+ * Shouldn't use this for character movement, as the
+ * player block may be updated before this action is applied,
+ * in which case the wrong version will be removed/added.
+ */
+class MoveBlockAction implements Action, NodeUpdater
+{
 	final Block block0;
 	final int x0, y0;
 	final Block block1;

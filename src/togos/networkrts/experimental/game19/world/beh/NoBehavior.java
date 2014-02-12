@@ -13,8 +13,8 @@ public class NoBehavior implements BlockBehavior
 	public static final NoBehavior instance = new NoBehavior();
 	
 	private NoBehavior() { }
-	@Override public long getMinId() { return IDs.GENERIC_BLOCK_ID; }
-	@Override public long getMaxId() { return IDs.GENERIC_BLOCK_ID; }
+	@Override public long getMinId() { return IDs.TYPE_BLOCK; }
+	@Override public long getMaxId() { return IDs.TYPE_BLOCK; }
 	@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }
 	@Override public Block update( Block b, int x, int y, int sizePower, long time, Message[] messages, List<Action> results ) {
 		return b;

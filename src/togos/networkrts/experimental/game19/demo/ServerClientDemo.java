@@ -14,13 +14,15 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
+import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
 import togos.networkrts.experimental.game19.scene.LayerData;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
+import togos.networkrts.experimental.game19.world.IDGenerator;
 import togos.networkrts.experimental.game19.world.Message;
-import togos.networkrts.experimental.game19.world.WorldNode;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
+import togos.networkrts.experimental.game19.world.WorldNode;
 import togos.networkrts.experimental.game19.world.beh.NoBehavior;
 import togos.networkrts.experimental.game19.world.beh.RandomWalkBehavior;
 import togos.networkrts.experimental.game19.world.beh.WalkingBehavior;
@@ -28,7 +30,6 @@ import togos.networkrts.experimental.game19.world.encoding.WorldConverter;
 import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
 import togos.networkrts.experimental.game19.world.gen.WorldUtil;
 import togos.networkrts.experimental.game19.world.sim.Simulator;
-import togos.networkrts.experimental.shape.RectIntersector;
 import togos.networkrts.experimental.shape.TBoundless;
 import togos.networkrts.experimental.shape.TCircle;
 import togos.networkrts.repo.BlobRepository;
@@ -102,9 +103,13 @@ public class ServerClientDemo
 	public static void main( String[] args ) throws Exception {
 		final ConcurrentLinkedQueue<Message> messageQueue = new ConcurrentLinkedQueue<Message>(); 
 		
+		IDGenerator idGenerator = new IDGenerator();
+		
 		BlobRepository repo = new BlobRepository(new File(".ccouch"));
 		ImageGetter imageGetter = new ImageGetter(repo.toBlobGetter());
 		final Client c = new Client(imageGetter);
+		final long playerBlockId = idGenerator.newBlockId();
+		final long dudeBlockId = idGenerator.newBlockId();
 		c.startUi();
 		c.sceneCanvas.addKeyListener(new KeyListener() {
 			boolean[] keysDown = new boolean[4];
@@ -117,11 +122,17 @@ public class ServerClientDemo
 				case KeyEvent.VK_A: dkCode = 2; break;
 				case KeyEvent.VK_S: dkCode = 1; break;
 				case KeyEvent.VK_D: dkCode = 0; break;
+				case KeyEvent.VK_V:
+					messageQueue.add(new Message(playerBlockId, playerBlockId, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(129) ));
+					return;
+				case KeyEvent.VK_I:
+					messageQueue.add(new Message(playerBlockId, playerBlockId, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(130) ));
+					return;
 				default: return; // Not a key we care about
 				}
 				
 				keysDown[dkCode] = state;
-				int dir = -1;
+				int dir;
 				if( keysDown[0] && !keysDown[2] ) {
 					dir = 0;
 				} else if( keysDown[2] && !keysDown[0] ) {
@@ -130,10 +141,12 @@ public class ServerClientDemo
 					dir = 2;
 				} else if( keysDown[3] && !keysDown[1] ) {
 					dir = 6;
+				} else {
+					dir = -1;
 				}
 				
 				if( dir != oldDir ) {
-					messageQueue.add(new Message(0x0202, 0x0202, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(dir) ));
+					messageQueue.add(new Message(playerBlockId, playerBlockId, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(dir) ));
 					oldDir = dir;
 				}
 			}
@@ -162,9 +175,13 @@ public class ServerClientDemo
 			
 			public void _run() throws Exception {
 				ResourceContext rc = new ResourceContext(new File(".ccouch"));
-				Block bricks = new Block(rc.storeImageHandle(new File("tile-images/dumbrick1.png")), Block.FLAG_SOLID, NoBehavior.instance);
-				Block dude = new Block(rc.storeImageHandle(new File("tile-images/dude.png")), Block.FLAG_SOLID, new RandomWalkBehavior(0x0102, 1));
-				Block player = new Block(rc.storeImageHandle(new File("tile-images/dude.png")), Block.FLAG_SOLID, new WalkingBehavior(0x0202, 0, 1, -1));
+				
+				ImageHandle brickImage = rc.storeImageHandle(new File("tile-images/dumbrick1.png"));
+				ImageHandle dudeImage = rc.storeImageHandle(new File("tile-images/dude.png"));
+				
+				Block bricks = new Block(brickImage, Block.FLAG_SOLID, NoBehavior.instance);
+				Block dude = new Block(dudeImage, Block.FLAG_SOLID, new RandomWalkBehavior(dudeBlockId, 1));
+				Block player = new Block(dudeImage, Block.FLAG_SOLID, new WalkingBehavior(playerBlockId, 0, 1, -1, dudeImage, brickImage));
 				
 				int worldSizePower = 24;
 				int worldDataOrigin = -(1<<(worldSizePower-1));
@@ -195,7 +212,7 @@ public class ServerClientDemo
 					Scene s = new Scene( l, 0, 0, 1 );
 					c.setScene(s);
 					
-					Thread.sleep(100);
+					Thread.sleep(40);
 					simTime += 1;
 				}
 			}

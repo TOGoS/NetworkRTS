@@ -14,8 +14,8 @@ public class WorldBranchNode extends BaseWorldNode
 	
 	public static WorldBranchNode create( WorldNode[] subNodes ) {
 		long aut = Long.MAX_VALUE;
-		long minId = IDs.GENERIC_NODE_ID;
-		long maxId = IDs.GENERIC_NODE_ID;
+		long minId = IDs.TYPE_NODE;
+		long maxId = IDs.TYPE_NODE;
 		for( WorldNode n : subNodes ) {
 			long baut = n.getNextAutoUpdateTime();
 			if( baut < aut ) aut = baut;

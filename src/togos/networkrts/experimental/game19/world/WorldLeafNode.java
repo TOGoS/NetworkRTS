@@ -19,8 +19,8 @@ public class WorldLeafNode extends BaseWorldNode
 		if( blockStack.leafNode != null ) return blockStack.leafNode;
 		
 		long aut = Long.MAX_VALUE;
-		long minId = IDs.GENERIC_NODE_ID;
-		long maxId = IDs.GENERIC_NODE_ID;
+		long minId = IDs.TYPE_NODE;
+		long maxId = IDs.TYPE_NODE;
 		for( Block b : blockStack.blocks ) {
 			long baut = b.behavior.getNextAutoUpdateTime();
 			if( baut < aut ) aut = baut;
