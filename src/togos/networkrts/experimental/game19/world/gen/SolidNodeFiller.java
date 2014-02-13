@@ -1,6 +1,7 @@
 package togos.networkrts.experimental.game19.world.gen;
 
 import togos.networkrts.experimental.game19.world.BlockStack;
+import togos.networkrts.experimental.game19.world.NodeUpdater;
 import togos.networkrts.experimental.game19.world.WorldBranchNode;
 import togos.networkrts.experimental.game19.world.WorldNode;
 

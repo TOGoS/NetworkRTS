@@ -4,9 +4,9 @@ import togos.networkrts.experimental.game19.world.Action;
 import togos.networkrts.experimental.game19.world.ActionContext;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
+import togos.networkrts.experimental.game19.world.NodeUpdater;
 import togos.networkrts.experimental.game19.world.WorldNode;
-import togos.networkrts.experimental.game19.world.gen.NodeUpdater;
-import togos.networkrts.experimental.game19.world.gen.WorldUtil;
+import togos.networkrts.experimental.game19.world.WorldUtil;
 
 /**
  * Removes and re-adds a specific snapshot of a block

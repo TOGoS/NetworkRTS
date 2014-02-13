@@ -1,10 +1,6 @@
-package togos.networkrts.experimental.game19.world.gen;
+package togos.networkrts.experimental.game19.world;
 
-import togos.networkrts.experimental.game19.world.Block;
-import togos.networkrts.experimental.game19.world.BlockStack;
-import togos.networkrts.experimental.game19.world.WorldBranchNode;
-import togos.networkrts.experimental.game19.world.WorldLeafNode;
-import togos.networkrts.experimental.game19.world.WorldNode;
+import togos.networkrts.experimental.game18.sim.IDUtil;
 import togos.networkrts.experimental.shape.RectIntersector;
 
 public class WorldUtil
@@ -147,5 +143,41 @@ public class WorldUtil
 		newSubNodes[2] = updateBlockStackAt(subNodes[2], nodeX        , nodeY+subSize, subSizePower, x, y, toBeAdded, toBeRemoved );
 		newSubNodes[3] = updateBlockStackAt(subNodes[3], nodeX+subSize, nodeY+subSize, subSizePower, x, y, toBeAdded, toBeRemoved );
 		return WorldBranchNode.createBasedOn( newSubNodes, node );
+	}
+	
+	// TODO: Find-by-ID functions ought to check
+	// the actual ID of each item (which currently isn't stored),
+	// not just the range of IDs that might be in each one,
+	// Since ID between min, max doesnt imply that an object with
+	// that ID is necessarily in there.
+	
+	public static Block findBlock( BlockStack bs, long minId, long maxId ) {
+		for( Block b : bs.blocks ) {
+			if( IDUtil.rangesIntersect(b.behavior.getMinId(), b.behavior.getMaxId(), minId, maxId) ) {
+				return b; // probably.  See TODO note above.
+			}
+		}
+		return null;
+	}
+	
+	public static NodePosition findBlock( WorldNode n, int x, int y, int sizePower, long minId, long maxId ) {
+		if( !IDUtil.rangesIntersect(n.getMinId(), n.getMaxId(), minId, maxId) ) return null;
+		
+		if( n.isLeaf() ) {
+			if( findBlock(n.getBlockStack(), minId, maxId) != null ) {
+				return new NodePosition(x,y,sizePower);
+			}
+		}
+		
+		NodePosition p;
+		int subSizePower = sizePower-1;
+		int subSize = 1<<subSizePower;
+		WorldNode[] subNodes = n.getSubNodes();
+		if( (p = findBlock(subNodes[0], x        , y        , subSizePower, minId, maxId)) != null ) return p;
+		if( (p = findBlock(subNodes[1], x+subSize, y        , subSizePower, minId, maxId)) != null ) return p;
+		if( (p = findBlock(subNodes[2], x        , y+subSize, subSizePower, minId, maxId)) != null ) return p;
+		if( (p = findBlock(subNodes[3], x+subSize, y+subSize, subSizePower, minId, maxId)) != null ) return p;
+		
+		return null;
 	}
 }

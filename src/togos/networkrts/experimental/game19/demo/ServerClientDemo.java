@@ -22,13 +22,14 @@ import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.IDGenerator;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
+import togos.networkrts.experimental.game19.world.NodePosition;
 import togos.networkrts.experimental.game19.world.WorldNode;
+import togos.networkrts.experimental.game19.world.WorldUtil;
 import togos.networkrts.experimental.game19.world.beh.NoBehavior;
 import togos.networkrts.experimental.game19.world.beh.RandomWalkBehavior;
 import togos.networkrts.experimental.game19.world.beh.WalkingBehavior;
 import togos.networkrts.experimental.game19.world.encoding.WorldConverter;
 import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
-import togos.networkrts.experimental.game19.world.gen.WorldUtil;
 import togos.networkrts.experimental.game19.world.sim.Simulator;
 import togos.networkrts.experimental.shape.TBoundless;
 import togos.networkrts.experimental.shape.TCircle;
@@ -181,7 +182,7 @@ public class ServerClientDemo
 				
 				Block bricks = new Block(brickImage, Block.FLAG_SOLID, NoBehavior.instance);
 				Block dude = new Block(dudeImage, Block.FLAG_SOLID, new RandomWalkBehavior(dudeBlockId, 1));
-				Block player = new Block(dudeImage, Block.FLAG_SOLID, new WalkingBehavior(playerBlockId, 0, 1, -1, dudeImage, brickImage));
+				Block player = new Block(dudeImage, Block.FLAG_SOLID, new WalkingBehavior(playerBlockId, 0, 10, -1, dudeImage, brickImage));
 				
 				int worldSizePower = 24;
 				int worldDataOrigin = -(1<<(worldSizePower-1));
@@ -206,8 +207,18 @@ public class ServerClientDemo
 					sim.update(simTime);
 					n = sim.getRootNode();
 					
-					LayerData layerData = new LayerData( 16, 16, 1 );
-					WorldConverter.nodeToLayerData( n, worldDataOrigin, worldDataOrigin, 0, 1<<worldSizePower, layerData, -8, -8, 16, 16 );
+					NodePosition playerPosition = WorldUtil.findBlock(n, sim.getRootX(), sim.getRootY(), sim.getRootSizePower(), playerBlockId, playerBlockId);
+					double centerX, centerY;
+					if( playerPosition != null ) {
+						centerX = playerPosition.getCenterX();
+						centerY = playerPosition.getCenterY();
+					} else {
+						centerX = 0;
+						centerY = 0;
+					}
+					
+					LayerData layerData = new LayerData( 17, 17, 1 );
+					WorldConverter.nodeToLayerData( n, worldDataOrigin, worldDataOrigin, 0, 1<<worldSizePower, layerData, (int)Math.floor(centerX)-8, (int)Math.floor(centerY)-8, 17, 17 );
 					Layer l = new Layer( layerData, -8, -8, null, 0, 0, 0 );
 					Scene s = new Scene( l, 0, 0, 1 );
 					c.setScene(s);
