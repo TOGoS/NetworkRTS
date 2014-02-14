@@ -51,7 +51,10 @@ public class Renderer
 				// TODO: find first visible cell from top instead of starting at 0
 				for( int z=0; z<layer.data.depth; ++z ) {
 					BlockStack cc = layer.data.blockStacks[x + (layer.data.width)*y + (layer.data.width*layer.data.height)*z];
-					if( cc != null ) for( Block b : cc.blocks ) {
+					if( cc == null ) {
+						g.setColor( Color.BLACK );
+						g.fillRect( sx, sy, tileSize, tileSize );
+					} else for( Block b : cc.blocks ) {
 						ImageHandle ih = b.imageHandle;
 						if( ih.isCompletelyTransparent ) continue;
 						try {

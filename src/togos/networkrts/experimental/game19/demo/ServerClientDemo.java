@@ -17,6 +17,7 @@ import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
 import togos.networkrts.experimental.game19.scene.LayerData;
+import togos.networkrts.experimental.game19.scene.VisibilityChecker;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.IDGenerator;
@@ -180,7 +181,7 @@ public class ServerClientDemo
 				ImageHandle brickImage = rc.storeImageHandle(new File("tile-images/dumbrick1.png"));
 				ImageHandle dudeImage = rc.storeImageHandle(new File("tile-images/dude.png"));
 				
-				Block bricks = new Block(brickImage, Block.FLAG_SOLID, NoBehavior.instance);
+				Block bricks = new Block(brickImage, Block.FLAG_SOLID|Block.FLAG_OPAQUE, NoBehavior.instance);
 				Block dude = new Block(dudeImage, Block.FLAG_SOLID, new RandomWalkBehavior(dudeBlockId, 1));
 				Block player = new Block(dudeImage, Block.FLAG_SOLID, new WalkingBehavior(playerBlockId, 0, 10, -1, dudeImage, brickImage));
 				
@@ -217,8 +218,12 @@ public class ServerClientDemo
 						centerY = 0;
 					}
 					
+					int intCenterX = (int)Math.floor(centerX);
+					int intCenterY = (int)Math.floor(centerY);
+					
 					LayerData layerData = new LayerData( 17, 17, 1 );
-					WorldConverter.nodeToLayerData( n, worldDataOrigin, worldDataOrigin, 0, 1<<worldSizePower, layerData, (int)Math.floor(centerX)-8, (int)Math.floor(centerY)-8, 17, 17 );
+					WorldConverter.nodeToLayerData( n, worldDataOrigin, worldDataOrigin, 0, 1<<worldSizePower, layerData, intCenterX-8, intCenterY-8, 17, 17 );
+					VisibilityChecker.calculateAndApplyVisibility(layerData, 8, 8, 0);
 					Layer l = new Layer( layerData, -8, -8, null, 0, 0, 0 );
 					Scene s = new Scene( l, 0, 0, 1 );
 					c.setScene(s);

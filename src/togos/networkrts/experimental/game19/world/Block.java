@@ -7,7 +7,8 @@ public class Block
 {
 	public final BlockStack stack = BlockStack.create( this );
 	
-	public static final int FLAG_SOLID = 0x001;
+	public static final int FLAG_SOLID  = 0x001;
+	public static final int FLAG_OPAQUE = 0x002;
 	
 	public final ImageHandle imageHandle;
 	public final int flags;
