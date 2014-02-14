@@ -15,6 +15,7 @@ public class VisibilityChecker
 	
 	// TODO: Better algorithm.
 	
+	/*
 	protected static void calculateVisibility( BlockStack[] blockStacks, int width, int height, int offset, int originX, int originY, int dx, int dy, boolean[] visibility ) {
 		for( int x=originX, y=originY; x>=0 && x<width && y>=0 && y<height; x+=dx, y+=dy ) {
 			int idx = x + y*width;
@@ -41,6 +42,45 @@ public class VisibilityChecker
 		calculateVisibility( blockStacks, width, height, offset, originX, originY, -1, 0, 0, 1, 0,-1, visibility );
 		calculateVisibility( blockStacks, width, height, offset, originX, originY,  0, 1, 1, 0,-1, 0, visibility );
 		calculateVisibility( blockStacks, width, height, offset, originX, originY,  0,-1, 1, 0,-1, 0, visibility );
+	}
+	*/
+	
+	public static void _calculateVisibility( BlockStack[] blockStacks, int width, int height, int offset, int x, int y, boolean[] visibility ) {
+		int vIdx = x+width*y;
+		if( visibility[vIdx] ) return;
+		
+		visibility[vIdx] = true;
+		
+		if( !isSeeThrough(blockStacks[offset+vIdx]) ) return;
+		
+
+		if( x > 0        ) {
+			if( y > 0        ) calculateVisibility(blockStacks, width, height, offset, x-1, y-1, visibility );
+			calculateVisibility(blockStacks, width, height, offset, x-1, y  , visibility );
+			if( y < height-1 ) calculateVisibility(blockStacks, width, height, offset, x-1, y+1, visibility );
+		}
+		if( x < width-1  ) {
+			if( y > 0        ) calculateVisibility(blockStacks, width, height, offset, x+1, y-1, visibility );
+			calculateVisibility(blockStacks, width, height, offset, x+1, y  , visibility );
+			if( y < height-1 ) calculateVisibility(blockStacks, width, height, offset, x+1, y+1, visibility );
+		}
+		if( y > 0        ) calculateVisibility(blockStacks, width, height, offset, x  , y-1, visibility );
+		if( y < height-1 ) calculateVisibility(blockStacks, width, height, offset, x  , y+1, visibility );
+	}
+	
+	public static void calculateVisibility( BlockStack[] blockStacks, int width, int height, int offset, int x, int y, boolean[] visibility ) {
+		if( x < 0 || x >= width || y < 0 || y >= height ) return;
+		_calculateVisibility( blockStacks, width, height, offset, x, y, visibility );
+		/*
+		int vIdx = x+width*y;
+		if( visibility[vIdx] ) return;
+		
+		visibility[vIdx] = true;
+
+		for( int dy=-1; dy<=1; ++dy ) for( int dx=-1; dx<=1; ++dx ) if( dx != 0 && dy != 0 ) {
+			calculateVisibility(blockStacks, width, height, offset, x+dx, y+dy, visibility );
+		}
+		*/
 	}
 	
 	public static void applyVisibilityToAllLayers( boolean[] visibility, int width, int height, BlockStack[] blockStacks, int depth ) {

@@ -67,4 +67,8 @@ public class Blackifier
 		res.setRGB( 0, 0, w, h, buf, 0, w );
 		return res;
 	}
+	
+	public static BufferedImage makeShadeOverlay( int size, float v0, float v1, float v2, float v3 ) {
+		return shade( new BufferedImage( size, size, BufferedImage.TYPE_INT_ARGB ), 1f, v0, v1, v2, v3 );
+	}
 }

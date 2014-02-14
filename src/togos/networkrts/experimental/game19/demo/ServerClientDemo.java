@@ -10,6 +10,7 @@ import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.Queue;
+import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import togos.networkrts.experimental.game19.Renderer;
@@ -34,10 +35,7 @@ import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
 import togos.networkrts.experimental.game19.world.sim.Simulator;
 import togos.networkrts.experimental.shape.TBoundless;
 import togos.networkrts.experimental.shape.TCircle;
-import togos.networkrts.repo.BlobRepository;
 import togos.networkrts.ui.ImageCanvas;
-import togos.networkrts.util.Getter;
-import togos.networkrts.util.ImageGetter;
 
 public class ServerClientDemo
 {
@@ -56,21 +54,23 @@ public class ServerClientDemo
 	static class SceneCanvas extends ImageCanvas {
 		private static final long serialVersionUID = 1L;
 
-		BufferedImage sceneBuffer = new BufferedImage(512,384,BufferedImage.TYPE_INT_ARGB);
+		BufferedImage sceneBuffer = new BufferedImage(512, 384, BufferedImage.TYPE_INT_RGB); // Much faster than ARGB!
+		int cellScale = 16;
 		
 		protected final Renderer renderer;
-		public SceneCanvas( Getter<BufferedImage> imageSource ) {
-			renderer = new Renderer(imageSource);
+		public SceneCanvas( ResourceContext resourceContext ) {
+			renderer = new Renderer(resourceContext);
 		}
 		
-		Color sceneBackgroundColor = Color.BLUE;
+		Color sceneBackgroundColor = new Color(0.2f, 0, 0);
 		
 		public void setScene( Scene s ) {
 			synchronized( sceneBuffer ) {
 				Graphics g = sceneBuffer.getGraphics();
+				g.setClip(0, 0, sceneBuffer.getWidth(), sceneBuffer.getHeight());
 				g.setColor( sceneBackgroundColor );
 				g.fillRect( 0, 0, sceneBuffer.getWidth(), sceneBuffer.getHeight() );
-				renderer.draw( s.layer, s.layerX, s.layerY, s.layerDistance, g, 32, sceneBuffer.getWidth()/2, sceneBuffer.getHeight()/2 );
+				renderer.draw( s.layer, s.layerX, s.layerY, s.layerDistance, g, cellScale, sceneBuffer.getWidth()/2, sceneBuffer.getHeight()/2 );
 			}
 			setImage(sceneBuffer);
 		}
@@ -80,8 +80,8 @@ public class ServerClientDemo
 		SceneCanvas sceneCanvas;
 		public Queue<Message> messageQueue;
 		
-		public Client( Getter<BufferedImage> imageSource ) {
-			sceneCanvas = new SceneCanvas(imageSource);
+		public Client( ResourceContext resourceContext ) {
+			sceneCanvas = new SceneCanvas(resourceContext);
 			sceneCanvas.setBackground(Color.BLACK);
 		}
 		
@@ -107,9 +107,8 @@ public class ServerClientDemo
 		
 		IDGenerator idGenerator = new IDGenerator();
 		
-		BlobRepository repo = new BlobRepository(new File(".ccouch"));
-		ImageGetter imageGetter = new ImageGetter(repo.toBlobGetter());
-		final Client c = new Client(imageGetter);
+		final ResourceContext resourceContext = new ResourceContext(new File(".ccouch"));
+		final Client c = new Client(resourceContext);
 		final long playerBlockId = idGenerator.newBlockId();
 		final long dudeBlockId = idGenerator.newBlockId();
 		c.startUi();
@@ -176,10 +175,8 @@ public class ServerClientDemo
 			}
 			
 			public void _run() throws Exception {
-				ResourceContext rc = new ResourceContext(new File(".ccouch"));
-				
-				ImageHandle brickImage = rc.storeImageHandle(new File("tile-images/dumbrick1.png"));
-				ImageHandle dudeImage = rc.storeImageHandle(new File("tile-images/dude.png"));
+				ImageHandle brickImage = resourceContext.storeImageHandle(new File("tile-images/dumbrick1.png"));
+				ImageHandle dudeImage = resourceContext.storeImageHandle(new File("tile-images/dude.png"));
 				
 				Block bricks = new Block(brickImage, Block.FLAG_SOLID|Block.FLAG_OPAQUE, NoBehavior.instance);
 				Block dude = new Block(dudeImage, Block.FLAG_SOLID, new RandomWalkBehavior(dudeBlockId, 1));
@@ -191,6 +188,12 @@ public class ServerClientDemo
 				WorldNode n = WorldUtil.createSolid(bricks.stack, worldSizePower);
 				n = WorldUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( -2, -2, 4 ), new SolidNodeFiller( BlockStack.EMPTY ));
 				n = WorldUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStack.EMPTY ));
+				
+				Random r = new Random();
+				for( int i=0; i<50; ++i ) {
+					n = WorldUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStack.EMPTY ));
+				}
+				
 				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -2, -2, dude, null);
 				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -3, -2, dude, null);
 				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -2, dude, null);
@@ -221,10 +224,15 @@ public class ServerClientDemo
 					int intCenterX = (int)Math.floor(centerX);
 					int intCenterY = (int)Math.floor(centerY);
 					
-					LayerData layerData = new LayerData( 17, 17, 1 );
-					WorldConverter.nodeToLayerData( n, worldDataOrigin, worldDataOrigin, 0, 1<<worldSizePower, layerData, intCenterX-8, intCenterY-8, 17, 17 );
-					VisibilityChecker.calculateAndApplyVisibility(layerData, 8, 8, 0);
-					Layer l = new Layer( layerData, -8, -8, null, 0, 0, 0 );
+					int ldWidth = 21;
+					int ldHeight = 15;
+					int ldCenterX = ldWidth/2;
+					int ldCenterY = ldHeight/2;
+					
+					LayerData layerData = new LayerData( ldWidth, ldHeight, 1 );
+					WorldConverter.nodeToLayerData( n, worldDataOrigin, worldDataOrigin, 0, 1<<worldSizePower, layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, ldWidth, ldHeight );
+					VisibilityChecker.calculateAndApplyVisibility(layerData, ldCenterX, ldCenterY, 0);
+					Layer l = new Layer( layerData, -ldWidth/2.0, -ldHeight/2.0, null, 0, 0, 0 );
 					Scene s = new Scene( l, 0, 0, 1 );
 					c.setScene(s);
 					

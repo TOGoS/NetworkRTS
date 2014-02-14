@@ -44,7 +44,7 @@ public class RenderDemo
 	
 	public void run() throws Exception {
 		Layer layer = makeLayer();
-		Renderer renderer = new Renderer(rc.imageGetter);
+		Renderer renderer = new Renderer(rc);
 		BufferedImage sceneBuffer = new BufferedImage(512,384,BufferedImage.TYPE_INT_ARGB);
 		Graphics sceneGraphics = sceneBuffer.getGraphics();
 		sceneGraphics.setColor(Color.BLACK);

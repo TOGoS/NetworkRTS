@@ -59,9 +59,11 @@ public class ImageHandle
 	
 	protected BufferedImage scale( Getter<BufferedImage> populator, int width, int height ) throws ResourceNotFound {
 		BufferedImage original = getOriginal(populator);
-		BufferedImage b = new BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB);
+		ensureMetadataInitialized(original);
+		BufferedImage b = new BufferedImage(width, height, isCompletelyOpaque ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g = (Graphics2D)b.getGraphics();
-		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		//g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); // That's for primitive geometry
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
 		g.drawImage( original, 0, 0, width, height, 0, 0, original.getWidth(), original.getHeight(), null);
 		return b;
 	}

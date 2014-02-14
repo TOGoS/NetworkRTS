@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import togos.networkrts.experimental.game19.scene.ImageHandle;
+import togos.networkrts.experimental.game19.scene.LayerData;
+import togos.networkrts.experimental.qt2drender.Blackifier;
 import togos.networkrts.repo.BlobRepository;
 import togos.networkrts.util.ImageGetter;
 import togos.networkrts.util.ResourceHandlePool;
@@ -34,5 +36,21 @@ public class ResourceContext
 	
 	public ImageHandle storeImageHandle( File f ) throws IOException {
 		return new ImageHandle( resourceHandlePool.<BufferedImage>get(storeImage(f)) );
+	}
+	
+	protected BufferedImage[] shadeOverlays;
+	protected int shadeOverlaySize;
+	public synchronized BufferedImage[] getShadeOverlays( int size ) {
+		if( shadeOverlays == null || size != shadeOverlaySize ) {
+			shadeOverlays = new BufferedImage[16];
+			for( int i=0; i<16; ++i ) shadeOverlays[i] = Blackifier.makeShadeOverlay(
+				size,
+				(i & LayerData.SHADE_TL) != 0 ? 1 : 0,
+				(i & LayerData.SHADE_TR) != 0 ? 1 : 0,
+				(i & LayerData.SHADE_BL) != 0 ? 1 : 0,
+				(i & LayerData.SHADE_BR) != 0 ? 1 : 0
+			); 
+		}
+		return shadeOverlays;
 	}
 }
