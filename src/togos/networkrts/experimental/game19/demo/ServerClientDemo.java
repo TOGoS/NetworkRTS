@@ -183,7 +183,7 @@ public class ServerClientDemo
 				
 				Block bricks = new Block(brickImage, Block.FLAG_SOLID|Block.FLAG_OPAQUE, NoBehavior.instance);
 				Block dude = new Block(dudeImage, Block.FLAG_SOLID, new RandomWalkBehavior(dudeBlockId, 1));
-				Block player = new Block(dudeImage, Block.FLAG_SOLID, new WalkingBehavior(playerBlockId, 0, 10, -1, dudeImage, brickImage));
+				Block player = new Block(dudeImage, Block.FLAG_SOLID, new WalkingBehavior(playerBlockId, 2, 0, -1, dudeImage, brickImage));
 				
 				int worldSizePower = 24;
 				int worldDataOrigin = -(1<<(worldSizePower-1));
