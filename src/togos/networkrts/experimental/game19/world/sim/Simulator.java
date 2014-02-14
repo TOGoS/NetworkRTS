@@ -3,12 +3,12 @@ package togos.networkrts.experimental.game19.world.sim;
 import java.util.ArrayList;
 import java.util.List;
 
-import togos.networkrts.experimental.game18.sim.IDUtil;
 import togos.networkrts.experimental.game19.world.Action;
 import togos.networkrts.experimental.game19.world.ActionContext;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.WorldNode;
 import togos.networkrts.experimental.shape.RectIntersector;
+import togos.networkrts.util.BitAddressUtil;
 
 public class Simulator implements ActionContext
 {
@@ -31,7 +31,7 @@ public class Simulator implements ActionContext
 		int size = 1<<sizePower;
 		for( Message m : messages ) {
 			boolean relevance =
-				IDUtil.rangesIntersect(n.getMinId(), n.getMaxId(), m.minId, m.maxId) &&
+				BitAddressUtil.rangesIntersect(n, m) &&
 				m.targetShape.rectIntersection( x, y, size, size ) != RectIntersector.INCLUDES_NONE;
 			relevantMessageCount += relevance ? 1 : 0;
 		}

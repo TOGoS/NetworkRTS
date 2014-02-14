@@ -19,6 +19,7 @@ import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
 import togos.networkrts.experimental.game19.scene.LayerData;
 import togos.networkrts.experimental.game19.scene.VisibilityChecker;
+import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.IDGenerator;
@@ -55,7 +56,7 @@ public class ServerClientDemo
 		private static final long serialVersionUID = 1L;
 
 		BufferedImage sceneBuffer = new BufferedImage(512, 384, BufferedImage.TYPE_INT_RGB); // Much faster than ARGB!
-		int cellScale = 16;
+		int cellScale = 24;
 		
 		protected final Renderer renderer;
 		public SceneCanvas( ResourceContext resourceContext ) {
@@ -109,8 +110,8 @@ public class ServerClientDemo
 		
 		final ResourceContext resourceContext = new ResourceContext(new File(".ccouch"));
 		final Client c = new Client(resourceContext);
-		final long playerBlockId = idGenerator.newBlockId();
-		final long dudeBlockId = idGenerator.newBlockId();
+		final int playerBlockId = idGenerator.newId();
+		final int dudeBlockId = idGenerator.newId();
 		c.startUi();
 		c.sceneCanvas.addKeyListener(new KeyListener() {
 			boolean[] keysDown = new boolean[4];
@@ -147,7 +148,7 @@ public class ServerClientDemo
 				}
 				
 				if( dir != oldDir ) {
-					messageQueue.add(new Message(playerBlockId, playerBlockId, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(dir) ));
+					messageQueue.add(new Message(playerBlockId, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(dir) ));
 					oldDir = dir;
 				}
 			}
@@ -178,9 +179,9 @@ public class ServerClientDemo
 				ImageHandle brickImage = resourceContext.storeImageHandle(new File("tile-images/dumbrick1.png"));
 				ImageHandle dudeImage = resourceContext.storeImageHandle(new File("tile-images/dude.png"));
 				
-				Block bricks = new Block(brickImage, Block.FLAG_SOLID|Block.FLAG_OPAQUE, NoBehavior.instance);
-				Block dude = new Block(dudeImage, Block.FLAG_SOLID, new RandomWalkBehavior(dudeBlockId, 1));
-				Block player = new Block(dudeImage, Block.FLAG_SOLID, new WalkingBehavior(playerBlockId, 2, 0, -1));
+				Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance);
+				Block dude = new Block(dudeBlockId|BitAddresses.BLOCK_SOLID, dudeImage, new RandomWalkBehavior(3, 1));
+				Block player = new Block(playerBlockId|BitAddresses.BLOCK_SOLID, dudeImage, new WalkingBehavior(2, 0, -1));
 				
 				int worldSizePower = 24;
 				int worldDataOrigin = -(1<<(worldSizePower-1));
@@ -211,7 +212,7 @@ public class ServerClientDemo
 					sim.update(simTime);
 					n = sim.getRootNode();
 					
-					NodePosition playerPosition = WorldUtil.findBlock(n, sim.getRootX(), sim.getRootY(), sim.getRootSizePower(), playerBlockId, playerBlockId);
+					NodePosition playerPosition = WorldUtil.findBlock(n, sim.getRootX(), sim.getRootY(), sim.getRootSizePower(), playerBlockId);
 					double centerX, centerY;
 					if( playerPosition != null ) {
 						centerX = playerPosition.getCenterX();

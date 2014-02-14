@@ -4,22 +4,24 @@ import java.util.List;
 import java.util.Random;
 
 import togos.networkrts.experimental.game19.world.Action;
+import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockBehavior;
 import togos.networkrts.experimental.game19.world.Message;
+import togos.networkrts.util.BitAddressUtil;
 
 public class RandomWalkBehavior implements BlockBehavior
 {
-	public final long blockId;
+	public final int stepInterval;
 	public final long nextStepTime;
 	
-	public RandomWalkBehavior( long blockId, long nextStepTime ) {
-		this.blockId = blockId;
+	public RandomWalkBehavior( int stepInterval, long nextStepTime ) {
+		this.stepInterval = stepInterval;
 		this.nextStepTime = nextStepTime;
 	}
 	
-	@Override public long getMinId() { return blockId; }
-	@Override public long getMaxId() { return blockId; }
+	@Override public long getMinBitAddress() { return BitAddressUtil.MAX_ADDRESS; }
+	@Override public long getMaxBitAddress() { return BitAddressUtil.MIN_ADDRESS; }
 	@Override public long getNextAutoUpdateTime() { return nextStepTime; }
 	@Override public Block update( Block b, int x, int y, int sizePower, long time,	Message[] messages, List<Action> results ) {
 		if( time < nextStepTime ) return b;
@@ -36,9 +38,9 @@ public class RandomWalkBehavior implements BlockBehavior
 		default: throw new RuntimeException("Unpossible!");
 		}
 		
-		Block newBlock = new Block( b.imageHandle, b.flags, new RandomWalkBehavior(blockId, time+1) );
+		Block newBlock = new Block( b.bitAddress, b.imageHandle, new RandomWalkBehavior(stepInterval, time+stepInterval) );
 		
-		results.add( new MoveBlockAction(b, x, y, newBlock, destX, destY, new FlagBasedCellSuitabilityChecker(0, Block.FLAG_SOLID) ) );
+		results.add( new MoveBlockAction(b, x, y, newBlock, destX, destY, new FlagBasedCellSuitabilityChecker(0, BitAddresses.BLOCK_SOLID) ) );
 		return b;
 	}
 }

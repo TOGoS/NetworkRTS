@@ -14,13 +14,13 @@ public class WorldBranchNode extends BaseWorldNode
 	
 	public static WorldBranchNode create( WorldNode[] subNodes ) {
 		long aut = Long.MAX_VALUE;
-		long minId = IDs.TYPE_NODE;
-		long maxId = IDs.TYPE_NODE;
+		long minId = BitAddresses.TYPE_NODE;
+		long maxId = BitAddresses.TYPE_NODE;
 		for( WorldNode n : subNodes ) {
 			long baut = n.getNextAutoUpdateTime();
 			if( baut < aut ) aut = baut;
-			maxId |= n.getMaxId();
-			minId &= n.getMinId();
+			maxId |= n.getMaxBitAddress();
+			minId &= n.getMinBitAddress();
 		}
 		return new WorldBranchNode( subNodes, minId, maxId, aut );
 	}

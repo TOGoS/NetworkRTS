@@ -1,5 +1,6 @@
 package togos.networkrts.experimental.game19.scene;
 
+import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
 
@@ -8,7 +9,7 @@ public class VisibilityChecker
 	protected static boolean isSeeThrough( BlockStack bs ) {
 		if( bs == null ) return false;
 		for( Block b : bs.blocks ) {
-			if( (b.flags & Block.FLAG_OPAQUE) == Block.FLAG_OPAQUE ) return false;
+			if( (b.bitAddress & BitAddresses.BLOCK_OPAQUE) == BitAddresses.BLOCK_OPAQUE ) return false;
 		}
 		return true;
 	}

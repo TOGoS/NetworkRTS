@@ -9,6 +9,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import togos.networkrts.experimental.game18.sim.Message.MessageType;
+import togos.networkrts.util.BitAddressUtil;
 
 public class Simulation
 {
@@ -51,7 +52,7 @@ public class Simulation
 				nextThump += thumpInterval;
 			}
 			
-			if( !IDUtil.rangeContains(m.minId, m.maxId, id) ) m = Message.NONE;
+			if( !BitAddressUtil.rangeContains(m, id) ) m = Message.NONE;
 			
 			switch( m.type ) {
 			case INFORMATIONAL:

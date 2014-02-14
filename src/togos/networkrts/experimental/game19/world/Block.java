@@ -2,29 +2,36 @@ package togos.networkrts.experimental.game19.world;
 
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.world.beh.NoBehavior;
+import togos.networkrts.util.BitAddressRange;
+import togos.networkrts.util.BitAddressUtil;
 
-public class Block
+public class Block implements BitAddressRange
 {
 	public final BlockStack stack = BlockStack.create( this );
 	
-	public static final int FLAG_SOLID  = 0x001;
-	public static final int FLAG_OPAQUE = 0x002;
-	
+	public final long bitAddress;
 	public final ImageHandle imageHandle;
-	public final int flags;
 	public final BlockBehavior behavior;
 	
-	public Block( ImageHandle imageHandle, int flags, BlockBehavior behavior ) {
+	public Block( long bitAddress, ImageHandle imageHandle, BlockBehavior behavior ) {
+		this.bitAddress = BitAddresses.forceType( BitAddresses.TYPE_BLOCK, bitAddress );
 		this.imageHandle = imageHandle;
-		this.flags = flags;
 		this.behavior = behavior;
 	}
 	
 	public Block( ImageHandle imageHandle ) {
-		this( imageHandle, 0, NoBehavior.instance );
+		this( 0, imageHandle, NoBehavior.instance );
 	}
 	
 	public Block withBehavior( BlockBehavior beh ) {
-		return new Block( imageHandle, flags, beh );
+		return new Block( bitAddress, imageHandle, beh );
+	}
+	
+	@Override public long getMinBitAddress() {
+		return BitAddressUtil.minAddress( bitAddress, behavior.getMinBitAddress() );
+	}
+	
+	@Override public long getMaxBitAddress() {
+		return BitAddressUtil.maxAddress( bitAddress, behavior.getMaxBitAddress() );
 	}
 }

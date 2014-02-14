@@ -15,11 +15,11 @@ import togos.networkrts.experimental.game18.sim.Room.Neighbor;
 import togos.networkrts.experimental.game18.sim.Room.Tile;
 import togos.networkrts.experimental.game18.sim.Room.TileMapper;
 import togos.networkrts.experimental.game18.sim.Simulation;
-import togos.networkrts.experimental.game18.sim.IDUtil;
 import togos.networkrts.experimental.qt2drender.VizState;
 import togos.networkrts.experimental.qt2drender.demo.NetRenderDemo.RenderContext;
 import togos.networkrts.experimental.qt2drender.demo.NetRenderDemo.VizStateCanvas;
 import togos.networkrts.repo.BlobRepository;
+import togos.networkrts.util.BitAddressUtil;
 
 public class Game18Demo
 {
@@ -59,8 +59,8 @@ public class Game18Demo
 	}
 	
 	public static void main( String[] args ) {
-		Tile[] ta = new Tile(IDUtil.NO_ID, "urn:bitprint:EPNJUCXVUO2AVQN4I6OEJ5AVGVOUT3VP.W5JFWDVKZUM6YMMEX5OCZJZCDVONREJQ73O77GI", false, false, BoringestThingBehavior.<Tile>getInstance()).single;
-		Tile[] tb = new Tile(IDUtil.NO_ID, "urn:bitprint:QI43S2L5OMDQEFVOMTMMH2IGAIXAFVC5.J4MDMEUBJM3H5D7QUNXXYGMVCSDBJ47ODAZPRZI", true , true , BoringestThingBehavior.<Tile>getInstance()).single;
+		Tile[] ta = new Tile(BitAddressUtil.NO_ADDRESS, "urn:bitprint:EPNJUCXVUO2AVQN4I6OEJ5AVGVOUT3VP.W5JFWDVKZUM6YMMEX5OCZJZCDVONREJQ73O77GI", false, false, BoringestThingBehavior.<Tile>getInstance()).single;
+		Tile[] tb = new Tile(BitAddressUtil.NO_ADDRESS, "urn:bitprint:QI43S2L5OMDQEFVOMTMMH2IGAIXAFVC5.J4MDMEUBJM3H5D7QUNXXYGMVCSDBJ47ODAZPRZI", true , true , BoringestThingBehavior.<Tile>getInstance()).single;
 		
 		Room arr = new Room(1, 5, 5, 1, 0, 0, new Neighbor[0], null, new Tile[][] {
 			tb, tb, tb, tb, tb,

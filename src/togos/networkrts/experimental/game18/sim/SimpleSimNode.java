@@ -2,6 +2,8 @@ package togos.networkrts.experimental.game18.sim;
 
 import java.util.List;
 
+import togos.networkrts.util.BitAddressUtil;
+
 /**
  * Base class for a simulation object that has zero or one IDs and does not contain other objects.
  */
@@ -14,11 +16,11 @@ public abstract class SimpleSimNode implements SimNode
 	}
 	
 	protected boolean isTargetOfMessage( Message m ) {
-		return IDUtil.rangeContains( m.minId, m.maxId, id );
+		return BitAddressUtil.rangeContains( m, id );
 	}
 	
-	@Override public long getMinId() { return IDUtil.toMaxId(id); }
-	@Override public long getMaxId() { return IDUtil.toMinId(id); }
+	@Override public long getMinId() { return BitAddressUtil.toMaxAddress(id); }
+	@Override public long getMaxId() { return BitAddressUtil.toMinAddress(id); }
 	@Override public <T> T get( long id, Class<T> expectedClass ) {
 		return id == this.id ? expectedClass.cast(this) : null;
 	}

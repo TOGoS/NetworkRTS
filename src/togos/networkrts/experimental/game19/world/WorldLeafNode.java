@@ -19,15 +19,15 @@ public class WorldLeafNode extends BaseWorldNode
 		if( blockStack.leafNode != null ) return blockStack.leafNode;
 		
 		long aut = Long.MAX_VALUE;
-		long minId = IDs.TYPE_NODE;
-		long maxId = IDs.TYPE_NODE;
+		long minAddress = BitAddresses.TYPE_NODE;
+		long maxAddress = BitAddresses.TYPE_NODE;
 		for( Block b : blockStack.blocks ) {
 			long baut = b.behavior.getNextAutoUpdateTime();
 			if( baut < aut ) aut = baut;
-			maxId |= b.behavior.getMaxId();
-			minId &= b.behavior.getMinId();
+			maxAddress |= b.getMaxBitAddress();
+			minAddress &= b.getMinBitAddress();
 		}
-		return new WorldLeafNode( blockStack, minId, maxId, aut );
+		return new WorldLeafNode( blockStack, minAddress, maxAddress, aut );
 	}
 	
 	static WorldLeafNode create( Block[] blocks ) {

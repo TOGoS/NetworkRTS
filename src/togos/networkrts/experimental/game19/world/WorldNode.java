@@ -2,13 +2,13 @@ package togos.networkrts.experimental.game19.world;
 
 import java.util.List;
 
-public interface WorldNode
+import togos.networkrts.util.BitAddressRange;
+
+public interface WorldNode extends BitAddressRange
 {
 	public static final WorldNode[] EMPTY_LIST = new WorldNode[0];
 	
 	public boolean isLeaf();
-	public long getMinId();
-	public long getMaxId();
 	public long getNextAutoUpdateTime();
 	public BlockStack getBlockStack();
 	public WorldNode[] getSubNodes();

@@ -2,21 +2,21 @@ package togos.networkrts.experimental.game19.world;
 
 import java.util.List;
 
-import togos.networkrts.experimental.game18.sim.IDUtil;
 import togos.networkrts.experimental.shape.RectIntersector;
+import togos.networkrts.util.BitAddressUtil;
 
 public abstract class BaseWorldNode implements WorldNode
 {
-	protected final long minId, maxId;
+	protected final long minBitAddress, maxBitAddress;
 	protected final long nextAutoUpdateTime;
 	
 	protected BaseWorldNode( long minId, long maxId, long nextAutoUpdateTime ) {
-		this.minId = minId; this.maxId = maxId;
+		this.minBitAddress = minId; this.maxBitAddress = maxId;
 		this.nextAutoUpdateTime = nextAutoUpdateTime;
 	}
 	
-	@Override public long getMinId() { return minId; }
-	@Override public long getMaxId() { return maxId; }
+	@Override public long getMinBitAddress() { return minBitAddress; }
+	@Override public long getMaxBitAddress() { return maxBitAddress; }
 	@Override public long getNextAutoUpdateTime() { return this.nextAutoUpdateTime; }
 	
 	protected abstract WorldNode _update( int x, int y, int sizePower, long time, Message[] messages, List<Action> results );
@@ -26,7 +26,7 @@ public abstract class BaseWorldNode implements WorldNode
 		int size = 1<<sizePower;
 		for( Message m : messages ) {
 			boolean relevance =
-				IDUtil.rangesIntersect(minId, maxId, m.minId, m.maxId) &&
+				BitAddressUtil.rangesIntersect(this, m) &&
 				m.targetShape.rectIntersection( x, y, size, size ) != RectIntersector.INCLUDES_NONE;
 			relevantMessageCount += relevance ? 1 : 0;
 		}

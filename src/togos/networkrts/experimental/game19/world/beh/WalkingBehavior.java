@@ -2,35 +2,37 @@ package togos.networkrts.experimental.game19.world.beh;
 
 import java.util.List;
 
-import togos.networkrts.experimental.game18.sim.IDUtil;
 import togos.networkrts.experimental.game19.world.Action;
+import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockBehavior;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
+import togos.networkrts.util.BitAddressUtil;
 
 public class WalkingBehavior implements BlockBehavior
 {
-	public final long blockId;
 	public final long nextStepTime;
 	public final long stepInterval;
 	public final int walkDirection;
 	
-	public WalkingBehavior( long blockId, long stepInterval, long nextStepTime, int walkDir ) {
-		this.blockId = blockId;
+	public WalkingBehavior( long stepInterval, long nextStepTime, int walkDir ) {
 		this.stepInterval = stepInterval;
 		this.nextStepTime = nextStepTime;
 		this.walkDirection = walkDir;
 	}
 	
-	@Override public long getMinId() { return blockId; }
-	@Override public long getMaxId() { return blockId; }
+	@Override public long getMinBitAddress() { return BitAddressUtil.MAX_ADDRESS; }
+	@Override public long getMaxBitAddress() { return BitAddressUtil.MIN_ADDRESS; }
 	@Override public long getNextAutoUpdateTime() { return walkDirection == -1 ? Long.MAX_VALUE : nextStepTime; }
 	@Override public Block update( Block b, int x, int y, int sizePower, long time,	Message[] messages, List<Action> results ) {
 		int newWalkDir = walkDirection;
 		
 		for( Message m : messages ) {
-			if( IDUtil.rangeContains( m.minId, m.maxId, blockId ) ) {
+			System.err.println("Got your message lol");
+			
+			if( BitAddressUtil.rangeContains( m, b.bitAddress ) ) {
+				System.err.println("U tellin me to walk lol");
 				if( m.type == MessageType.INCOMING_PACKET ) {
 					if( m.payload instanceof Integer ) {
 						int d = ((Integer)m.payload).intValue();
@@ -43,7 +45,7 @@ public class WalkingBehavior implements BlockBehavior
 		}
 		
 		if( walkDirection != newWalkDir ) {
-			b = b.withBehavior( new WalkingBehavior(blockId, stepInterval, nextStepTime, newWalkDir) );
+			b = b.withBehavior( new WalkingBehavior(stepInterval, nextStepTime, newWalkDir) );
 		}
 		
 		int destX, destY;
@@ -62,8 +64,8 @@ public class WalkingBehavior implements BlockBehavior
 		
 		if( (destX != x || destY != y) && time >= nextStepTime ) {
 			// TODO: Create and use some kind of relative move action
-			final Block b1 = new Block( b0.imageHandle, b0.flags, new WalkingBehavior(blockId, stepInterval, time+stepInterval, newWalkDir) );
-			results.add( new MoveBlockAction(b0, x, y, b1, destX, destY, new FlagBasedCellSuitabilityChecker(0, Block.FLAG_SOLID)) );
+			final Block b1 = new Block( b0.bitAddress, b0.imageHandle, new WalkingBehavior(stepInterval, time+stepInterval, newWalkDir) );
+			results.add( new MoveBlockAction(b0, x, y, b1, destX, destY, new FlagBasedCellSuitabilityChecker(0, BitAddresses.BLOCK_SOLID)) );
 		}
 		
 		return b0;

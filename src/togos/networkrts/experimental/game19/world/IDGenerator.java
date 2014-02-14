@@ -1,17 +1,15 @@
 package togos.networkrts.experimental.game19.world;
 
 public class IDGenerator {
-	long next;
+	int next;
 	
-	public IDGenerator( long startAt ) {
+	public IDGenerator( int startAt ) {
 		next = startAt;
 	}
 	
 	public IDGenerator() { this(1); }
 	
-	public synchronized long newId( long type ) {
-		return (next++) | type;
+	public synchronized int newId() {
+		return next++;
 	}
-	
-	public long newBlockId() { return newId( IDs.TYPE_BLOCK ); }
 }

@@ -1,7 +1,7 @@
 package togos.networkrts.experimental.game19.world;
 
-import togos.networkrts.experimental.game18.sim.IDUtil;
 import togos.networkrts.experimental.shape.RectIntersector;
+import togos.networkrts.util.BitAddressUtil;
 
 public class WorldUtil
 {
@@ -145,39 +145,36 @@ public class WorldUtil
 		return WorldBranchNode.createBasedOn( newSubNodes, node );
 	}
 	
-	// TODO: Find-by-ID functions ought to check
-	// the actual ID of each item (which currently isn't stored),
-	// not just the range of IDs that might be in each one,
-	// Since ID between min, max doesnt imply that an object with
-	// that ID is necessarily in there.
-	
-	public static Block findBlock( BlockStack bs, long minId, long maxId ) {
+	public static Block findBlock( BlockStack bs, long minBa, long maxBa ) {
 		for( Block b : bs.blocks ) {
-			if( IDUtil.rangesIntersect(b.behavior.getMinId(), b.behavior.getMaxId(), minId, maxId) ) {
-				return b; // probably.  See TODO note above.
+			if( BitAddressUtil.rangeContains(minBa, maxBa, b.bitAddress) ) {
+				return b;
 			}
 		}
 		return null;
 	}
 	
-	public static NodePosition findBlock( WorldNode n, int x, int y, int sizePower, long minId, long maxId ) {
-		if( !IDUtil.rangesIntersect(n.getMinId(), n.getMaxId(), minId, maxId) ) return null;
+	public static NodePosition findBlock( WorldNode n, int x, int y, int sizePower, long minBa, long maxBa ) {
+		if( !BitAddressUtil.rangesIntersect(n, minBa, maxBa) ) return null;
 		
 		if( n.isLeaf() ) {
-			if( findBlock(n.getBlockStack(), minId, maxId) != null ) {
+			if( findBlock(n.getBlockStack(), minBa, maxBa) != null ) {
 				return new NodePosition(x,y,sizePower);
 			}
+		} else {
+			NodePosition p;
+			int subSizePower = sizePower-1;
+			int subSize = 1<<subSizePower;
+			WorldNode[] subNodes = n.getSubNodes();
+			if( (p = findBlock(subNodes[0], x        , y        , subSizePower, minBa, maxBa)) != null ) return p;
+			if( (p = findBlock(subNodes[1], x+subSize, y        , subSizePower, minBa, maxBa)) != null ) return p;
+			if( (p = findBlock(subNodes[2], x        , y+subSize, subSizePower, minBa, maxBa)) != null ) return p;
+			if( (p = findBlock(subNodes[3], x+subSize, y+subSize, subSizePower, minBa, maxBa)) != null ) return p;
 		}
-		
-		NodePosition p;
-		int subSizePower = sizePower-1;
-		int subSize = 1<<subSizePower;
-		WorldNode[] subNodes = n.getSubNodes();
-		if( (p = findBlock(subNodes[0], x        , y        , subSizePower, minId, maxId)) != null ) return p;
-		if( (p = findBlock(subNodes[1], x+subSize, y        , subSizePower, minId, maxId)) != null ) return p;
-		if( (p = findBlock(subNodes[2], x        , y+subSize, subSizePower, minId, maxId)) != null ) return p;
-		if( (p = findBlock(subNodes[3], x+subSize, y+subSize, subSizePower, minId, maxId)) != null ) return p;
-		
 		return null;
+	}
+	
+	public static NodePosition findBlock( WorldNode n, int x, int y, int sizePower, int id ) {
+		return findBlock( n, x, y, sizePower, BitAddresses.withMinFlags(id), BitAddresses.withMaxFlags(id) );
 	}
 }

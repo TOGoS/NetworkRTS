@@ -10,6 +10,7 @@ import togos.networkrts.experimental.qt2drender.ImageHandle;
 import togos.networkrts.experimental.qt2drender.Sprite;
 import togos.networkrts.experimental.qt2drender.VizState;
 import togos.networkrts.experimental.qt2drender.VizState.BackgroundLink;
+import togos.networkrts.util.BitAddressUtil;
 import togos.networkrts.util.ResourceHandle;
 import togos.networkrts.util.StorageUtil;
 
@@ -77,10 +78,10 @@ public class Room implements SimNode
 		}
 
 		@Override public long getMinId() {
-			return id == IDUtil.NO_ID ? IDUtil.MAX_ID : id;
+			return id == BitAddressUtil.NO_ADDRESS ? BitAddressUtil.MAX_ADDRESS : id;
 		}
 		@Override public long getMaxId() {
-			return id == IDUtil.NO_ID ? IDUtil.MIN_ID : id;
+			return id == BitAddressUtil.NO_ADDRESS ? BitAddressUtil.MIN_ADDRESS : id;
 		}
 		@Override public long getNextAutoUpdateTime() {
 			return behavior.getNextAutoUpdateTime(this);
@@ -115,10 +116,10 @@ public class Room implements SimNode
 		}
 
 		@Override public long getMinId() {
-			return id == IDUtil.NO_ID ? IDUtil.MAX_ID : id;
+			return id == BitAddressUtil.NO_ADDRESS ? BitAddressUtil.MAX_ADDRESS : id;
 		}
 		@Override public long getMaxId() {
-			return id == IDUtil.NO_ID ? IDUtil.MIN_ID : id;
+			return id == BitAddressUtil.NO_ADDRESS ? BitAddressUtil.MIN_ADDRESS : id;
 		}
 		@Override public long getNextAutoUpdateTime() {
 			return behavior.getNextAutoUpdateTime(this);
@@ -155,21 +156,21 @@ public class Room implements SimNode
 		this.tiles = tiles; this.dynamicThings = dynamicThings;
 		
 		long nextAutoUpdateTime = Long.MAX_VALUE;
-		long minId = IDUtil.toMinId(id);
-		long maxId = IDUtil.toMaxId(id);
+		long minId = BitAddressUtil.toMinAddress(id);
+		long maxId = BitAddressUtil.toMaxAddress(id);
 		boolean anyInterestingTileBehavior = false;
 		
 		for( Tile[] stack : tiles ) for( Tile t : stack ) {
 			if( t.behavior != BoringestThingBehavior.instance ) {
 				anyInterestingTileBehavior = true;
 			}
-			maxId = IDUtil.maxId( maxId, t.id );
-			minId = IDUtil.minId( minId, t.id );
+			maxId = BitAddressUtil.maxAddress( maxId, t.id );
+			minId = BitAddressUtil.minAddress( minId, t.id );
 			nextAutoUpdateTime = Math.min(nextAutoUpdateTime, t.getNextAutoUpdateTime() );
 		}
 		for( DynamicThing t : dynamicThings ) {
-			maxId = IDUtil.maxId( maxId, t.id );
-			minId = IDUtil.minId( minId, t.id );
+			maxId = BitAddressUtil.maxAddress( maxId, t.id );
+			minId = BitAddressUtil.minAddress( minId, t.id );
 			nextAutoUpdateTime = Math.min(nextAutoUpdateTime, t.getNextAutoUpdateTime() );
 		}
 		
@@ -241,9 +242,9 @@ public class Room implements SimNode
 	}
 	
 	@Override public Room update( SimNode rootNode, long timestamp, Message m, List<Message> messageDest ) {
-		if( timestamp < nextAutoUpdateTime && !IDUtil.rangesIntersect(m.minId, m.maxId, minId, maxId) ) return this;
+		if( timestamp < nextAutoUpdateTime && !BitAddressUtil.rangesIntersect(m, minId, maxId) ) return this;
 		
-		Room newRoom = IDUtil.rangeContains(m.minId, m.maxId, id) ? updateSelf(rootNode, timestamp, m, messageDest) : this;
+		Room newRoom = BitAddressUtil.rangeContains(m, id) ? updateSelf(rootNode, timestamp, m, messageDest) : this;
 		return newRoom.updateComponents( rootNode, timestamp, m, messageDest );
 	}
 	@Override public <T> T get( long id, Class<T> expectedClass ) {
