@@ -12,19 +12,21 @@ public class Block implements BitAddressRange
 	public final long bitAddress;
 	public final ImageHandle imageHandle;
 	public final BlockBehavior behavior;
+	public final BlockDynamics dynamics;
 	
-	public Block( long bitAddress, ImageHandle imageHandle, BlockBehavior behavior ) {
+	public Block( long bitAddress, ImageHandle imageHandle, BlockBehavior behavior, BlockDynamics dynamics ) {
 		this.bitAddress = BitAddresses.forceType( BitAddresses.TYPE_BLOCK, bitAddress );
 		this.imageHandle = imageHandle;
 		this.behavior = behavior;
+		this.dynamics = dynamics;
 	}
 	
 	public Block( ImageHandle imageHandle ) {
-		this( 0, imageHandle, NoBehavior.instance );
+		this( 0, imageHandle, NoBehavior.instance, BlockDynamics.NONE );
 	}
 	
 	public Block withBehavior( BlockBehavior beh ) {
-		return new Block( bitAddress, imageHandle, beh );
+		return new Block( bitAddress, imageHandle, beh, dynamics );
 	}
 	
 	@Override public long getMinBitAddress() {

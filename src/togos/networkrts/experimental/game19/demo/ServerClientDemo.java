@@ -21,6 +21,7 @@ import togos.networkrts.experimental.game19.scene.LayerData;
 import togos.networkrts.experimental.game19.scene.VisibilityChecker;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
+import togos.networkrts.experimental.game19.world.BlockDynamics;
 import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.IDGenerator;
 import togos.networkrts.experimental.game19.world.Message;
@@ -121,6 +122,16 @@ public class ServerClientDemo
 				return keysDown[dir] || keysDown[dir+4];
 			}
 			
+			final int[] dirs = new int[] {
+				5,  6, 7,
+				4, -1, 0,
+				3,  2, 1
+			};
+			
+			protected int dir( int dirX, int dirY ) {
+				return dirs[(dirY+1)*3 + dirX+1];
+			}
+			
 			protected void keySomething( int keyCode, boolean state ) {
 				int dkCode;
 				switch( keyCode ) {
@@ -136,19 +147,23 @@ public class ServerClientDemo
 				}
 				
 				keysDown[dkCode] = state;
-				int dir;
+				int dirX, dirY;
 				if( dkd(0) && !dkd(2) ) {
-					dir = 0;
+					dirX = 1;
 				} else if( dkd(2) && !dkd(0) ) {
-					dir = 4;
-				} else if( dkd(1) && !dkd(3) ) {
-					dir = 2;
-				} else if( dkd(3) && !dkd(1) ) {
-					dir = 6;
+					dirX = -1;
 				} else {
-					dir = -1;
+					dirX = 0;
+				}
+				if( dkd(1) && !dkd(3) ) {
+					dirY = 1;
+				} else if( dkd(3) && !dkd(1) ) {
+					dirY = -1;
+				} else {
+					dirY = 0;
 				}
 				
+				int dir = dir(dirX, dirY);
 				if( dir != oldDir ) {
 					messageQueue.add(new Message(playerBlockId, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(dir) ));
 					oldDir = dir;
@@ -181,9 +196,9 @@ public class ServerClientDemo
 				ImageHandle brickImage = resourceContext.storeImageHandle(new File("tile-images/dumbrick1.png"));
 				ImageHandle dudeImage = resourceContext.storeImageHandle(new File("tile-images/dude.png"));
 				
-				Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance);
-				Block dude = new Block(dudeBlockId|BitAddresses.BLOCK_SOLID, dudeImage, new RandomWalkBehavior(3, 1));
-				Block player = new Block(playerBlockId|BitAddresses.BLOCK_SOLID, dudeImage, new WalkingBehavior(2, 0, -1));
+				Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance, BlockDynamics.NONE);
+				Block dude = new Block(dudeBlockId|BitAddresses.BLOCK_SOLID, dudeImage, new RandomWalkBehavior(3, 1), BlockDynamics.NONE);
+				Block player = new Block(playerBlockId|BitAddresses.BLOCK_SOLID, dudeImage, new WalkingBehavior(2, 0, -1), BlockDynamics.NONE);
 				
 				int worldSizePower = 24;
 				int worldDataOrigin = -(1<<(worldSizePower-1));

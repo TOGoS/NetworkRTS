@@ -9,6 +9,7 @@ public class BitAddresses
 	public static final long BLOCK_SOLID  = 0x0000000100000000l;
 	public static final long BLOCK_OPAQUE = 0x0000000200000000l;
 	public static final long BLOCK_ABNB   = 0x0000000400000000l; // Affected by neighboring blocks
+	public static final long BLOCK_PHYS   = 0x0000000800000000l; // May need physics update
 	
 	public static final long TYPE_MASK    = 0xF000000000000000l;
 	public static final long FLAG_MASK    = 0xFFFFFFFF00000000l;
