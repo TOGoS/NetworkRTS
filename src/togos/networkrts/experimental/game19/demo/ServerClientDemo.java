@@ -114,8 +114,12 @@ public class ServerClientDemo
 		final int dudeBlockId = idGenerator.newId();
 		c.startUi();
 		c.sceneCanvas.addKeyListener(new KeyListener() {
-			boolean[] keysDown = new boolean[4];
+			boolean[] keysDown = new boolean[8];
 			int oldDir = -2;
+			
+			protected boolean dkd( int dir ) {
+				return keysDown[dir] || keysDown[dir+4];
+			}
 			
 			protected void keySomething( int keyCode, boolean state ) {
 				int dkCode;
@@ -124,24 +128,22 @@ public class ServerClientDemo
 				case KeyEvent.VK_A: dkCode = 2; break;
 				case KeyEvent.VK_S: dkCode = 1; break;
 				case KeyEvent.VK_D: dkCode = 0; break;
-				case KeyEvent.VK_V:
-					messageQueue.add(new Message(playerBlockId, playerBlockId, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(129) ));
-					return;
-				case KeyEvent.VK_I:
-					messageQueue.add(new Message(playerBlockId, playerBlockId, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(130) ));
-					return;
+				case KeyEvent.VK_UP: dkCode = 7; break;
+				case KeyEvent.VK_LEFT: dkCode = 6; break;
+				case KeyEvent.VK_DOWN: dkCode = 5; break;
+				case KeyEvent.VK_RIGHT: dkCode = 4; break;
 				default: return; // Not a key we care about
 				}
 				
 				keysDown[dkCode] = state;
 				int dir;
-				if( keysDown[0] && !keysDown[2] ) {
+				if( dkd(0) && !dkd(2) ) {
 					dir = 0;
-				} else if( keysDown[2] && !keysDown[0] ) {
+				} else if( dkd(2) && !dkd(0) ) {
 					dir = 4;
-				} else if( keysDown[1] && !keysDown[3] ) {
+				} else if( dkd(1) && !dkd(3) ) {
 					dir = 2;
-				} else if( keysDown[3] && !keysDown[1] ) {
+				} else if( dkd(3) && !dkd(1) ) {
 					dir = 6;
 				} else {
 					dir = -1;
