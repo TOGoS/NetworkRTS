@@ -1,12 +1,12 @@
 package togos.networkrts.experimental.game19.world;
 
-public interface ActionContext
+public interface ActionContext extends NodeInstance
 {
-	public WorldNode getRootNode();
-	public int getRootX();
-	public int getRootY();
-	public int getRootSizePower();
+	public WorldNode getNode();
+	public int getNodeX();
+	public int getNodeY();
+	public int getNodeSizePower();
 	
-	public void setRootNode(WorldNode n);
+	public void setNode(WorldNode n);
 	public void enqueueMessage(Message m);
 }

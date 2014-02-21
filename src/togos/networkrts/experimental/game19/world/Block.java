@@ -5,7 +5,7 @@ import togos.networkrts.experimental.game19.world.beh.NoBehavior;
 import togos.networkrts.util.BitAddressRange;
 import togos.networkrts.util.BitAddressUtil;
 
-public class Block implements BitAddressRange
+public class Block implements BitAddressRange, HasAutoUpdateTime
 {
 	public final BlockStack stack = BlockStack.create( this );
 	
@@ -35,5 +35,13 @@ public class Block implements BitAddressRange
 	
 	@Override public long getMaxBitAddress() {
 		return BitAddressUtil.maxAddress( bitAddress, behavior.getMaxBitAddress() );
+	}
+	
+	@Override public long getNextAutoUpdateTime() {
+		return Math.min(dynamics.getNextAutoUpdateTime(), behavior.getNextAutoUpdateTime());
+	}
+
+	public Block withDynamics(BlockDynamics dynamics) {
+		return new Block( bitAddress, imageHandle, behavior, dynamics );
 	}
 }

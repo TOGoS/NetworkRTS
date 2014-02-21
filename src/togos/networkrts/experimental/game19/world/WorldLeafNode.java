@@ -22,7 +22,7 @@ public class WorldLeafNode extends BaseWorldNode
 		long minAddress = BitAddresses.TYPE_NODE;
 		long maxAddress = BitAddresses.TYPE_NODE;
 		for( Block b : blockStack.blocks ) {
-			long baut = b.behavior.getNextAutoUpdateTime();
+			long baut = b.getNextAutoUpdateTime();
 			if( baut < aut ) aut = baut;
 			maxAddress |= b.getMaxBitAddress();
 			minAddress &= b.getMinBitAddress();

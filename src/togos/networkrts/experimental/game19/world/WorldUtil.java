@@ -101,6 +101,14 @@ public class WorldUtil
 		return WorldBranchNode.create( newSubNodes );
 	}
 	
+	public static WorldNode updateNodeContaining(
+		NodeInstance n,
+		int x0, int y0, int x1, int y1,
+		NodeUpdater updater
+	) {
+		return updateNodeContaining( n.getNode(), n.getNodeX(), n.getNodeY(), n.getNodeSizePower(), x0, y0, x1, y1, updater );
+	}
+	
 	public static BlockStack getBlockStackAt( WorldNode node, int nodeX, int nodeY, int nodeSizePower, int x, int y ) {
 		int nodeSize = 1<<nodeSizePower;
 		if( x < nodeX || y < nodeY || x >= nodeX+nodeSize || y >= nodeY+nodeSize ) return null;
@@ -145,24 +153,23 @@ public class WorldUtil
 		return WorldBranchNode.createBasedOn( newSubNodes, node );
 	}
 	
-	public static Block findBlock( BlockStack bs, long minBa, long maxBa ) {
-		for( Block b : bs.blocks ) {
-			if( BitAddressUtil.rangeContains(minBa, maxBa, b.bitAddress) ) {
-				return b;
-			}
-		}
-		return null;
+	public static WorldNode updateBlockStackAt( NodeInstance n, int x, int y, Block toBeAdded, Block toBeRemoved ) {
+		return updateBlockStackAt( n.getNode(), n.getNodeX(), n.getNodeY(), n.getNodeSizePower(), x, y, toBeAdded, toBeRemoved );
 	}
 	
-	public static NodePosition findBlock( WorldNode n, int x, int y, int sizePower, long minBa, long maxBa ) {
+	public static BlockInstance findBlock( WorldNode n, int x, int y, int sizePower, long minBa, long maxBa ) {
 		if( !BitAddressUtil.rangesIntersect(n, minBa, maxBa) ) return null;
 		
 		if( n.isLeaf() ) {
-			if( findBlock(n.getBlockStack(), minBa, maxBa) != null ) {
-				return new NodePosition(x,y,sizePower);
+			BlockStack bs = n.getBlockStack();
+			for( int i=0; i<bs.blocks.length; ++i ) {
+				Block b = bs.blocks[i];
+				if( BitAddressUtil.rangeContains(minBa, maxBa, b.bitAddress) ) {
+					return new BlockInstance(x,y,i,b);
+				}
 			}
 		} else {
-			NodePosition p;
+			BlockInstance p;
 			int subSizePower = sizePower-1;
 			int subSize = 1<<subSizePower;
 			WorldNode[] subNodes = n.getSubNodes();
@@ -174,7 +181,12 @@ public class WorldUtil
 		return null;
 	}
 	
-	public static NodePosition findBlock( WorldNode n, int x, int y, int sizePower, int id ) {
+	public static BlockInstance findBlock( WorldNode n, int x, int y, int sizePower, int id ) {
 		return findBlock( n, x, y, sizePower, BitAddresses.withMinFlags(id), BitAddresses.withMaxFlags(id) );
 	}
+	
+	public static BlockInstance findBlock( NodeInstance n, int id ) {
+		return findBlock( n.getNode(), n.getNodeX(), n.getNodeY(), n.getNodeSizePower(), BitAddresses.withMinFlags(id), BitAddresses.withMaxFlags(id) );
+	}
+
 }

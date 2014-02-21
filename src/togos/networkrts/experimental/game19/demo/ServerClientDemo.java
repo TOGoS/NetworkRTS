@@ -34,6 +34,7 @@ import togos.networkrts.experimental.game19.world.beh.RandomWalkBehavior;
 import togos.networkrts.experimental.game19.world.beh.WalkingBehavior;
 import togos.networkrts.experimental.game19.world.encoding.WorldConverter;
 import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
+import togos.networkrts.experimental.game19.world.sim.PhysicsUpdater;
 import togos.networkrts.experimental.game19.world.sim.Simulator;
 import togos.networkrts.experimental.shape.TBoundless;
 import togos.networkrts.experimental.shape.TCircle;
@@ -112,6 +113,7 @@ public class ServerClientDemo
 		final ResourceContext resourceContext = new ResourceContext(new File(".ccouch"));
 		final Client c = new Client(resourceContext);
 		final int playerBlockId = idGenerator.newId();
+		final int ballBlockId = idGenerator.newId();
 		final int dudeBlockId = idGenerator.newId();
 		c.startUi();
 		c.sceneCanvas.addKeyListener(new KeyListener() {
@@ -195,10 +197,12 @@ public class ServerClientDemo
 			public void _run() throws Exception {
 				ImageHandle brickImage = resourceContext.storeImageHandle(new File("tile-images/dumbrick1.png"));
 				ImageHandle dudeImage = resourceContext.storeImageHandle(new File("tile-images/dude.png"));
+				ImageHandle ballImage = resourceContext.storeImageHandle(new File("tile-images/stupid-ball.png"));
 				
 				Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance, BlockDynamics.NONE);
 				Block dude = new Block(dudeBlockId|BitAddresses.BLOCK_SOLID, dudeImage, new RandomWalkBehavior(3, 1), BlockDynamics.NONE);
 				Block player = new Block(playerBlockId|BitAddresses.BLOCK_SOLID, dudeImage, new WalkingBehavior(2, 0, -1), BlockDynamics.NONE);
+				Block stupidBall = new Block(ballBlockId|BitAddresses.BLOCK_PHYS|BitAddresses.BLOCK_SOLID, ballImage, NoBehavior.instance, new BlockDynamics(0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0));
 				
 				int worldSizePower = 24;
 				int worldDataOrigin = -(1<<(worldSizePower-1));
@@ -216,6 +220,7 @@ public class ServerClientDemo
 				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -3, -2, dude, null);
 				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -2, dude, null);
 				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -0, player, null);
+				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -5, -0, stupidBall, null);
 				final Simulator sim = new Simulator();
 				sim.setRoot( n, worldDataOrigin, worldDataOrigin, worldSizePower );
 				
@@ -227,9 +232,10 @@ public class ServerClientDemo
 					}
 					
 					sim.update(simTime);
-					n = sim.getRootNode();
+					PhysicsUpdater.apply(sim, simTime);
+					n = sim.getNode();
 					
-					NodePosition playerPosition = WorldUtil.findBlock(n, sim.getRootX(), sim.getRootY(), sim.getRootSizePower(), playerBlockId);
+					NodePosition playerPosition = WorldUtil.findBlock(n, sim.getNodeX(), sim.getNodeY(), sim.getNodeSizePower(), playerBlockId);
 					double centerX, centerY;
 					if( playerPosition != null ) {
 						centerX = playerPosition.getCenterX();

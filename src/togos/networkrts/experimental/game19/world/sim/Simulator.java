@@ -56,12 +56,12 @@ public class Simulator implements ActionContext
 	
 	//// Action context
 	
-	@Override public WorldNode getRootNode() { return rootNode; }
-	@Override public int getRootX() { return rootX; }
-	@Override public int getRootY() { return rootY; }
-	@Override public int getRootSizePower() { return rootSizePower; }
+	@Override public WorldNode getNode() { return rootNode; }
+	@Override public int getNodeX() { return rootX; }
+	@Override public int getNodeY() { return rootY; }
+	@Override public int getNodeSizePower() { return rootSizePower; }
 	
-	@Override public void setRootNode( WorldNode n ) {
+	@Override public void setNode( WorldNode n ) {
 		rootNode = n;
 	}
 	

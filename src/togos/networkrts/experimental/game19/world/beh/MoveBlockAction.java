@@ -33,17 +33,12 @@ class MoveBlockAction implements Action, NodeUpdater
 	}
 	
 	@Override public void apply( ActionContext ctx ) {
-		WorldNode rn = ctx.getRootNode();
-		int rx = ctx.getRootX();
-		int ry = ctx.getRootY();
-		int rsp = ctx.getRootSizePower();
-		
 		int x0 = Math.min(this.x0, this.x1);
 		int x1 = Math.max(this.x0, this.x1)+1;
 		int y0 = Math.min(this.y0, this.y1);
 		int y1 = Math.max(this.y0, this.y1)+1;
 		
-		ctx.setRootNode( WorldUtil.updateNodeContaining( rn, rx, ry, rsp, x0, y0, x1, y1, this) );
+		ctx.setNode( WorldUtil.updateNodeContaining( ctx, x0, y0, x1, y1, this) );
 	}
 
 	@Override public WorldNode update( WorldNode node, int nodeX, int nodeY, int nodeSizePower ) {
