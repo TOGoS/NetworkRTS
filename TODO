@@ -1,0 +1,18 @@
+Game19
+
+Make content creation possible/fun
+- quadtree editor
+- simple (probably JSON-based) tile format
+
+Image compositor
+- Diffuse
+- Radiant (office lights, stars, lit displays)
+- left-right and top-bottom normal maps
+These may be compiled to simple images assuming standard conditions.
+
+
+Remember to allow for animations
+- Discrete
+- Continuous (vector-based, like flash cartoons; would be useful for e.g. waving trees, spinning fans)
+- Would need to combine many animations into one in a scalable way
+  for drawing large composite nodes (e.g. distant background planes)
