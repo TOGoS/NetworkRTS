@@ -4,6 +4,13 @@ Make content creation possible/fun
 - quadtree editor
 - simple (probably JSON-based) tile format
 
+Continuous movement entities
+- Separate
+  - Fast (bullet) entities
+  - Normal dynamic entities
+  - Static (not requiring continuous update) entities
+  - Quadtree for solids
+
 Image compositor
 - Diffuse
 - Radiant (office lights, stars, lit displays)
