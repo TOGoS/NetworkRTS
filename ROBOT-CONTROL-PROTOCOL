@@ -13,3 +13,7 @@ All messages should contain
   Ordering value (so when receiving contradictory information, newer can take precedence)
 
 Encryption/authentication is outside the scope for now
+
+This may map nicely to
+http://en.m.wikipedia.org/wiki/Constrained_Application_Protocol
+CoAP has an 'observe' extension: https://tools.ietf.org/html/draft-ietf-core-observe-04
