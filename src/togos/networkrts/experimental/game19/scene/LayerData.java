@@ -2,6 +2,7 @@ package togos.networkrts.experimental.game19.scene;
 
 import java.util.Arrays;
 
+import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.BlockStack;
 
 
@@ -33,16 +34,27 @@ public class LayerData {
 	/** Layer for which shades were calculated. */
 	protected int shadeLayer;
 	
+	protected final boolean blockStackIsOpaque( BlockStack bs ) {
+		if( bs == null ) return true;
+		for( int i=bs.blocks.length-1; i>=0; --i ) {
+			if( (bs.blocks[i].bitAddress & BitAddresses.BLOCK_OPAQUE) != 0 ) return true;
+		}
+		return false;
+	}
+	
 	protected boolean[] getVertexVisibility(int layer) {
 		final int vvWidth = width+1;
 		final boolean[] vv = new boolean[vvWidth*(height+1)];
-		Arrays.fill(vv, true);
+		Arrays.fill(vv, false);
+		
+		// Lighten corners of all non-opaque cells
 		for( int y=0, i=width*height*layer; y<height; ++y ) for( int x=0, j=y*vvWidth; x<width; ++x, ++i, ++j ) {
-			if( blockStacks[i] == null ) {
-				vv[j        ] = false; vv[j        +1] = false;
-				vv[j+vvWidth] = false; vv[j+vvWidth+1] = false;
+			if( !blockStackIsOpaque(blockStacks[i]) ) {
+				vv[j        ] = true; vv[j        +1] = true;
+				vv[j+vvWidth] = true; vv[j+vvWidth+1] = true;
 			}
 		}
+		
 		return vv;
 	}
 	
