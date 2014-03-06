@@ -20,9 +20,9 @@ public class BlockStack
 		return new BlockStack( blocks );
 	}
 	
-	transient WorldLeafNode leafNode;
-	public synchronized WorldLeafNode toLeafNode() {
-		if( leafNode == null ) leafNode = WorldLeafNode.create(this);
+	transient BlockStackNode leafNode;
+	public synchronized BlockStackNode toLeafNode() {
+		if( leafNode == null ) leafNode = BlockStackNode.create(this);
 		return leafNode;
 	}
 	

@@ -30,7 +30,8 @@ public class PhysicsUpdater
 		if( n.getNextAutoUpdateTime() > time ) return;
 		if( !BitAddressUtil.rangesIntersect(n, dynamicBitAddresses) ) return; 
 		
-		if( n.isLeaf() ) {
+		switch( n.getNodeType() ) {
+		case BLOCKSTACK:
 			for( Block b : n.getBlockStack().blocks ) {
 				if( BitAddressUtil.rangeContains(dynamicBitAddresses, b.bitAddress) && b.getNextAutoUpdateTime() <= time ) {
 					int blockId = BitAddresses.extractId(b.bitAddress); 
@@ -38,7 +39,8 @@ public class PhysicsUpdater
 					dest.add( new BlockPointer(blockId, x, y) );
 				}
 			}
-		} else {
+			break;
+		case QUADTREE:
 			int subSizePower = sp-1;
 			int subSize = 1<<subSizePower;
 			WorldNode[] subNodes = n.getSubNodes();
@@ -46,6 +48,9 @@ public class PhysicsUpdater
 			findDynamicBlocks(subNodes[1], x+subSize, y        , subSizePower, time, dest);
 			findDynamicBlocks(subNodes[2], x        , y+subSize, subSizePower, time, dest);
 			findDynamicBlocks(subNodes[3], x+subSize, y+subSize, subSizePower, time, dest);
+			break;
+		default:
+			throw new RuntimeException("Don't know how to find dynamic blocks within "+n.getNodeType()+" node");
 		}
 	}
 	

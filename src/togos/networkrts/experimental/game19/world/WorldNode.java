@@ -6,9 +6,14 @@ import togos.networkrts.util.BitAddressRange;
 
 public interface WorldNode extends BitAddressRange
 {
+	public enum NodeType {
+		QUADTREE,
+		BLOCKSTACK
+	};
+	
 	public static final WorldNode[] EMPTY_LIST = new WorldNode[0];
 	
-	public boolean isLeaf();
+	public NodeType getNodeType();
 	public long getNextAutoUpdateTime();
 	public BlockStack getBlockStack();
 	public WorldNode[] getSubNodes();

@@ -2,18 +2,19 @@ package togos.networkrts.experimental.game19.world;
 
 import java.util.List;
 
-public class WorldLeafNode extends BaseWorldNode
+// TODO: This object could ~be~ the block stack
+public class BlockStackNode extends BaseWorldNode
 {
-	public static final WorldLeafNode EMPTY = create( BlockStack.EMPTY );
+	public static final BlockStackNode EMPTY = create( BlockStack.EMPTY );
 	
 	protected final BlockStack blockStack;
 	
-	private WorldLeafNode( BlockStack blockStack, long minId, long maxId, long nextAutoUpdateTime ) {
+	private BlockStackNode( BlockStack blockStack, long minId, long maxId, long nextAutoUpdateTime ) {
 		super( minId, maxId, nextAutoUpdateTime );
 		this.blockStack = blockStack;
 	}
 	
-	public static WorldLeafNode create( BlockStack blockStack ) {
+	public static BlockStackNode create( BlockStack blockStack ) {
 		assert blockStack != null;
 		
 		if( blockStack.leafNode != null ) return blockStack.leafNode;
@@ -27,14 +28,14 @@ public class WorldLeafNode extends BaseWorldNode
 			maxAddress |= b.getMaxBitAddress();
 			minAddress &= b.getMinBitAddress();
 		}
-		return new WorldLeafNode( blockStack, minAddress, maxAddress, aut );
+		return new BlockStackNode( blockStack, minAddress, maxAddress, aut );
 	}
 	
-	static WorldLeafNode create( Block[] blocks ) {
-		return WorldLeafNode.create( BlockStack.create(blocks) );
+	static BlockStackNode create( Block[] blocks ) {
+		return BlockStackNode.create( BlockStack.create(blocks) );
 	}
 	
-	@Override public boolean isLeaf() { return true; }
+	@Override public NodeType getNodeType() { return NodeType.BLOCKSTACK; }
 	@Override public BlockStack getBlockStack() { return blockStack; }
 	@Override public WorldNode[] getSubNodes() { return WorldNode.EMPTY_LIST; }
 	
@@ -48,6 +49,6 @@ public class WorldLeafNode extends BaseWorldNode
 			newBlocks[i] = blockStack.blocks[i].behavior.update( blockStack.blocks[i], x, y, sizePower, time, messages, results );
 			if( newBlocks[i] != blockStack.blocks[i] ) anyBlocksUpdated = true;
 		}
-		return anyBlocksUpdated ? WorldLeafNode.create(newBlocks) : this;
+		return anyBlocksUpdated ? BlockStackNode.create(newBlocks) : this;
 	}
 }

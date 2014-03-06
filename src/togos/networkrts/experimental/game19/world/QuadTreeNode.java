@@ -2,17 +2,17 @@ package togos.networkrts.experimental.game19.world;
 
 import java.util.List;
 
-public class WorldBranchNode extends BaseWorldNode
+public class QuadTreeNode extends BaseWorldNode
 {
 	protected final WorldNode[] subNodes;
 	
-	private WorldBranchNode( WorldNode[] subNodes, long minId, long maxId, long nextAutoUpdateTime ) {
+	private QuadTreeNode( WorldNode[] subNodes, long minId, long maxId, long nextAutoUpdateTime ) {
 		super( minId, maxId, nextAutoUpdateTime );
 		assert subNodes.length == 4;
 		this.subNodes = subNodes;
 	}
 	
-	public static WorldBranchNode create( WorldNode[] subNodes ) {
+	public static QuadTreeNode create( WorldNode[] subNodes ) {
 		long aut = Long.MAX_VALUE;
 		long minId = BitAddresses.TYPE_NODE;
 		long maxId = BitAddresses.TYPE_NODE;
@@ -22,7 +22,7 @@ public class WorldBranchNode extends BaseWorldNode
 			maxId |= n.getMaxBitAddress();
 			minId &= n.getMinBitAddress();
 		}
-		return new WorldBranchNode( subNodes, minId, maxId, aut );
+		return new QuadTreeNode( subNodes, minId, maxId, aut );
 	}
 	
 	/**
@@ -44,7 +44,7 @@ public class WorldBranchNode extends BaseWorldNode
 		return create( new WorldNode[] { subNode, subNode, subNode, subNode } );
 	}
 	
-	@Override public boolean isLeaf() { return false; }
+	@Override public NodeType getNodeType() { return NodeType.QUADTREE; }
 	@Override public BlockStack getBlockStack() { return BlockStack.EMPTY; }
 	@Override public WorldNode[] getSubNodes() { return subNodes; }
 	
@@ -58,6 +58,6 @@ public class WorldBranchNode extends BaseWorldNode
 		for( int sy=0, si=0; sy<2; ++sy) for( int sx=0; sx<2; ++sx, ++si ) {
 			newSubNodes[si] = subNodes[si].update( x+(sx*subSize), y+(sy*subSize), subSizePower, time, messages, results );
 		}
-		return WorldBranchNode.create( newSubNodes ); 
+		return QuadTreeNode.create( newSubNodes ); 
 	}
 }

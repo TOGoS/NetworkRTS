@@ -8,16 +8,21 @@ public class WorldConverter
 {
 	public static void nodeToBlockArray( WorldNode n, int nx, int ny, int nsize, BlockStack[] blockStacks, int bx, int by, int bw, int bh, int bo ) {
 		if( nx >= bx + bw || nx + nsize <= bx || ny >= by + bh || ny + nsize <= by ) return;
-		if( n.isLeaf() ) {
+		switch( n.getNodeType() ) {
+		case BLOCKSTACK:
 			int rx = nx - bx;
 			int ry = ny - by;
 			blockStacks[rx + ry*bw + bo] = n.getBlockStack();
-		} else {
+			break;
+		case QUADTREE:
 			int subSize = nsize>>1;
 			WorldNode[] subNodes = n.getSubNodes();
 			for( int sy=0, si=0; sy<2; ++sy) for( int sx=0; sx<2; ++sx, ++si ) {
 				nodeToBlockArray( subNodes[si], nx+(sx*subSize), ny+(sy*subSize), subSize, blockStacks, bx, by, bw, bh, bo );
 			}
+			break;
+		default:
+			throw new RuntimeException("Don't know how to nodeToBlockArray "+n.getNodeType()+" node");
 		}
 	}
 	

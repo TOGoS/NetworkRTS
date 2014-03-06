@@ -2,7 +2,7 @@ package togos.networkrts.experimental.game19.world.gen;
 
 import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.NodeUpdater;
-import togos.networkrts.experimental.game19.world.WorldBranchNode;
+import togos.networkrts.experimental.game19.world.QuadTreeNode;
 import togos.networkrts.experimental.game19.world.WorldNode;
 
 public class SolidNodeFiller implements NodeUpdater
@@ -37,7 +37,7 @@ public class SolidNodeFiller implements NodeUpdater
 		if( upscaled[scalePower] == null ) {
 			for( int i=1; i<=scalePower; ++i ) {
 				if( upscaled[i] == null ) {
-					upscaled[i] = WorldBranchNode.createHomogeneousQuad( upscaled[i-1] );
+					upscaled[i] = QuadTreeNode.createHomogeneousQuad( upscaled[i-1] );
 				}
 			}
 		}
