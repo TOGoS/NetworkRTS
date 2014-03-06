@@ -12,7 +12,7 @@ public class WorldConverter
 		case BLOCKSTACK:
 			int rx = nx - bx;
 			int ry = ny - by;
-			blockStacks[rx + ry*bw + bo] = n.getBlockStack();
+			blockStacks[rx + ry*bw + bo] = n;
 			break;
 		case QUADTREE:
 			int subSize = nsize>>1;

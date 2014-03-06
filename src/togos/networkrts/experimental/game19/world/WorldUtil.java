@@ -6,14 +6,6 @@ import togos.networkrts.util.BitAddressUtil;
 
 public class WorldUtil
 {
-	public static WorldNode createSolid( BlockStack blockStack, int sizePower ) {
-		assert sizePower >= 0;
-		
-		if( sizePower == 0 ) return BlockStackNode.create( blockStack );
-		
-		return QuadTreeNode.createHomogeneousQuad( createSolid( blockStack, sizePower-1 ) );
-	}
-	
 	public static WorldNode fillShape( WorldNode orig, int x, int y, int sizePower, RectIntersector shape, NodeUpdater filler ) {
 		int size = 1<<sizePower;
 		switch( shape.rectIntersection( x, y, size, size ) ) {
@@ -122,7 +114,7 @@ public class WorldUtil
 		
 		switch( node.getNodeType() ) {
 		case BLOCKSTACK:
-			return node.getBlockStack();
+			return node;
 		default:
 			throw new RuntimeException("Don't know how to getBlockStackAt from "+node.getNodeType()+" node");
 		case QUADTREE:
@@ -147,14 +139,14 @@ public class WorldUtil
 		
 		switch( node.getNodeType() ) {
 		case BLOCKSTACK:
-			BlockStack blockStack = node.getBlockStack();
-			BlockStack newBlockStack = blockStack;
+			WorldNode blockStack = node;
+			WorldNode newBlockStack = node;
 			
-			if( toBeRemoved != null ) newBlockStack = newBlockStack.without(toBeRemoved);
-			if( toBeAdded   != null ) newBlockStack = newBlockStack.with(toBeAdded);
+			if( toBeRemoved != null ) newBlockStack = BlockStackNode.withoutBlock(newBlockStack, toBeRemoved);
+			if( toBeAdded   != null ) newBlockStack = BlockStackNode.withBlock(newBlockStack, toBeAdded);
 			
 			if( blockStack == newBlockStack ) return node;
-			return BlockStackNode.create( newBlockStack );
+			return newBlockStack;
 		default:
 			throw new RuntimeException("Don't know how to getBlockStackAt from "+node.getNodeType()+" node");
 		case QUADTREE:
@@ -180,9 +172,9 @@ public class WorldUtil
 		
 		switch( n.getNodeType() ) {
 		case BLOCKSTACK:
-			BlockStack bs = n.getBlockStack();
-			for( int i=0; i<bs.blocks.length; ++i ) {
-				Block b = bs.blocks[i];
+			Block[] blocks = n.getBlocks();
+			for( int i=0; i<blocks.length; ++i ) {
+				Block b = blocks[i];
 				if( BitAddressUtil.rangeContains(minBa, maxBa, b.bitAddress) ) {
 					return new BlockInstance(x,y,i,b);
 				}

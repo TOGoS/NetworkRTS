@@ -16,6 +16,7 @@ import togos.networkrts.experimental.game19.scene.Layer;
 import togos.networkrts.experimental.game19.scene.LayerData;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
+import togos.networkrts.experimental.game19.world.BlockStackNode;
 import togos.networkrts.ui.ImageCanvas;
 
 public class RenderDemo
@@ -31,7 +32,7 @@ public class RenderDemo
 		for( int i=0; i<50; ++i ) {
 			int k = r.nextInt(3);
 			switch(k) {
-			case 0: blockStacks[i] = BlockStack.EMPTY; break; 
+			case 0: blockStacks[i] = BlockStackNode.EMPTY; break; 
 			case 1: blockStacks[i] = bricks.stack; break;
 			case 2: blockStacks[i] = cheese.stack; break;
 			}

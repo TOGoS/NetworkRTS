@@ -22,11 +22,12 @@ import togos.networkrts.experimental.game19.scene.VisibilityChecker;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockDynamics;
-import togos.networkrts.experimental.game19.world.BlockStack;
+import togos.networkrts.experimental.game19.world.BlockStackNode;
 import togos.networkrts.experimental.game19.world.IDGenerator;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.NodePosition;
+import togos.networkrts.experimental.game19.world.QuadTreeNode;
 import togos.networkrts.experimental.game19.world.WorldNode;
 import togos.networkrts.experimental.game19.world.WorldUtil;
 import togos.networkrts.experimental.game19.world.beh.NoBehavior;
@@ -207,13 +208,13 @@ public class ServerClientDemo
 				int worldSizePower = 24;
 				int worldDataOrigin = -(1<<(worldSizePower-1));
 				
-				WorldNode n = WorldUtil.createSolid(bricks.stack, worldSizePower);
-				n = WorldUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( -2, -2, 4 ), new SolidNodeFiller( BlockStack.EMPTY ));
-				n = WorldUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStack.EMPTY ));
+				WorldNode n = QuadTreeNode.createHomogeneous(bricks.stack, worldSizePower);
+				n = WorldUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( -2, -2, 4 ), new SolidNodeFiller( BlockStackNode.EMPTY ));
+				n = WorldUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStackNode.EMPTY ));
 				
 				Random r = new Random();
 				for( int i=0; i<50; ++i ) {
-					n = WorldUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStack.EMPTY ));
+					n = WorldUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStackNode.EMPTY ));
 				}
 				
 				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -2, -2, dude, null);

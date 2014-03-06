@@ -13,7 +13,7 @@ class FlagBasedCellSuitabilityChecker implements CellSuitabilityChecker {
 	@Override
 	public boolean cellIsSuitable( int x, int y, BlockStack bs ) {
 		long flags = 0;
-		for( Block b : bs.blocks ) {
+		for( Block b : bs.getBlocks() ) {
 			flags |= b.bitAddress;
 		}
 		return

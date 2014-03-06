@@ -4,7 +4,7 @@ import java.util.List;
 
 import togos.networkrts.util.BitAddressRange;
 
-public interface WorldNode extends BitAddressRange
+public interface WorldNode extends BlockStack, BitAddressRange
 {
 	public enum NodeType {
 		QUADTREE,
@@ -15,7 +15,7 @@ public interface WorldNode extends BitAddressRange
 	
 	public NodeType getNodeType();
 	public long getNextAutoUpdateTime();
-	public BlockStack getBlockStack();
+	public Block[] getBlocks();
 	public WorldNode[] getSubNodes();
 	
 	public WorldNode update( int x, int y, int sizePower, long time, Message[] messages, List<Action> results );

@@ -3,6 +3,7 @@ package togos.networkrts.experimental.game19.scene;
 import java.util.Arrays;
 
 import togos.networkrts.experimental.game19.world.BitAddresses;
+import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
 
 
@@ -36,8 +37,9 @@ public class LayerData {
 	
 	protected final boolean blockStackIsOpaque( BlockStack bs ) {
 		if( bs == null ) return true;
-		for( int i=bs.blocks.length-1; i>=0; --i ) {
-			if( (bs.blocks[i].bitAddress & BitAddresses.BLOCK_OPAQUE) != 0 ) return true;
+		Block[] blocks = bs.getBlocks();
+		for( int i=blocks.length-1; i>=0; --i ) {
+			if( (blocks[i].bitAddress & BitAddresses.BLOCK_OPAQUE) != 0 ) return true;
 		}
 		return false;
 	}
@@ -49,7 +51,7 @@ public class LayerData {
 		
 		// Lighten corners of all non-opaque cells
 		for( int y=0, i=width*height*layer; y<height; ++y ) for( int x=0, j=y*vvWidth; x<width; ++x, ++i, ++j ) {
-			if( !blockStackIsOpaque(blockStacks[i]) ) {
+			if( VisibilityChecker.isSeeThrough(blockStacks[i]) ) {
 				vv[j        ] = true; vv[j        +1] = true;
 				vv[j+vvWidth] = true; vv[j+vvWidth+1] = true;
 			}

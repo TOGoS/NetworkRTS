@@ -32,7 +32,7 @@ public class PhysicsUpdater
 		
 		switch( n.getNodeType() ) {
 		case BLOCKSTACK:
-			for( Block b : n.getBlockStack().blocks ) {
+			for( Block b : n.getBlocks() ) {
 				if( BitAddressUtil.rangeContains(dynamicBitAddresses, b.bitAddress) && b.getNextAutoUpdateTime() <= time ) {
 					int blockId = BitAddresses.extractId(b.bitAddress); 
 					assert blockId != 0;
@@ -71,7 +71,7 @@ public class PhysicsUpdater
 			// Try to move it!
 			BlockStack destStack = WorldUtil.getBlockStackAt(ctx.getNode(), ctx.getNodeX(), ctx.getNodeY(), ctx.getNodeSizePower(), destX, destY);
 			boolean blocked = false;
-			for( Block b : destStack.blocks ) {
+			for( Block b : destStack.getBlocks() ) {
 				if( (b.bitAddress & BitAddresses.BLOCK_SOLID) != 0 ) blocked = true;
 			}
 			newDynamics = newDynamics.repositioned();

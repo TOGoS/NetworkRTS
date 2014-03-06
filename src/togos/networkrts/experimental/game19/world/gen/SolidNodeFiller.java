@@ -1,6 +1,5 @@
 package togos.networkrts.experimental.game19.world.gen;
 
-import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.NodeUpdater;
 import togos.networkrts.experimental.game19.world.QuadTreeNode;
 import togos.networkrts.experimental.game19.world.WorldNode;
@@ -9,6 +8,7 @@ public class SolidNodeFiller implements NodeUpdater
 {
 	final WorldNode leafNode;
 	final int leafSizePower;
+	
 	public SolidNodeFiller( WorldNode n, int sizePower ) {
 		assert n != null;
 		assert sizePower >= 0;
@@ -17,10 +17,9 @@ public class SolidNodeFiller implements NodeUpdater
 		this.leafSizePower = sizePower;
 	}
 	
-	public SolidNodeFiller( BlockStack bs ) {
-		this( bs.toLeafNode(), 0 );
+	public SolidNodeFiller( WorldNode n ) {
+		this( n, 0 );
 	}
-	
 	
 	transient WorldNode[] upscaled;
 	protected synchronized WorldNode upscaled( int sizePower ) {

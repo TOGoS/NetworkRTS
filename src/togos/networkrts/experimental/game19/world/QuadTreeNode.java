@@ -44,8 +44,14 @@ public class QuadTreeNode extends BaseWorldNode
 		return create( new WorldNode[] { subNode, subNode, subNode, subNode } );
 	}
 	
+	public static WorldNode createHomogeneous( WorldNode leaf, int depth ) {
+		assert depth >= 0;
+		
+		return depth == 0 ? leaf : createHomogeneousQuad( createHomogeneous( leaf, depth-1 ) );
+	}
+	
 	@Override public NodeType getNodeType() { return NodeType.QUADTREE; }
-	@Override public BlockStack getBlockStack() { return BlockStack.EMPTY; }
+	@Override public Block[] getBlocks() { return BlockStackNode.EMPTY.getBlocks(); }
 	@Override public WorldNode[] getSubNodes() { return subNodes; }
 	
 	@Override protected WorldNode _update(
