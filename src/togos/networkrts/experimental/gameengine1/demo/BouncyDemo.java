@@ -45,7 +45,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 			double vx, double vy, double vz,
 			double ax, double ay, double az,
 			double radius,	double mass, Color color,
-			long flags, EntityBehavior behavior
+			long flags, EntityBehavior<Bouncer> behavior
 		) {
 			super( tag, flags, x-radius, y-radius, z-radius, x+radius, y+radius, z+radius );
 			this.time = time;
@@ -91,7 +91,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 		public EC onCollision( long time, EC self, Bouncer other, EntityShell<EC> shell );
 	}
 	
-	static final EntityBehavior NULL_BEHAVIOR = new EntityBehavior<Entity>() {
+	static final EntityBehavior<Entity> NULL_BEHAVIOR = new EntityBehavior<Entity>() {
 		@Override public Entity onMove( long time, Entity self, EntityShell<Entity> shell ) { return self; }
 		@Override public Entity onCollision( long time, Entity self, Bouncer other, EntityShell<Entity> shell ) { return self; }
 	};
@@ -105,7 +105,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 		return distSquared < radSum*radSum;
 	}
 	
-	EntitySpatialTreeIndex entityIndex = new EntitySpatialTreeIndex();
+	EntitySpatialTreeIndex<Bouncer> entityIndex = new EntitySpatialTreeIndex<Bouncer>();
 	public long physicsInterval = 10;
 	HashSet<Runnable> worldUpdateListeners = new HashSet<Runnable>();
 	
@@ -170,7 +170,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 				}
 			};
 			@Override
-			public Bouncer update( Bouncer e, EntityShell shell ) {
+			public Bouncer update( Bouncer e, EntityShell<Bouncer> shell ) {
 				collisionCheckEntity = e;
 				collisionTargetEntity = null;
 				entityIndex.forEachEntityIntersecting( e, collisionChecker );
@@ -229,7 +229,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 			this.lastCollisionTime = lastCollisionTime;
 		}
 		
-		protected Bouncer withColorAndBehavior( Bouncer e, Color c, EntityBehavior b ) {
+		protected Bouncer withColorAndBehavior( Bouncer e, Color c, EntityBehavior<Bouncer> b ) {
 			return new Bouncer(
 				e.tag, e.time,
 				e.x, e.y, e.z, e.vx, e.vy, e.vz, e.ax, e.ay, e.az,
@@ -250,7 +250,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 			return x + vx*dt + ax*dt*dt/2;
 		}
 		
-		@Override public Bouncer onCollision( long time, Bouncer self, Bouncer other, EntityShell shell ) {
+		@Override public Bouncer onCollision( long time, Bouncer self, Bouncer other, EntityShell<Bouncer> shell ) {
 			assert self != null;
 			assert other != null;
 			
