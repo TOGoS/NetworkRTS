@@ -132,6 +132,7 @@ public class EntitySpatialTreeIndex<EC extends EntityRange> implements EntityInd
 			
 			minBitAddress &= e.getMinBitAddress();
 			maxBitAddress &= e.getMaxBitAddress();
+			nextAutoUpdateTime = Math.min( nextAutoUpdateTime, e.getNextAutoUpdateTime() );
 			totalEntityCount += 1;
 			
 			if( hasSubNodes() ) {
