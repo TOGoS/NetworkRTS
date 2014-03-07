@@ -109,7 +109,6 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 	}
 	
 	EntitySpatialTreeIndex<Bouncer> entityIndex = new EntitySpatialTreeIndex<Bouncer>();
-	public long physicsInterval = 10;
 	HashSet<Runnable> worldUpdateListeners = new HashSet<Runnable>();
 	
 	static final long DYNAMIC_ENTITY_FLAG = 0x01;
@@ -407,8 +406,20 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 				canv.repaint();
 			}
 		});
-		
-		sim.currentTime = eventSource.getCurrentTime();
-		EventLoop.run(eventSource, sim);
+
+		final long realStartTime = eventSource.getCurrentTime();
+		final long stepLength = 10;
+		EventLoop.TimeTranslator tt = new EventLoop.TimeTranslator() {
+			@Override public long simToReal(long simTime) {
+				if( simTime == Long.MAX_VALUE ) return simTime;
+				return realStartTime + simTime * stepLength;
+			}
+			@Override public long realToSim(long realTime) {
+				if( realTime == Long.MAX_VALUE ) return realTime;
+				return (long)Math.ceil( (double)(realTime - realStartTime) / stepLength );
+			}
+		};
+		sim.currentTime = 0;
+		EventLoop.run(eventSource, sim, tt);
 	}
 }
