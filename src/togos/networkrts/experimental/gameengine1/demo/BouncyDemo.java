@@ -61,7 +61,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 		}
 		
 		public Bouncer withUpdatedPosition( long targetTime ) {
-			final double duration = (targetTime-time)/1000.0;
+			final double duration = (targetTime-time)/100.0;
 			final double halfDurationSquared = duration*duration/2;
 			return withPosition(
 				targetTime,
@@ -124,9 +124,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 	
 	@Override
 	protected void passTime(final long targetTime) {
-		long sysTime = System.currentTimeMillis();
-		System.err.println( (targetTime - currentTime) + " milliseconds passed to "+targetTime );
-		System.err.println( "Lag: "+(sysTime - targetTime));
+		System.err.println( (targetTime - currentTime) + " ticks passed to "+targetTime );
 		entityIndex = entityIndex.updateEntities( EntityRanges.BOUNDLESS, new EntityUpdater<Bouncer>() {
 			protected double damp( double v, double min ) {
 				return Math.abs(v) < min ? 0 : v;
@@ -313,14 +311,16 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 	};
 	
 	public static void main( String[] args ) throws Exception {
+		final long initialSimTime = 0;
 		final BouncyDemo sim = new BouncyDemo();
+		sim.currentTime = initialSimTime;
 		final QueuelessRealTimeEventSource<Signal> eventSource = new QueuelessRealTimeEventSource<Signal>();
 		
 		for( int i=0; i<200; ++i ) {
 			long flags = DYNAMIC_ENTITY_FLAG | (i == 0 ? TAGGED_ENTITY_FLAG : 0);
 			
 			Bouncer e = new Bouncer(
-				flags, flags, eventSource.getCurrentTime(),
+				flags, flags, initialSimTime,
 				Math.random()*500-250, Math.random()*1000, 0,
 				Math.random()*20-10, Math.random()*200-10, 0,
 				0, -gravity, 0,
@@ -331,7 +331,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 		}
 		for( int i=0; i<800; ++i ) {
 			Bouncer e = new Bouncer(
-				DYNAMIC_ENTITY_FLAG, DYNAMIC_ENTITY_FLAG, eventSource.getCurrentTime(),
+				DYNAMIC_ENTITY_FLAG, DYNAMIC_ENTITY_FLAG, initialSimTime,
 				Math.random()*8000-2000, Math.random()*2000, 0,
 				0, 0, 0,
 				0, +gravity*0.005, 0,
@@ -349,7 +349,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 			BufferedImage bufferCache = null;
 			protected BufferedImage getBuffer( int width, int height ) {
 				if( bufferCache == null || bufferCache.getWidth() != width || bufferCache.getHeight() != height ) {
-					bufferCache = new BufferedImage( width, height, BufferedImage.TYPE_INT_ARGB );
+					bufferCache = new BufferedImage( width, height, BufferedImage.TYPE_INT_RGB );
 				}
 				return bufferCache;
 			}
@@ -419,7 +419,6 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 				return (long)Math.ceil( (double)(realTime - realStartTime) / stepLength );
 			}
 		};
-		sim.currentTime = 0;
 		EventLoop.run(eventSource, sim, tt);
 	}
 }
