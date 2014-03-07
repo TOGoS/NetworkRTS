@@ -13,7 +13,9 @@ import java.awt.image.BufferedImage;
 import java.util.HashSet;
 
 import togos.networkrts.experimental.gameengine1.index.AABB;
-import togos.networkrts.experimental.gameengine1.index.Entity;
+import togos.networkrts.experimental.gameengine1.index.BaseEntity;
+import togos.networkrts.experimental.gameengine1.index.EntityRange;
+import togos.networkrts.experimental.gameengine1.index.EntityRanges;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
 import togos.networkrts.experimental.gameengine1.index.EntityShell;
 import togos.networkrts.experimental.gameengine1.index.EntityUpdater;
@@ -28,7 +30,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 		BREAK, JUMP
 	}
 	
-	static class Bouncer extends Entity
+	static class Bouncer extends BaseEntity
 	{
 		public final long time;
 		public final double x, y, z;
@@ -40,14 +42,15 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 		public final EntityBehavior<Bouncer> behavior;
 				
 		public Bouncer(
-			Object tag, long time,
+			long minBitAddress, long maxBitAddress,
+			long time,
 			double x, double y, double z,
 			double vx, double vy, double vz,
 			double ax, double ay, double az,
 			double radius,	double mass, Color color,
-			long flags, EntityBehavior<Bouncer> behavior
+			EntityBehavior<Bouncer> behavior
 		) {
-			super( tag, flags, x-radius, y-radius, z-radius, x+radius, y+radius, z+radius );
+			super( minBitAddress, maxBitAddress, time+1, x-radius, y-radius, z-radius, x+radius, y+radius, z+radius );
 			this.time = time;
 			this.x = x; this.y = y; this.z = z;
 			this.vx = vx; this.vy = vy; this.vz = vz;
@@ -78,22 +81,22 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 			double ax, double ay, double az
 		) {
 			return new Bouncer(
-				tag, time,
+				minBitAddress, maxBitAddress, time,
 				x, y, z, vx, vy, vz, ax, ay, az,
-				radius, mass, color, flags, behavior
+				radius, mass, color, behavior
 			);
 		}
 	}
 	
-	interface EntityBehavior<EC extends Entity>
+	interface EntityBehavior<EC extends EntityRange>
 	{
 		public EC onMove( long time, EC self, EntityShell<EC> shell );
 		public EC onCollision( long time, EC self, Bouncer other, EntityShell<EC> shell );
 	}
 	
-	static final EntityBehavior<Entity> NULL_BEHAVIOR = new EntityBehavior<Entity>() {
-		@Override public Entity onMove( long time, Entity self, EntityShell<Entity> shell ) { return self; }
-		@Override public Entity onCollision( long time, Entity self, Bouncer other, EntityShell<Entity> shell ) { return self; }
+	static final EntityBehavior<EntityRange> NULL_BEHAVIOR = new EntityBehavior<EntityRange>() {
+		@Override public EntityRange onMove( long time, EntityRange self, EntityShell<EntityRange> shell ) { return self; }
+		@Override public EntityRange onCollision( long time, EntityRange self, Bouncer other, EntityShell<EntityRange> shell ) { return self; }
 	};
 	
 	protected static final boolean solidCollision( Bouncer e1, Bouncer e2 ) {
@@ -109,17 +112,15 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 	public long physicsInterval = 10;
 	HashSet<Runnable> worldUpdateListeners = new HashSet<Runnable>();
 	
-	static final long DYNAMIC_ENTITY_FLAG = 1;
+	static final long DYNAMIC_ENTITY_FLAG = 0x01;
+	static final long TAGGED_ENTITY_FLAG  = 0x02;
+	
 	static final boolean isEntityMoving( Bouncer e ) {
 		return e.vx != 0 || e.vy != 0 || e.vz != 0 || e.ax != 0 || e.ay != 0 || e.az != 0;
 	}
 	
-	protected long getNextPhysicsUpdateTime() {
-		return (entityIndex.getAllEntityFlags() & DYNAMIC_ENTITY_FLAG) == DYNAMIC_ENTITY_FLAG ? currentTime + physicsInterval : TIME_INFINITY;
-	}
-	
-	@Override public long getNextAutomaticUpdateTime() {
-		return Math.min(getNextPhysicsUpdateTime(), super.getNextAutomaticUpdateTime());
+	@Override public long getNextAutoUpdateTime() {
+		return Math.min(entityIndex.getNextAutoUpdateTime(), super.getNextAutoUpdateTime());
 	}
 	
 	@Override
@@ -127,7 +128,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 		long sysTime = System.currentTimeMillis();
 		System.err.println( (targetTime - currentTime) + " milliseconds passed to "+targetTime );
 		System.err.println( "Lag: "+(sysTime - targetTime));
-		entityIndex = entityIndex.updateEntities( DYNAMIC_ENTITY_FLAG, new EntityUpdater<Bouncer>() {
+		entityIndex = entityIndex.updateEntities( EntityRanges.BOUNDLESS, new EntityUpdater<Bouncer>() {
 			protected double damp( double v, double min ) {
 				return Math.abs(v) < min ? 0 : v;
 			}
@@ -157,7 +158,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 				return e;
 			}
 		} );
-		entityIndex = entityIndex.updateEntities( DYNAMIC_ENTITY_FLAG, new EntityUpdater<Bouncer>() {
+		entityIndex = entityIndex.updateEntities( EntityRanges.BOUNDLESS, new EntityUpdater<Bouncer>() {
 			Bouncer collisionCheckEntity;
 			Bouncer collisionTargetEntity;
 			Visitor<Bouncer> collisionChecker = new Visitor<Bouncer>() {
@@ -173,7 +174,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 			public Bouncer update( Bouncer e, EntityShell<Bouncer> shell ) {
 				collisionCheckEntity = e;
 				collisionTargetEntity = null;
-				entityIndex.forEachEntityIntersecting( e, collisionChecker );
+				entityIndex.forEachEntity( EntityRanges.forAABB(e.getAABB()), collisionChecker );
 				return collisionTargetEntity == null ? e : 
 					e.behavior.onCollision( targetTime, e, collisionTargetEntity, shell );
 			}
@@ -186,7 +187,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 	
 	@Override
 	protected void handleEvent(final Signal evt) {
-		entityIndex = entityIndex.updateEntities(DYNAMIC_ENTITY_FLAG, new EntityUpdater<Bouncer>() {
+		entityIndex = entityIndex.updateEntities(EntityRanges.BOUNDLESS, new EntityUpdater<Bouncer>() {
 			@Override
 			public Bouncer update( Bouncer e, EntityShell<Bouncer> shell ) {
 				if( evt == Signal.BREAK ) {
@@ -194,12 +195,12 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 						// Asplode!
 						for( int i=0; i<4; ++i ) {
 							shell.add( new Bouncer(
-								null, e.time,
+								e.minBitAddress, e.maxBitAddress, e.time,
 								e.x, e.y, e.z,
 								e.vx + Math.random()*200-100, e.vy + Math.random()*400-200, 0, //e.vz + Math.random()*200-100,
 								e.ax, e.ay, e.az,
 								e.radius/2, e.mass/4, e.color,
-								DYNAMIC_ENTITY_FLAG, CoolEntityBehavior.INSTANCE
+								CoolEntityBehavior.INSTANCE
 							) );
 						}
 						return null;
@@ -231,19 +232,16 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 		
 		protected Bouncer withColorAndBehavior( Bouncer e, Color c, EntityBehavior<Bouncer> b ) {
 			return new Bouncer(
-				e.tag, e.time,
+				e.minBitAddress, e.maxBitAddress, e.time,
 				e.x, e.y, e.z, e.vx, e.vy, e.vz, e.ax, e.ay, e.az,
 				e.radius, e.mass, c,
-				DYNAMIC_ENTITY_FLAG, b
+				b
 			);
 		}
 		
-		@Override public Bouncer onMove( long time, Bouncer self,	EntityShell<Bouncer> shell ) {
-			if( self.tag == "tag" ) {
-				System.err.println("Time since last collision "+(time - lastCollisionTime));
-			}
+		@Override public Bouncer onMove( long time, Bouncer self, EntityShell<Bouncer> shell ) {
 			return (self.color == Color.RED && (time - lastCollisionTime >= 1000) ) ?
-				withColorAndBehavior( self, self.tag == "tag" ? Color.GREEN : Color.WHITE, this ) : self;
+				withColorAndBehavior( self, Color.WHITE, this ) : self;
 		}
 		
 		protected static final double pos( double x, double vx, double ax, double dt ) {
@@ -300,7 +298,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 			// Add that much to velocity along centerline * 1+elasticity (elasticity in 0-1) 
 			
 			return new Bouncer(
-				self.tag, time,
+				self.minBitAddress, self.maxBitAddress, time,
 				sx0 + dpm * dx0/dist0 * mProp,
 				sy0 + dpm * dy0/dist0 * mProp,
 				sz0 + dpm * dz0/dist0 * mProp,
@@ -309,8 +307,8 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 				self.vz + mProp * dvm * (dz0/dist0),
 				self.ax, self.ay, self.az,
 				self.radius, self.mass,
-				self.color == Color.BLUE ? self.color : self.tag == "tag" ? Color.ORANGE : Color.RED,
-				self.flags, new CoolEntityBehavior(time)
+				self.color == Color.BLUE ? self.color : Color.RED,
+				new CoolEntityBehavior(time)
 			);
 		}
 	};
@@ -320,24 +318,26 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 		final QueuelessRealTimeEventSource<Signal> eventSource = new QueuelessRealTimeEventSource<Signal>();
 		
 		for( int i=0; i<200; ++i ) {
+			long flags = DYNAMIC_ENTITY_FLAG | (i == 0 ? TAGGED_ENTITY_FLAG : 0);
+			
 			Bouncer e = new Bouncer(
-				i == 0 ? "tag" : null, eventSource.getCurrentTime(),
+				flags, flags, eventSource.getCurrentTime(),
 				Math.random()*500-250, Math.random()*1000, 0,
 				Math.random()*20-10, Math.random()*200-10, 0,
 				0, -gravity, 0,
 				10, 1, i == 0 ? Color.GREEN : Color.WHITE,
-				DYNAMIC_ENTITY_FLAG, CoolEntityBehavior.INSTANCE
+				CoolEntityBehavior.INSTANCE
 			);
 			sim.entityIndex.add(e);
 		}
 		for( int i=0; i<800; ++i ) {
 			Bouncer e = new Bouncer(
-				null, eventSource.getCurrentTime(),
+				DYNAMIC_ENTITY_FLAG, DYNAMIC_ENTITY_FLAG, eventSource.getCurrentTime(),
 				Math.random()*8000-2000, Math.random()*2000, 0,
 				0, 0, 0,
 				0, +gravity*0.005, 0,
 				10+Math.random()*100, 1, Color.BLUE,
-				DYNAMIC_ENTITY_FLAG, CoolEntityBehavior.INSTANCE
+				CoolEntityBehavior.INSTANCE
 				//0, NULL_BEHAVIOR
 			);
 			sim.entityIndex.add(e);
@@ -362,7 +362,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 				g.setColor(Color.BLACK);
 				g.fillRect(0, 0, getWidth(), getHeight());
 				AABB screenBounds = new AABB(-getWidth()/2, 0, Double.NEGATIVE_INFINITY, getWidth()/2, getHeight(), Double.POSITIVE_INFINITY );
-				sim.entityIndex.forEachEntityIntersecting(screenBounds, new Visitor<Bouncer>() {
+				sim.entityIndex.forEachEntity(EntityRanges.forAABB(screenBounds), new Visitor<Bouncer>() {
 					public void visit(Bouncer e) {
 						g.setColor( e.color );
 						g.fillOval( (int)(e.x-e.radius) + getWidth()/2, (int)(getHeight()-e.y-e.radius), (int)(e.radius*2), (int)(e.radius*2) );

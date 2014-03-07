@@ -23,8 +23,8 @@ public class EventLoop
 	// (terminates when eventSource has no more events and next internal update time = infinity)
 	public static <EventClass> void run( RealTimeEventSource<EventClass> eventSource, AutoEventUpdatable<EventClass> stepper ) throws Exception {
 		EventBuffer<EventClass> buf = new EventBuffer<EventClass>( eventSource.getCurrentTime() );
-		while( eventSource.hasMoreEvents() || stepper.getNextAutomaticUpdateTime() != AutoEventUpdatable.TIME_INFINITY ) {
-			boolean eventOccured = eventSource.recv( stepper.getNextAutomaticUpdateTime(), buf );
+		while( eventSource.hasMoreEvents() || stepper.getNextAutoUpdateTime() != AutoEventUpdatable.TIME_INFINITY ) {
+			boolean eventOccured = eventSource.recv( stepper.getNextAutoUpdateTime(), buf );
 			stepper = stepper.update(buf.time, eventOccured ? buf.payload : null);
 		}
 	}

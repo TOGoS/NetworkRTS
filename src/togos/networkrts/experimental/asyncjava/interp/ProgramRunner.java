@@ -32,7 +32,7 @@ public class ProgramRunner extends BaseMutableAutoUpdatable<ProgramSegment> impl
 	HashMap<Puller,PullerState> pullerStates = new HashMap<Puller,PullerState>();
 	QueuelessRealTimeEventSource<ProgramSegment> inputEventSource = new QueuelessRealTimeEventSource<ProgramSegment>() {
 		public boolean hasMoreEvents() {
-			return super.hasMoreEvents() && activePullerCount > 0 && getNextAutomaticUpdateTime() != TIME_INFINITY;
+			return super.hasMoreEvents() && activePullerCount > 0 && getNextAutoUpdateTime() != TIME_INFINITY;
 		}
 	};
 	ProgramShell shell = new ProgramShell() {
@@ -141,8 +141,8 @@ public class ProgramRunner extends BaseMutableAutoUpdatable<ProgramSegment> impl
 		}
 	}
 	
-	@Override public long getNextAutomaticUpdateTime() {
-		return immediatelyScheduledSegments.size() > 0 ? getCurrentTime() : super.getNextAutomaticUpdateTime();
+	@Override public long getNextAutoUpdateTime() {
+		return immediatelyScheduledSegments.size() > 0 ? getCurrentTime() : super.getNextAutoUpdateTime();
 	}
 	
 	public void schedule( ProgramSegment seg ) {

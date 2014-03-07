@@ -574,7 +574,7 @@ public class DungeonGame
 			internalUpdater.addTimer(c.walkReadyTime, null, null);
 		}
 		
-		@Override public long getNextAutomaticUpdateTime() {
+		@Override public long getNextAutoUpdateTime() {
 			long nextAutoUpdateTime = TIME_INFINITY;
 			DGTimer<?> firstTimer;
 			if( (firstTimer = timerQueue.peek()) != null ) {

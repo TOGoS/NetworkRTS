@@ -2,13 +2,17 @@ package togos.networkrts.experimental.gameengine1.index;
 
 import java.util.ArrayList;
 
-public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC>
+import togos.networkrts.util.BitAddressUtil;
+
+public class EntitySpatialTreeIndex<EC extends EntityRange> implements EntityIndex<EC>
 {
-	static class EntityTreeNode<EC extends Entity> extends AABB {
+	static class EntityTreeNode<EC extends EntityRange> extends AABB implements EntityRange {
 		private ArrayList<EC> localEntities = new ArrayList<EC>();
 		private EntityTreeNode<EC> subNodeA = null;
 		private EntityTreeNode<EC> subNodeB = null;
-		protected long flags = 0; // Flags of all entities within, including subnodes
+		protected long minBitAddress = BitAddressUtil.MAX_ADDRESS;
+		protected long maxBitAddress = BitAddressUtil.MIN_ADDRESS;
+		protected long nextAutoUpdateTime = Long.MAX_VALUE;
 		protected int totalEntityCount = 0;
 		
 		public EntityTreeNode( double minX, double minY, double minZ, double maxX, double maxY, double maxZ, EntityTreeNode<EC> subNodeA, EntityTreeNode<EC> subNodeB ) {
@@ -17,7 +21,9 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 			this.subNodeB = subNodeB;
 			if( hasSubNodes() ) {
 				this.totalEntityCount = subNodeA.totalEntityCount + subNodeB.totalEntityCount;
-				this.flags = subNodeA.flags | subNodeB.flags;
+				this.minBitAddress = subNodeA.minBitAddress & subNodeB.minBitAddress;
+				this.maxBitAddress = subNodeA.maxBitAddress & subNodeB.maxBitAddress;
+				this.nextAutoUpdateTime = Math.min(subNodeA.getNextAutoUpdateTime(), subNodeB.getNextAutoUpdateTime());
 			}
 		}
 		public EntityTreeNode( double minX, double minY, double minZ, double maxX, double maxY, double maxZ ) {
@@ -38,14 +44,15 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 			double
 				bMinX = maxX, bMinY = maxY, bMinZ = maxZ,
 				bMaxX = minX, bMaxY = minY, bMaxZ = minZ;
-			for( Entity e : oldEntities ) {
-				assert e.isFinite();
-				bMinX = Math.min(bMinX, e.minX);
-				bMinY = Math.min(bMinY, e.minY);
-				bMinZ = Math.min(bMinZ, e.minZ);
-				bMaxX = Math.max(bMaxX, e.maxX);
-				bMaxY = Math.max(bMaxY, e.maxY);
-				bMaxZ = Math.max(bMaxZ, e.maxZ);
+			for( EntityRange e : oldEntities ) {
+				AABB aabb = e.getAABB();
+				assert aabb.isFinite();
+				bMinX = Math.min(bMinX, aabb.minX);
+				bMinY = Math.min(bMinY, aabb.minY);
+				bMinZ = Math.min(bMinZ, aabb.minZ);
+				bMaxX = Math.max(bMaxX, aabb.maxX);
+				bMaxY = Math.max(bMaxY, aabb.maxY);
+				bMaxZ = Math.max(bMaxZ, aabb.maxZ);
 			}
 			
 			char maxDim = 'x';
@@ -72,9 +79,10 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 			
 			localEntities = new ArrayList<EC>();
 			for( EC e : oldEntities ) {
-				if( subNodeA.contains(e) ) {
+				AABB aabb = e.getAABB();
+				if( subNodeA.contains(aabb) ) {
 					subNodeA.add(e);
-				} else if( subNodeB.contains(e) ) {
+				} else if( subNodeB.contains(aabb) ) {
 					subNodeB.add(e);
 				} else {
 					localEntities.add(e);
@@ -109,7 +117,9 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 			thawed.subNodeA = subNodeA;
 			thawed.subNodeB = subNodeB;
 			thawed.localEntities = new ArrayList<EC>(localEntities);
-			thawed.flags = flags;
+			thawed.minBitAddress = minBitAddress;
+			thawed.maxBitAddress = maxBitAddress;
+			thawed.nextAutoUpdateTime = nextAutoUpdateTime;
 			thawed.totalEntityCount = totalEntityCount;
 			return thawed;
 		}
@@ -117,16 +127,18 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 		// Note: This subdivision algorithm sucks.
 		public void add(EC e) {
 			assert !frozen;
-			assert contains(e);
+			AABB aabb = e.getAABB();
+			assert contains(aabb);
 			
-			flags |= e.flags;
+			minBitAddress &= e.getMinBitAddress();
+			maxBitAddress &= e.getMaxBitAddress();
 			totalEntityCount += 1;
 			
 			if( hasSubNodes() ) {
 				// Already subdivided
-				if( subNodeA.contains(e) ) {
+				if( subNodeA.contains(aabb) ) {
 					subNodeA = subNodeA.with(e);
-				} else if( subNodeB.contains(e) ) {
+				} else if( subNodeB.contains(aabb) ) {
 					subNodeB = subNodeB.with(e);
 				} else {
 					localEntities.add(e);
@@ -137,21 +149,22 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 		}
 		
 		public EntityTreeNode<EC> with(EC e) {
-			assert contains(e);
+			AABB aabb = e.getAABB();
+			assert contains(aabb);
 			EntityTreeNode<EC> n = thaw();
 			n.add(e);
 			return n;
 		}
 		
-		public void forEachEntity( long requireFlags, Visitor<EC> callback ) {
-			if( (flags & requireFlags) != requireFlags ) return;
+		public void forEachEntity( EntityRange er, Visitor<EC> callback ) {
+			if( !EntityRanges.intersects(er, this) ) return;
 			
 			for( EC e : localEntities ) {
-				if( (e.flags & requireFlags) == requireFlags ) callback.visit(e);
+				if( EntityRanges.intersects(er, e) ) callback.visit(e);
 			}
 			if( hasSubNodes() ) {
-				subNodeA.forEachEntity( requireFlags, callback );
-				subNodeB.forEachEntity( requireFlags, callback );
+				subNodeA.forEachEntity( er, callback );
+				subNodeB.forEachEntity( er, callback );
 			}
 		}
 		
@@ -159,7 +172,7 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 			if( !intersects(bounds) ) return;
 			
 			for( EC e : localEntities ) {
-				if( e.intersects(bounds) ) callback.visit(e);
+				if( e.getAABB().intersects(bounds) ) callback.visit(e);
 			}
 			if( hasSubNodes() ) {
 				subNodeA.forEachEntityIntersecting(bounds, callback);
@@ -176,18 +189,18 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 		 * 
 		 * Returns null if the entire node would be updated.
 		 */
-		public EntityTreeNode<EC> update( long requireFlags, EntityUpdater<EC> u, EntityShell<EC> shell ) {
-			if( (flags & requireFlags) != requireFlags ) return this;
+		public EntityTreeNode<EC> update( EntityRange er, EntityUpdater<EC> u, EntityShell<EC> shell ) {
+			if( !EntityRanges.intersects(er, this) ) return this;
 			
 			for( EC e : localEntities ) {
-				EC updated = (e.flags & requireFlags) == requireFlags ? u.update(e, shell) : e;
+				EC updated = EntityRanges.intersects(er, e) ? u.update(e, shell) : e;
 				if( updated != null ) shell.add( updated );
 			}
 			
 			if( !hasSubNodes() ) return null;
 			
-			EntityTreeNode<EC> newNodeA = subNodeA.update(requireFlags, u, shell);
-			EntityTreeNode<EC> newNodeB = subNodeB.update(requireFlags, u, shell);
+			EntityTreeNode<EC> newNodeA = subNodeA.update(er, u, shell);
+			EntityTreeNode<EC> newNodeB = subNodeB.update(er, u, shell);
 			
 			if( newNodeA == null && newNodeB == null ) return null;
 			
@@ -200,6 +213,10 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 				newNodeA, newNodeB
 			);
 		}
+		@Override public long getMinBitAddress() { return minBitAddress; }
+		@Override public long getMaxBitAddress() { return maxBitAddress; }
+		@Override public AABB getAABB() { return this; }
+		@Override public long getNextAutoUpdateTime() { return nextAutoUpdateTime; }
 	}
 	
 	final EntityTreeNode<EC> entityTree;
@@ -227,8 +244,8 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 	}
 	
 	@Override
-	public void forEachEntityIntersecting(AABB bounds, Visitor<EC> callback) {
-		entityTree.forEachEntityIntersecting(bounds, callback);
+	public void forEachEntity(EntityRange er, Visitor<EC> callback) {
+		entityTree.forEachEntity(er, callback);
 	}
 	
 	/*
@@ -251,7 +268,7 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 	*/
 	
 	@Override
-	public EntitySpatialTreeIndex<EC> updateEntities( long requireFlags, final EntityUpdater<EC> u ) {
+	public EntitySpatialTreeIndex<EC> updateEntities( EntityRange er, final EntityUpdater<EC> u ) {
 		final ArrayList<EC> newEntityList = new ArrayList<EC>();
 		newEntityList.clear();
 		EntityShell<EC> shell = new EntityShell<EC>() {
@@ -259,7 +276,7 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 				newEntityList.add(e);
 			}
 		};
-		EntityTreeNode<EC> newEntityTree = entityTree.update(requireFlags, u, shell);
+		EntityTreeNode<EC> newEntityTree = entityTree.update(er, u, shell);
 		if( newEntityTree == null ) newEntityTree = new EntityTreeNode<EC>();
 		for( EC e : newEntityList ) {
 			newEntityTree.add(e);
@@ -268,5 +285,8 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 	}
 	
 	public int getTotalEntityCount() { return entityTree.totalEntityCount; }
-	@Override public long getAllEntityFlags() { return entityTree.flags; }
+	@Override public AABB getAABB() { return entityTree.getAABB(); }
+	@Override public long getMinBitAddress() { return entityTree.getMinBitAddress(); }
+	@Override public long getMaxBitAddress() { return entityTree.getMaxBitAddress(); }
+	@Override public long getNextAutoUpdateTime() { return entityTree.getNextAutoUpdateTime(); }
 }

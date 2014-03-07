@@ -2,6 +2,11 @@ package togos.networkrts.experimental.gameengine1.index;
 
 /** Axis-aligned bounding box */
 public class AABB {
+	public static final AABB BOUNDLESS = new AABB(
+		Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
+		Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY
+	);
+	
 	public final double minX, minY, minZ, maxX, maxY, maxZ;
 	
 	public AABB( double x0, double y0, double z0, double x1, double y1, double z1 ) {

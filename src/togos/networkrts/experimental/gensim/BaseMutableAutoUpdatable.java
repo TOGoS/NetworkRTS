@@ -7,11 +7,11 @@ import togos.networkrts.util.Timer;
 public abstract class BaseMutableAutoUpdatable<EventClass> implements AutoEventUpdatable<EventClass>
 {
 	protected long currentTime = Long.MIN_VALUE;
-	private PriorityQueue<Timer<EventClass>> timerQueue = new PriorityQueue();
+	private PriorityQueue<Timer<EventClass>> timerQueue = new PriorityQueue<Timer<EventClass>>();
 	
 	//// Stepper implementation
 	
-	@Override public long getNextAutomaticUpdateTime() {
+	@Override public long getNextAutoUpdateTime() {
 		Timer<EventClass> t = timerQueue.peek();
 		return t == null ? Long.MAX_VALUE : t.time;
 	}

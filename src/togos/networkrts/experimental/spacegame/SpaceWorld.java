@@ -29,7 +29,7 @@ public class SpaceWorld implements AutoEventUpdatable<SpaceWorld.SpaceWorldEvent
 	List<SpaceWorldEvent> enqueuedEvents;
 	long currentTime = 0;
 	
-	@Override public long getNextAutomaticUpdateTime() {
+	@Override public long getNextAutoUpdateTime() {
 		long t = Long.MAX_VALUE;
 		for( SpaceObject o : objects ) {
 			if( o.autoUpdateTime < t ) t = o.autoUpdateTime;
@@ -73,7 +73,7 @@ public class SpaceWorld implements AutoEventUpdatable<SpaceWorld.SpaceWorldEvent
 		}
 		
 		long nextUpdateTime;
-		while( (nextUpdateTime = getNextAutomaticUpdateTime()) <= targetTime ) {
+		while( (nextUpdateTime = getNextAutoUpdateTime()) <= targetTime ) {
 			currentTime = nextUpdateTime;
 			processTimedUpdates();
 			processEnqueuedEvents();

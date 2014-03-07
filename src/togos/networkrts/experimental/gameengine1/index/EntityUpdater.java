@@ -1,6 +1,6 @@
 package togos.networkrts.experimental.gameengine1.index;
 
-public interface EntityUpdater<EC extends Entity>
+public interface EntityUpdater<EC extends EntityRange>
 {
 	/**
 	 * Return the entity to replace the given one with, or null to replace it with nothing.
