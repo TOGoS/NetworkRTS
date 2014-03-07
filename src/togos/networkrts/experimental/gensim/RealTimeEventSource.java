@@ -21,7 +21,7 @@ public interface RealTimeEventSource<EventClass>
 	 * 
 	 * After this returns buf.time must be between its old value and returnBy (inclusive). 
 	 */
-	public boolean recv( long returnBy, EventBuffer buf ) throws IOException, InterruptedException;
+	public boolean recv( long returnBy, EventBuffer<EventClass> buf ) throws IOException, InterruptedException;
 	/**
 	 * Get the 'current time' as defined by this event source.
 	 * Useful for initializing buf.time. 
