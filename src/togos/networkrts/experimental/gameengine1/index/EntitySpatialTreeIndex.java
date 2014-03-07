@@ -6,12 +6,12 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 {
 	static class EntityTreeNode<EC extends Entity> extends AABB {
 		private ArrayList<EC> localEntities = new ArrayList<EC>();
-		private EntityTreeNode subNodeA = null;
-		private EntityTreeNode subNodeB = null;
+		private EntityTreeNode<EC> subNodeA = null;
+		private EntityTreeNode<EC> subNodeB = null;
 		protected long flags = 0; // Flags of all entities within, including subnodes
 		protected int totalEntityCount = 0;
 		
-		public EntityTreeNode( double minX, double minY, double minZ, double maxX, double maxY, double maxZ, EntityTreeNode subNodeA, EntityTreeNode subNodeB ) {
+		public EntityTreeNode( double minX, double minY, double minZ, double maxX, double maxY, double maxZ, EntityTreeNode<EC> subNodeA, EntityTreeNode<EC> subNodeB ) {
 			super( minX, minY, minZ, maxX, maxY, maxZ );
 			this.subNodeA = subNodeA;
 			this.subNodeB = subNodeB;
@@ -33,7 +33,7 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 			);
 		}
 		
-		private EntityTreeNode subDivide() {
+		private EntityTreeNode<EC> subDivide() {
 			ArrayList<EC> oldEntities = localEntities;
 			double
 				bMinX = maxX, bMinY = maxY, bMinZ = maxZ,
@@ -55,18 +55,18 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 			switch( maxDim ) {
 			case 'x':
 				double divX = bMinX+(bMaxX-bMinX)/2;
-				subNodeA = new EntityTreeNode( minX, minY, minZ, divX, maxY, maxZ );
-				subNodeB = new EntityTreeNode( divX, minY, minZ, maxX, maxY, maxZ );
+				subNodeA = new EntityTreeNode<EC>( minX, minY, minZ, divX, maxY, maxZ );
+				subNodeB = new EntityTreeNode<EC>( divX, minY, minZ, maxX, maxY, maxZ );
 				break;
 			case 'y':
 				double divY = bMinY+(bMaxY-bMinY)/2;
-				subNodeA = new EntityTreeNode( minX, minY, minZ, maxX, divY, maxZ );
-				subNodeB = new EntityTreeNode( minX, divY, minZ, maxX, maxY, maxZ );
+				subNodeA = new EntityTreeNode<EC>( minX, minY, minZ, maxX, divY, maxZ );
+				subNodeB = new EntityTreeNode<EC>( minX, divY, minZ, maxX, maxY, maxZ );
 				break;
 			case 'z':
 				double divZ = bMinZ+(bMaxZ-bMinZ)/2;
-				subNodeA = new EntityTreeNode( minX, minY, minZ, maxX, maxY, divZ );
-				subNodeB = new EntityTreeNode( minX, minY, divZ, maxX, maxY, maxZ );
+				subNodeA = new EntityTreeNode<EC>( minX, minY, minZ, maxX, maxY, divZ );
+				subNodeB = new EntityTreeNode<EC>( minX, minY, divZ, maxX, maxY, maxZ );
 				break;
 			}
 			
@@ -90,7 +90,7 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 		}
 		
 		private boolean frozen;
-		protected EntityTreeNode freeze() {
+		protected EntityTreeNode<EC> freeze() {
 			if( frozen ) return this;
 			
 			if( hasSubNodes() ) {
@@ -102,10 +102,10 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 			this.frozen = true;
 			return this;
 		}
-		protected EntityTreeNode thaw() {
+		protected EntityTreeNode<EC> thaw() {
 			if( !frozen ) return this;
 			
-			EntityTreeNode thawed = new EntityTreeNode();
+			EntityTreeNode<EC> thawed = new EntityTreeNode<EC>();
 			thawed.subNodeA = subNodeA;
 			thawed.subNodeB = subNodeB;
 			thawed.localEntities = new ArrayList<EC>(localEntities);
@@ -136,9 +136,9 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 			}
 		}
 		
-		public EntityTreeNode with(EC e) {
+		public EntityTreeNode<EC> with(EC e) {
 			assert contains(e);
-			EntityTreeNode n = thaw();
+			EntityTreeNode<EC> n = thaw();
 			n.add(e);
 			return n;
 		}
@@ -176,7 +176,7 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 		 * 
 		 * Returns null if the entire node would be updated.
 		 */
-		public EntityTreeNode update( long requireFlags, EntityUpdater<EC> u, EntityShell<EC> shell ) {
+		public EntityTreeNode<EC> update( long requireFlags, EntityUpdater<EC> u, EntityShell<EC> shell ) {
 			if( (flags & requireFlags) != requireFlags ) return this;
 			
 			for( EC e : localEntities ) {
@@ -186,15 +186,15 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 			
 			if( !hasSubNodes() ) return null;
 			
-			EntityTreeNode newNodeA = subNodeA.update(requireFlags, u, shell);
-			EntityTreeNode newNodeB = subNodeB.update(requireFlags, u, shell);
+			EntityTreeNode<EC> newNodeA = subNodeA.update(requireFlags, u, shell);
+			EntityTreeNode<EC> newNodeB = subNodeB.update(requireFlags, u, shell);
 			
 			if( newNodeA == null && newNodeB == null ) return null;
 			
-			if( newNodeA == null ) newNodeA = new EntityTreeNode((AABB)subNodeA); 
-			if( newNodeB == null ) newNodeB = new EntityTreeNode((AABB)subNodeB);
+			if( newNodeA == null ) newNodeA = new EntityTreeNode<EC>((AABB)subNodeA); 
+			if( newNodeB == null ) newNodeB = new EntityTreeNode<EC>((AABB)subNodeB);
 			
-			return new EntityTreeNode(
+			return new EntityTreeNode<EC>(
 				minX, minY, minZ,
 				maxX, maxY, maxZ,
 				newNodeA, newNodeB
@@ -202,17 +202,17 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 		}
 	}
 	
-	final EntityTreeNode entityTree;
+	final EntityTreeNode<EC> entityTree;
 	
-	protected EntitySpatialTreeIndex( EntityTreeNode tree ) {
+	protected EntitySpatialTreeIndex( EntityTreeNode<EC> tree ) {
 		this.entityTree = tree;
 	}
 	public EntitySpatialTreeIndex() {
-		this(new EntityTreeNode());
+		this(new EntityTreeNode<EC>());
 	}
 	
-	protected EntitySpatialTreeIndex thaw() {
-		return new EntitySpatialTreeIndex(entityTree.thaw());
+	protected EntitySpatialTreeIndex<EC> thaw() {
+		return new EntitySpatialTreeIndex<EC>(entityTree.thaw());
 	}
 	
 	public void add(EC e) {
@@ -220,8 +220,8 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 	}
 	
 	@Override
-	public EntitySpatialTreeIndex with(EC e) {
-		EntitySpatialTreeIndex newIndex = thaw();
+	public EntitySpatialTreeIndex<EC> with(EC e) {
+		EntitySpatialTreeIndex<EC> newIndex = thaw();
 		newIndex.add(e);
 		return newIndex;
 	}
@@ -251,20 +251,20 @@ public class EntitySpatialTreeIndex<EC extends Entity> implements EntityIndex<EC
 	*/
 	
 	@Override
-	public EntitySpatialTreeIndex updateEntities( long requireFlags, final EntityUpdater u ) {
+	public EntitySpatialTreeIndex<EC> updateEntities( long requireFlags, final EntityUpdater<EC> u ) {
 		final ArrayList<EC> newEntityList = new ArrayList<EC>();
 		newEntityList.clear();
-		EntityShell shell = new EntityShell<EC>() {
+		EntityShell<EC> shell = new EntityShell<EC>() {
 			@Override public void add(EC e) {
 				newEntityList.add(e);
 			}
 		};
-		EntityTreeNode newEntityTree = entityTree.update(requireFlags, u, shell);
-		if( newEntityTree == null ) newEntityTree = new EntityTreeNode();
+		EntityTreeNode<EC> newEntityTree = entityTree.update(requireFlags, u, shell);
+		if( newEntityTree == null ) newEntityTree = new EntityTreeNode<EC>();
 		for( EC e : newEntityList ) {
 			newEntityTree.add(e);
 		}
-		return new EntitySpatialTreeIndex(newEntityTree.freeze());
+		return new EntitySpatialTreeIndex<EC>(newEntityTree.freeze());
 	}
 	
 	public int getTotalEntityCount() { return entityTree.totalEntityCount; }
