@@ -12,22 +12,20 @@ public class Block implements BitAddressRange, HasAutoUpdateTime
 	public final long bitAddress;
 	public final ImageHandle imageHandle;
 	public final BlockBehavior behavior;
-	public final BlockDynamics dynamics;
 	
-	public Block( long bitAddress, ImageHandle imageHandle, BlockBehavior behavior, BlockDynamics dynamics ) {
+	public Block( long bitAddress, ImageHandle imageHandle, BlockBehavior behavior ) {
 		this.bitAddress = BitAddresses.forceType( BitAddresses.TYPE_BLOCK, bitAddress );
 		this.imageHandle = imageHandle;
 		this.behavior = behavior;
-		this.dynamics = dynamics;
 		this.stack = BlockStackNode.create( this );
 	}
 	
 	public Block( ImageHandle imageHandle ) {
-		this( 0, imageHandle, NoBehavior.instance, BlockDynamics.NONE );
+		this( 0, imageHandle, NoBehavior.instance );
 	}
 	
 	public Block withBehavior( BlockBehavior beh ) {
-		return new Block( bitAddress, imageHandle, beh, dynamics );
+		return new Block( bitAddress, imageHandle, beh );
 	}
 	
 	@Override public long getMinBitAddress() {
@@ -39,10 +37,6 @@ public class Block implements BitAddressRange, HasAutoUpdateTime
 	}
 	
 	@Override public long getNextAutoUpdateTime() {
-		return Math.min(dynamics.getNextAutoUpdateTime(), behavior.getNextAutoUpdateTime());
-	}
-
-	public Block withDynamics(BlockDynamics dynamics) {
-		return new Block( bitAddress, imageHandle, behavior, dynamics );
+		return behavior.getNextAutoUpdateTime();
 	}
 }

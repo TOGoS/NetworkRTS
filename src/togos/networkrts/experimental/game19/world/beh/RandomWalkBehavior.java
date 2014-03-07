@@ -7,7 +7,6 @@ import togos.networkrts.experimental.game19.world.Action;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockBehavior;
-import togos.networkrts.experimental.game19.world.BlockDynamics;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.util.BitAddressUtil;
 
@@ -39,7 +38,7 @@ public class RandomWalkBehavior implements BlockBehavior
 		default: throw new RuntimeException("Unpossible!");
 		}
 		
-		Block newBlock = new Block( b.bitAddress, b.imageHandle, new RandomWalkBehavior(stepInterval, time+stepInterval), BlockDynamics.NONE );
+		Block newBlock = new Block( b.bitAddress, b.imageHandle, new RandomWalkBehavior(stepInterval, time+stepInterval) );
 		
 		results.add( new MoveBlockAction(b, x, y, newBlock, destX, destY, new FlagBasedCellSuitabilityChecker(0, BitAddresses.BLOCK_SOLID) ) );
 		return b;

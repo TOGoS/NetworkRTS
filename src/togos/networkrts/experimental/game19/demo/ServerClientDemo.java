@@ -21,7 +21,6 @@ import togos.networkrts.experimental.game19.scene.LayerData;
 import togos.networkrts.experimental.game19.scene.VisibilityChecker;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
-import togos.networkrts.experimental.game19.world.BlockDynamics;
 import togos.networkrts.experimental.game19.world.BlockStackNode;
 import togos.networkrts.experimental.game19.world.IDGenerator;
 import togos.networkrts.experimental.game19.world.Message;
@@ -35,7 +34,6 @@ import togos.networkrts.experimental.game19.world.beh.RandomWalkBehavior;
 import togos.networkrts.experimental.game19.world.beh.WalkingBehavior;
 import togos.networkrts.experimental.game19.world.encoding.WorldConverter;
 import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
-import togos.networkrts.experimental.game19.world.sim.PhysicsUpdater;
 import togos.networkrts.experimental.game19.world.sim.Simulator;
 import togos.networkrts.experimental.shape.TBoundless;
 import togos.networkrts.experimental.shape.TCircle;
@@ -200,10 +198,10 @@ public class ServerClientDemo
 				ImageHandle dudeImage = resourceContext.storeImageHandle(new File("tile-images/dude.png"));
 				ImageHandle ballImage = resourceContext.storeImageHandle(new File("tile-images/stupid-ball.png"));
 				
-				Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance, BlockDynamics.NONE);
-				Block dude = new Block(dudeBlockId|BitAddresses.BLOCK_SOLID, dudeImage, new RandomWalkBehavior(3, 1), BlockDynamics.NONE);
-				Block player = new Block(playerBlockId|BitAddresses.BLOCK_SOLID, dudeImage, new WalkingBehavior(2, 0, -1), BlockDynamics.NONE);
-				Block stupidBall = new Block(ballBlockId|BitAddresses.BLOCK_PHYS|BitAddresses.BLOCK_SOLID, ballImage, NoBehavior.instance, new BlockDynamics(0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0));
+				Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance);
+				Block dude = new Block(dudeBlockId|BitAddresses.BLOCK_SOLID, dudeImage, new RandomWalkBehavior(3, 1));
+				Block player = new Block(playerBlockId|BitAddresses.BLOCK_SOLID, dudeImage, new WalkingBehavior(2, 0, -1));
+				Block stupidBall = new Block(ballBlockId|BitAddresses.BLOCK_PHYS|BitAddresses.BLOCK_SOLID, ballImage, NoBehavior.instance);
 				
 				int worldSizePower = 24;
 				int worldDataOrigin = -(1<<(worldSizePower-1));
@@ -233,7 +231,6 @@ public class ServerClientDemo
 					}
 					
 					sim.update(simTime);
-					PhysicsUpdater.apply(sim, simTime);
 					n = sim.getNode();
 					
 					NodePosition playerPosition = WorldUtil.findBlock(n, sim.getNodeX(), sim.getNodeY(), sim.getNodeSizePower(), playerBlockId);

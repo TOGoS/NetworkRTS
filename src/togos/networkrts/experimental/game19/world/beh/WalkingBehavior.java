@@ -64,7 +64,7 @@ public class WalkingBehavior implements BlockBehavior
 		
 		if( (destX != x || destY != y) && time >= nextStepTime ) {
 			// TODO: Create and use some kind of relative move action
-			final Block b1 = new Block( b0.bitAddress, b0.imageHandle, new WalkingBehavior(stepInterval, time+stepInterval, newWalkDir), b0.dynamics );
+			final Block b1 = new Block( b0.bitAddress, b0.imageHandle, new WalkingBehavior(stepInterval, time+stepInterval, newWalkDir) );
 			results.add( new MoveBlockAction(b0, x, y, b1, destX, destY, new FlagBasedCellSuitabilityChecker(0, BitAddresses.BLOCK_SOLID)) );
 		}
 		
