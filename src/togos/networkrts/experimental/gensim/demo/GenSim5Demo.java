@@ -1,6 +1,7 @@
 package togos.networkrts.experimental.gensim.demo;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 import togos.networkrts.experimental.gensim.BaseMutableAutoUpdatable;
 import togos.networkrts.experimental.gensim.EventLoop;
@@ -56,7 +57,7 @@ public class GenSim5Demo
 	}
 	
 	static class DemoSimulation extends BaseMutableAutoUpdatable<DemoEvent> {
-		ArrayList<DemoActor> actors = new ArrayList();
+		ArrayList<DemoActor> actors = new ArrayList<DemoActor>();
 		
 		public void transmit( double sourceX, double sourceY, String message ) {
 			for( DemoActor actor : actors ) {
@@ -67,8 +68,8 @@ public class GenSim5Demo
 			}
 		}
 		
-		@Override public void handleEvent( DemoEvent evt ) {
-			evt.run(this);
+		@Override public void handleEvents( Collection<DemoEvent> events ) {
+			for( DemoEvent evt : events ) evt.run(this);
 		}
 	}
 	
@@ -76,7 +77,7 @@ public class GenSim5Demo
 		final DemoSimulation sim = new DemoSimulation();
 		sim.actors.add( new DemoActor( sim, "Frank",  1,  1 ));
 		sim.actors.add( new DemoActor( sim, "Ralph", -1, -1 ));
-		final QueuelessRealTimeEventSource<DemoEvent> es = new QueuelessRealTimeEventSource();
+		final QueuelessRealTimeEventSource<DemoEvent> es = new QueuelessRealTimeEventSource<DemoEvent>();
 		es.post( new Transmission(0, 0, "Yuk yuk!") );
 		EventLoop.run( es, sim );
 	}

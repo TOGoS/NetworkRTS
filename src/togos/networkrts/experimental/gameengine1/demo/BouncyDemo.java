@@ -10,18 +10,19 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.util.Collection;
 import java.util.HashSet;
 
 import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.experimental.gameengine1.index.BaseEntity;
 import togos.networkrts.experimental.gameengine1.index.EntityRange;
 import togos.networkrts.experimental.gameengine1.index.EntityRanges;
-import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
 import togos.networkrts.experimental.gameengine1.index.EntityShell;
+import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
 import togos.networkrts.experimental.gameengine1.index.EntityUpdater;
 import togos.networkrts.experimental.gameengine1.index.Visitor;
 import togos.networkrts.experimental.gensim.BaseMutableAutoUpdatable;
-import togos.networkrts.experimental.gensim.EventLoop;
+import togos.networkrts.experimental.gensim.EventLooper;
 import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
 
 public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
@@ -29,6 +30,8 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 	enum Signal {
 		BREAK, JUMP
 	}
+	
+	static final double targetFramesPerSecond = 33.333; 
 	
 	static class Bouncer extends BaseEntity
 	{
@@ -61,7 +64,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 		}
 		
 		public Bouncer withUpdatedPosition( long targetTime ) {
-			final double duration = (targetTime-time)/100.0;
+			final double duration = (targetTime-time)/targetFramesPerSecond;
 			final double halfDurationSquared = duration*duration/2;
 			return withPosition(
 				targetTime,
@@ -182,7 +185,10 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 	
 	final static double gravity = 400;
 	
-	@Override
+	@Override protected void handleEvents(Collection<Signal> events) {
+		for( Signal evt : events ) handleEvent(evt);
+	};
+	
 	protected void handleEvent(final Signal evt) {
 		entityIndex = entityIndex.updateEntities(EntityRanges.BOUNDLESS, new EntityUpdater<Bouncer>() {
 			@Override
@@ -406,19 +412,9 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 				canv.repaint();
 			}
 		});
-
-		final long realStartTime = eventSource.getCurrentTime();
-		final long stepLength = 10;
-		EventLoop.TimeTranslator tt = new EventLoop.TimeTranslator() {
-			@Override public long simToReal(long simTime) {
-				if( simTime == Long.MAX_VALUE ) return simTime;
-				return realStartTime + simTime * stepLength;
-			}
-			@Override public long realToSim(long realTime) {
-				if( realTime == Long.MAX_VALUE ) return realTime;
-				return (long)Math.ceil( (double)(realTime - realStartTime) / stepLength );
-			}
-		};
-		EventLoop.run(eventSource, sim, tt);
+		
+		final long stepLength = (long)(1000/targetFramesPerSecond);
+		EventLooper<BouncyDemo.Signal> looper = new EventLooper<BouncyDemo.Signal>(eventSource, sim, stepLength);
+		looper.run();
 	}
 }

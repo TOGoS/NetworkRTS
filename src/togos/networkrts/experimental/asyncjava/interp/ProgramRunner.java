@@ -168,8 +168,8 @@ public class ProgramRunner extends BaseMutableAutoUpdatable<ProgramSegment> impl
 		super.passTime(targetTime);
 	}
 	
-	@Override protected void handleEvent(ProgramSegment evt) {
-		evt.run( shell );
+	@Override protected void handleEvents(Collection<ProgramSegment> segments) {
+		for( ProgramSegment seg : segments ) seg.run( shell );
 		runImmediateSegments();
 	}
 	

@@ -26,13 +26,21 @@ public class EventLooper<EventClass>
 	}
 	
 	public void run() throws Exception {
+		long previousTickStartTime = eventSource.getCurrentTime() - minStepInterval / 2;
 		while( eventSource.hasMoreEvents() || stepper.getNextAutoUpdateTime() < AutoEventUpdatable.TIME_INFINITY ) {
 			final List<EventClass> incomingEvents;
 			final long currentTick = stepper.getCurrentTime();
 			final long currentTime = eventSource.getCurrentTime();
 			final long nextAutoTick = stepper.getNextAutoUpdateTime();
-			final long nextAutoTickTime = currentTime + (nextAutoTick - currentTick) * minStepInterval;
+			
+			long nextAutoTickTime = previousTickStartTime + (nextAutoTick - currentTick) * minStepInterval;
+			if( nextAutoTickTime < currentTime+1 ) {
+				System.err.println("Simulation running slow!  Tick took "+(currentTime-previousTickStartTime)+" milliseconds");
+				nextAutoTickTime = currentTime + 1;
+			}
+			
 			final long nextTick, nextTickTime;
+			eBuf.time = currentTime;
 			if( eventSource.recv(nextAutoTickTime, eBuf) ) {
 				incomingEvents = new ArrayList<EventClass>(8);
 				incomingEvents.add(eBuf.payload);
@@ -47,6 +55,8 @@ public class EventLooper<EventClass>
 				nextTickTime = nextAutoTickTime;
 				incomingEvents = Collections.<EventClass>emptyList();
 			}
+			
+			previousTickStartTime = currentTime;
 			stepper = stepper.update(nextTick, incomingEvents);
 		}
 	}

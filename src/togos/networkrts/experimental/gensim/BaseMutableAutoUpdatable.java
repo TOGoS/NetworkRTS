@@ -1,10 +1,12 @@
 package togos.networkrts.experimental.gensim;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.PriorityQueue;
 
 import togos.networkrts.util.Timer;
 
-public abstract class BaseMutableAutoUpdatable<EventClass> implements AutoEventUpdatable<EventClass>
+public abstract class BaseMutableAutoUpdatable<EventClass> implements AutoEventUpdatable<EventClass>, AutoEventUpdatable2<EventClass>
 {
 	protected long currentTime = Long.MIN_VALUE;
 	private PriorityQueue<Timer<EventClass>> timerQueue = new PriorityQueue<Timer<EventClass>>();
@@ -17,6 +19,10 @@ public abstract class BaseMutableAutoUpdatable<EventClass> implements AutoEventU
 	}
 	
 	@Override public final BaseMutableAutoUpdatable<EventClass> update( long targetTime, EventClass evt ) throws Exception {
+		return update( targetTime, Collections.singletonList(evt) );
+	}
+	
+	@Override public final BaseMutableAutoUpdatable<EventClass> update( long targetTime, Collection<EventClass> events ) throws Exception {
 		if( targetTime < currentTime ) {
 			throw new RuntimeException("Tried to rewind time from "+currentTime+" to "+targetTime);
 		}
@@ -24,17 +30,17 @@ public abstract class BaseMutableAutoUpdatable<EventClass> implements AutoEventU
 		Timer<EventClass> timer;
 		while( (timer = timerQueue.peek()) != null && timer.time <= currentTime ) {
 			timerQueue.remove();
-			_update( timer.time > currentTime ? timer.time : currentTime, timer.payload );
+			_update( timer.time > currentTime ? timer.time : currentTime, Collections.singletonList(timer.payload) );
 		}
 		
-		_update( targetTime, evt );
+		_update( targetTime, events );
 		return this;
 	}
 	
-	private final void _update( long targetTime, EventClass evt ) {
+	private final void _update( long targetTime, Collection<EventClass> events ) {
 		passTime( targetTime );
 		assert currentTime == targetTime;
-		if( evt != null ) handleEvent( evt );
+		handleEvents( events );
 	}
 	
 	//// For use internally
@@ -47,7 +53,7 @@ public abstract class BaseMutableAutoUpdatable<EventClass> implements AutoEventU
 		return timerQueue.size();
 	}
 	
-	protected final long getCurrentTime() {
+	public final long getCurrentTime() {
 		return currentTime;
 	}
 	
@@ -68,5 +74,5 @@ public abstract class BaseMutableAutoUpdatable<EventClass> implements AutoEventU
 	/**
 	 * Simulate the given event occurring at currentTime.
 	 */
-	protected void handleEvent( EventClass evt ) { }
+	protected void handleEvents( Collection<EventClass> evt ) { }
 }
