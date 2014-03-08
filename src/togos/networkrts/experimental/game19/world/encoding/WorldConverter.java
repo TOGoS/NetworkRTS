@@ -1,6 +1,6 @@
 package togos.networkrts.experimental.game19.world.encoding;
 
-import togos.networkrts.experimental.game19.scene.LayerData;
+import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.WorldNode;
 
@@ -26,7 +26,7 @@ public class WorldConverter
 		}
 	}
 	
-	public static void nodeToLayerData( WorldNode n, int nx, int ny, int nz, int nsize, LayerData layerData, int lx, int ly, int lw, int lh ) {
+	public static void nodeToLayerData( WorldNode n, int nx, int ny, int nz, int nsize, TileLayerData layerData, int lx, int ly, int lw, int lh ) {
 		nodeToBlockArray( n, nx, ny, nsize, layerData.blockStacks, lx, ly, lw, lh, nz*lw*lh );
 	}
 }

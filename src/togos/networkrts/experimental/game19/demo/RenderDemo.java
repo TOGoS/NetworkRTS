@@ -13,7 +13,7 @@ import java.util.Random;
 import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.Layer;
-import togos.networkrts.experimental.game19.scene.LayerData;
+import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.BlockStackNode;
@@ -38,8 +38,9 @@ public class RenderDemo
 			}
 		}
 		return new Layer(
-			new LayerData( 5, 5, 2, blockStacks ), -2.5, -2.5,
-			null, 0, 0, 0
+			new TileLayerData( 5, 5, 2, blockStacks ), -2.5, -2.5,
+			null,
+			false, null, 0, 0, 0
 		);
 	}
 	

@@ -17,7 +17,7 @@ import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
-import togos.networkrts.experimental.game19.scene.LayerData;
+import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.scene.VisibilityChecker;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
@@ -251,10 +251,10 @@ public class ServerClientDemo
 					int ldCenterX = ldWidth/2;
 					int ldCenterY = ldHeight/2;
 					
-					LayerData layerData = new LayerData( ldWidth, ldHeight, 1 );
+					TileLayerData layerData = new TileLayerData( ldWidth, ldHeight, 1 );
 					WorldConverter.nodeToLayerData( n, worldDataOrigin, worldDataOrigin, 0, 1<<worldSizePower, layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, ldWidth, ldHeight );
 					VisibilityChecker.calculateAndApplyVisibility(layerData, ldCenterX, ldCenterY, 0);
-					Layer l = new Layer( layerData, -ldWidth/2.0, -ldHeight/2.0, null, 0, 0, 0 );
+					Layer l = new Layer( layerData, -ldWidth/2.0, -ldHeight/2.0, new Layer.VisibilityClip(-ldWidth/2.0, -ldHeight/2.0, ldWidth/2.0, ldHeight/2.0), false, null, 0, 0, 0 );
 					Scene s = new Scene( l, 0, 0, 1 );
 					c.setScene(s);
 					

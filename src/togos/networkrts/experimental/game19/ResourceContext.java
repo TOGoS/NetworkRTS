@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import togos.networkrts.experimental.game19.scene.ImageHandle;
-import togos.networkrts.experimental.game19.scene.LayerData;
+import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.qt2drender.Blackifier;
 import togos.networkrts.repo.BlobRepository;
 import togos.networkrts.util.ImageGetter;
@@ -45,10 +45,10 @@ public class ResourceContext
 			shadeOverlays = new BufferedImage[16];
 			for( int i=0; i<16; ++i ) shadeOverlays[i] = Blackifier.makeShadeOverlay(
 				size,
-				(i & LayerData.SHADE_TL) != 0 ? 1 : 0,
-				(i & LayerData.SHADE_TR) != 0 ? 1 : 0,
-				(i & LayerData.SHADE_BL) != 0 ? 1 : 0,
-				(i & LayerData.SHADE_BR) != 0 ? 1 : 0
+				(i & TileLayerData.SHADE_TL) != 0 ? 1 : 0,
+				(i & TileLayerData.SHADE_TR) != 0 ? 1 : 0,
+				(i & TileLayerData.SHADE_BL) != 0 ? 1 : 0,
+				(i & TileLayerData.SHADE_BR) != 0 ? 1 : 0
 			); 
 		}
 		return shadeOverlays;

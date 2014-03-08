@@ -46,7 +46,7 @@ public class VisibilityChecker
 		}
 	}
 	
-	public static void calculateAndApplyVisibility( LayerData ld, int originX, int originY, int originZ ) {
+	public static void calculateAndApplyVisibility( TileLayerData ld, int originX, int originY, int originZ ) {
 		boolean[] visibility = new boolean[ld.width*ld.height];
 		calculateVisibility( ld.blockStacks, ld.width, ld.height, originZ*ld.width*ld.height, originX, originY, visibility );
 		applyVisibilityToAllLayers(visibility, ld.width, ld.height, ld.blockStacks, ld.depth);
