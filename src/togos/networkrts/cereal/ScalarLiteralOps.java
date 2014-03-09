@@ -18,10 +18,14 @@ public class ScalarLiteralOps extends OperationLibrary
 	 *   a indicates type: signed int (1) or float (0)
 	 *   b c indicate size: 8-bit (0), 16-bit (1), 32-bit (2), or 64-bit (4)
 	 *   
-	 *   8-bit float is probably not useful; so 0x08 may be put to another use.
+	 *   8-bit float is probably not useful; so 0x08 may be put to another use, maybe to mean NaN?
 	 * 0x80-0xFF : small integers -64 to 63, where
 	 *   0xC0 = -64, 0xFF = -1, 0x80 = 0, 0x3F = 63
 	 */
+	
+	public static final byte SE_SHORTSTRING = 0x02;
+	public static final byte SE_LONGSTRING = 0x03;
+	
 	public static final byte NE_FLOAT16 = 0x09;
 	public static final byte NE_FLOAT32 = 0x0A;
 	public static final byte NE_FLOAT64 = 0x0B;
@@ -227,7 +231,7 @@ public class ScalarLiteralOps extends OperationLibrary
 	 * could be written more compactly.  This is mainly for testing.  Normally you should use
 	 * writeCompactNumber. 
 	 */
-	public static final void writeNativeNumber( Number num, OutputStream os ) throws IOException {
+	public static final void writeNumberNative( Number num, OutputStream os ) throws IOException {
 		writeNumber( num, nativeEncoding(num), os );
 	}
 	
@@ -268,7 +272,7 @@ public class ScalarLiteralOps extends OperationLibrary
 	/**
 	 * Encode the given number in the most space-efficient representation.
 	 */
-	public static final void writeCompactNumber( double num, OutputStream os ) throws IOException {
+	public static final void writeNumberCompact( double num, OutputStream os ) throws IOException {
 		byte optimalEncoding = optimalEncoding(num);
 		if( isFloatEncoding(optimalEncoding) ) {
 			writeFloat( num, optimalEncoding, os );
@@ -280,19 +284,43 @@ public class ScalarLiteralOps extends OperationLibrary
 	/**
 	 * Encode the given number in the most space-efficient representation.
 	 */
-	public static final void writeCompactNumber( long num, OutputStream os ) throws IOException {
+	public static final void writeNumberCompact( long num, OutputStream os ) throws IOException {
 		writeInteger( num, optimalEncoding(num), os );
 	}
 	
 	/**
 	 * Encode the given number in the most space-efficient representation.
 	 */
-	public static final void writeCompactNumber( Number num, OutputStream os ) throws IOException {
+	public static final void writeNumberCompact( Number num, OutputStream os ) throws IOException {
 		byte optimalEncoding = optimalEncoding(num);
 		if( isFloatEncoding(optimalEncoding) ) {
 			writeFloat( num.doubleValue(), optimalEncoding, os );
 		} else {
 			writeInteger( num.longValue(), optimalEncoding, os );
+		}
+	}
+	
+	public static void writeByteString( byte[] data, OutputStream os ) throws IOException {
+		if( data.length <= 255 ) {
+			os.write( SE_SHORTSTRING );
+			os.write( (byte)data.length );
+			os.write( data );
+		} else if( data.length <= 65535 ) {
+			os.write( SE_LONGSTRING );
+			CerealUtil.writeInt16( (short)data.length, os );
+			os.write( data );
+		} else {
+			throw new UnsupportedOperationException("Byte string to be encoded is too long (>65535, "+data.length+" to be exact)");
+		}
+	}
+	
+	public static void writeValue( Object thing, OutputStream os ) throws IOException {
+		if( thing instanceof byte[] ) {
+			writeByteString( (byte[])thing, os );
+		} else if( thing instanceof Number ) {
+			writeNumberCompact( (Number)thing, os );
+		} else {
+			throw new UnsupportedOperationException("Don't know how to encode "+thing.getClass());
 		}
 	}
 }

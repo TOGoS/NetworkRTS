@@ -12,7 +12,7 @@ public class ScalarLiteralEncodingTest extends TestCase
 	protected void testOptimalEncoding( Number v, byte optimalEncoding ) {
 		try {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			ScalarLiteralOps.writeCompactNumber(v, baos);
+			ScalarLiteralOps.writeNumberCompact(v, baos);
 			byte[] encoded = baos.toByteArray();
 			if( optimalEncoding == ScalarLiteralOps.NE_INT6 ) {
 				assertEquals(1, encoded.length);

@@ -42,6 +42,10 @@ public class CerealDecoder implements Getter<Object>
 		
 		// Stack mutation
 		
+		public Object[] getStackSnapshot() {
+			return stack.toArray(new Object[stack.size()]);
+		}
+		
 		public synchronized Object removeStackItem(int index) {
 			if( frozen ) throw new RuntimeException("DecodeState is frozen; you cannah get its stack mutable!");
 			if( index < 0 ) index = stack.size()+index;
