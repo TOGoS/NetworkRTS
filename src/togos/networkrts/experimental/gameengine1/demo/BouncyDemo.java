@@ -15,6 +15,7 @@ import java.util.HashSet;
 
 import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.experimental.gameengine1.index.BaseEntity;
+import togos.networkrts.experimental.gameengine1.index.EntityIndex;
 import togos.networkrts.experimental.gameengine1.index.EntityRange;
 import togos.networkrts.experimental.gameengine1.index.EntityRanges;
 import togos.networkrts.experimental.gameengine1.index.EntityShell;
@@ -316,6 +317,20 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 		}
 	};
 	
+	static class BouncyView {
+		public double scx, scy;
+		public double scale = 1;
+		
+		public void draw( EntityIndex<Bouncer> entities, AABB screenBounds, final Graphics g ) {
+			entities.forEachEntity(EntityRanges.forAABB(screenBounds), new Visitor<Bouncer>() {
+				public void visit(Bouncer e) {
+					g.setColor( e.color );
+					g.fillOval( (int)(scx + scale*(e.x-e.radius)), (int)(scy - scale*(e.y-e.radius)), (int)(e.radius*scale*2), (int)(e.radius*scale*2) );
+				};
+			});
+		}
+	}
+	
 	public static void main( String[] args ) throws Exception {
 		final long initialSimTime = 0;
 		final BouncyDemo sim = new BouncyDemo();
@@ -349,6 +364,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 		}
 		
 		final Frame frame = new Frame();
+		final BouncyView view = new BouncyView();
 		final Canvas canv = new Canvas() {
 			private static final long serialVersionUID = 1L;
 			
@@ -366,14 +382,10 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 				final Graphics g = buf.getGraphics();
 				g.setColor(Color.BLACK);
 				g.fillRect(0, 0, getWidth(), getHeight());
-				AABB screenBounds = new AABB(-getWidth()/2, 0, Double.NEGATIVE_INFINITY, getWidth()/2, getHeight(), Double.POSITIVE_INFINITY );
-				sim.entityIndex.forEachEntity(EntityRanges.forAABB(screenBounds), new Visitor<Bouncer>() {
-					public void visit(Bouncer e) {
-						g.setColor( e.color );
-						g.fillOval( (int)(e.x-e.radius) + getWidth()/2, (int)(getHeight()-e.y-e.radius), (int)(e.radius*2), (int)(e.radius*2) );
-					};
-				});
-				
+				AABB screenBounds = new AABB(-getWidth()/view.scale/2, 0, Double.NEGATIVE_INFINITY, getWidth()/view.scale/2, getHeight()/view.scale, Double.POSITIVE_INFINITY );
+				view.scx = getWidth()/2;
+				view.scy = getHeight()*0.9;
+				view.draw( sim.entityIndex, screenBounds, g );
 				_g.drawImage( buf, 0, 0, null ); 
 			};
 			public void update(Graphics g) {
@@ -397,6 +409,10 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 					switch(e.getKeyCode()) {
 					case KeyEvent.VK_SPACE: eventSource.post(Signal.BREAK); break;
 					case KeyEvent.VK_ENTER: eventSource.post(Signal.JUMP); break;
+					case KeyEvent.VK_PLUS: case KeyEvent.VK_EQUALS:
+						view.scale *= 1.5; break;
+					case KeyEvent.VK_MINUS: case KeyEvent.VK_UNDERSCORE:
+						view.scale /= 1.5; break;
 					}
 					
 				} catch( InterruptedException e1 ) {
