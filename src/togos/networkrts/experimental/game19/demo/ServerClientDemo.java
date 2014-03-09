@@ -22,14 +22,14 @@ import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.scene.VisibilityChecker;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
-import togos.networkrts.experimental.game19.world.BlockStackNode;
+import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
 import togos.networkrts.experimental.game19.world.IDGenerator;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.NodePosition;
-import togos.networkrts.experimental.game19.world.QuadTreeNode;
-import togos.networkrts.experimental.game19.world.WorldNode;
-import togos.networkrts.experimental.game19.world.WorldUtil;
+import togos.networkrts.experimental.game19.world.QuadRSTNode;
+import togos.networkrts.experimental.game19.world.RSTNode;
+import togos.networkrts.experimental.game19.world.RSTUtil;
 import togos.networkrts.experimental.game19.world.beh.NoBehavior;
 import togos.networkrts.experimental.game19.world.beh.RandomWalkBehavior;
 import togos.networkrts.experimental.game19.world.beh.WalkingBehavior;
@@ -207,20 +207,20 @@ public class ServerClientDemo
 				int worldSizePower = 24;
 				int worldDataOrigin = -(1<<(worldSizePower-1));
 				
-				WorldNode n = QuadTreeNode.createHomogeneous(bricks.stack, worldSizePower);
-				n = WorldUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( -2, -2, 4 ), new SolidNodeFiller( BlockStackNode.EMPTY ));
-				n = WorldUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStackNode.EMPTY ));
+				RSTNode n = QuadRSTNode.createHomogeneous(bricks.stack, worldSizePower);
+				n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( -2, -2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+				n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
 				
 				Random r = new Random();
 				for( int i=0; i<50; ++i ) {
-					n = WorldUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStackNode.EMPTY ));
+					n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
 				}
 				
-				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -2, -2, dude, null);
-				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -3, -2, dude, null);
-				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -2, dude, null);
-				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -0, player, null);
-				n = WorldUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -5, -0, stupidBall, null);
+				n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -2, -2, dude, null);
+				n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -3, -2, dude, null);
+				n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -2, dude, null);
+				n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -0, player, null);
+				n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -5, -0, stupidBall, null);
 				final Simulator sim = new Simulator();
 				sim.setRoot( n, worldDataOrigin, worldDataOrigin, worldSizePower );
 				
@@ -234,7 +234,7 @@ public class ServerClientDemo
 					sim.update(simTime);
 					n = sim.getNode();
 					
-					NodePosition playerPosition = WorldUtil.findBlock(n, sim.getNodeX(), sim.getNodeY(), sim.getNodeSizePower(), playerBlockId);
+					NodePosition playerPosition = RSTUtil.findBlock(n, sim.getNodeX(), sim.getNodeY(), sim.getNodeSizePower(), playerBlockId);
 					double centerX, centerY;
 					if( playerPosition != null ) {
 						centerX = playerPosition.getCenterX();

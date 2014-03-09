@@ -1,13 +1,13 @@
 package togos.networkrts.experimental.game19.scene;
 
-import togos.networkrts.experimental.game19.world.WorldNode;
+import togos.networkrts.experimental.game19.world.RSTNode;
 
 public class QuadTreeLayerData
 {
-	public final WorldNode node;
+	public final RSTNode node;
 	public final double size;
 	
-	public QuadTreeLayerData( WorldNode node, double size ) {
+	public QuadTreeLayerData( RSTNode node, double size ) {
 		this.node = node;
 		this.size = size;
 	}

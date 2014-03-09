@@ -2,7 +2,7 @@ package togos.networkrts.experimental.game19.world;
 
 public interface NodeInstance
 {
-	public WorldNode getNode();
+	public RSTNode getNode();
 	public int getNodeX();
 	public int getNodeY();
 	public int getNodeSizePower();

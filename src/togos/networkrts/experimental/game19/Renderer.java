@@ -13,7 +13,7 @@ import togos.networkrts.experimental.game19.scene.QuadTreeLayerData;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
-import togos.networkrts.experimental.game19.world.WorldNode;
+import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.util.Getter;
 import togos.networkrts.util.ResourceNotFound;
 
@@ -79,12 +79,12 @@ public class Renderer
 		}
 	}
 	
-	protected void drawRstNode( WorldNode node, double x, double y, double size, Graphics g, int clipMinX, int clipMinY, int clipMaxX, int clipMaxY ) {
+	protected void drawRstNode( RSTNode node, double x, double y, double size, Graphics g, int clipMinX, int clipMinY, int clipMaxX, int clipMaxY ) {
 		if( x >= clipMaxX || y >= clipMaxY || x+size <= clipMinX || y+size <= clipMinY ) return;
 		
 		switch( node.getNodeType() ) {
 		case QUADTREE:
-			WorldNode[] subNodes = node.getSubNodes();
+			RSTNode[] subNodes = node.getSubNodes();
 			double subSize = size/2;
 			drawRstNode( subNodes[0], x        , y        , subSize, g, clipMinX, clipMinY, clipMaxX, clipMaxY );
 			drawRstNode( subNodes[1], x+subSize, y        , subSize, g, clipMinX, clipMinY, clipMaxX, clipMaxY );

@@ -1,15 +1,15 @@
 package togos.networkrts.experimental.game19.world.gen;
 
 import togos.networkrts.experimental.game19.world.NodeUpdater;
-import togos.networkrts.experimental.game19.world.QuadTreeNode;
-import togos.networkrts.experimental.game19.world.WorldNode;
+import togos.networkrts.experimental.game19.world.QuadRSTNode;
+import togos.networkrts.experimental.game19.world.RSTNode;
 
 public class SolidNodeFiller implements NodeUpdater
 {
-	final WorldNode leafNode;
+	final RSTNode leafNode;
 	final int leafSizePower;
 	
-	public SolidNodeFiller( WorldNode n, int sizePower ) {
+	public SolidNodeFiller( RSTNode n, int sizePower ) {
 		assert n != null;
 		assert sizePower >= 0;
 		
@@ -17,17 +17,17 @@ public class SolidNodeFiller implements NodeUpdater
 		this.leafSizePower = sizePower;
 	}
 	
-	public SolidNodeFiller( WorldNode n ) {
+	public SolidNodeFiller( RSTNode n ) {
 		this( n, 0 );
 	}
 	
-	transient WorldNode[] upscaled;
-	protected synchronized WorldNode upscaled( int sizePower ) {
+	transient RSTNode[] upscaled;
+	protected synchronized RSTNode upscaled( int sizePower ) {
 		int scalePower = sizePower - leafSizePower;
 		assert scalePower >= 0;
 		
 		if( upscaled == null ) {
-			upscaled = new WorldNode[16];
+			upscaled = new RSTNode[16];
 			upscaled[0] = leafNode;
 		}
 		// TODO: could expand array as needed here
@@ -36,7 +36,7 @@ public class SolidNodeFiller implements NodeUpdater
 		if( upscaled[scalePower] == null ) {
 			for( int i=1; i<=scalePower; ++i ) {
 				if( upscaled[i] == null ) {
-					upscaled[i] = QuadTreeNode.createHomogeneousQuad( upscaled[i-1] );
+					upscaled[i] = QuadRSTNode.createHomogeneousQuad( upscaled[i-1] );
 				}
 			}
 		}
@@ -44,7 +44,7 @@ public class SolidNodeFiller implements NodeUpdater
 		return upscaled[scalePower];
 	}
 	
-	@Override public WorldNode update( WorldNode oldNode, int x, int y, int sizePower ) {
+	@Override public RSTNode update( RSTNode oldNode, int x, int y, int sizePower ) {
 		if( sizePower == leafSizePower ) {
 			return leafNode;
 		} else if( sizePower > leafSizePower ) {

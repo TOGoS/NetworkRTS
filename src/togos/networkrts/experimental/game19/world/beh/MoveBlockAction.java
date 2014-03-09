@@ -5,8 +5,8 @@ import togos.networkrts.experimental.game19.world.ActionContext;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.NodeUpdater;
-import togos.networkrts.experimental.game19.world.WorldNode;
-import togos.networkrts.experimental.game19.world.WorldUtil;
+import togos.networkrts.experimental.game19.world.RSTNode;
+import togos.networkrts.experimental.game19.world.RSTUtil;
 
 /**
  * Removes and re-adds a specific snapshot of a block
@@ -38,11 +38,11 @@ class MoveBlockAction implements Action, NodeUpdater
 		int y0 = Math.min(this.y0, this.y1);
 		int y1 = Math.max(this.y0, this.y1)+1;
 		
-		ctx.setNode( WorldUtil.updateNodeContaining( ctx, x0, y0, x1, y1, this) );
+		ctx.setNode( RSTUtil.updateNodeContaining( ctx, x0, y0, x1, y1, this) );
 	}
 
-	@Override public WorldNode update( WorldNode node, int nodeX, int nodeY, int nodeSizePower ) {
-		BlockStack bs = WorldUtil.getBlockStackAt( node, nodeX, nodeY, nodeSizePower, x1, y1 );
+	@Override public RSTNode update( RSTNode node, int nodeX, int nodeY, int nodeSizePower ) {
+		BlockStack bs = RSTUtil.getBlockStackAt( node, nodeX, nodeY, nodeSizePower, x1, y1 );
 		if( bs == null ) {
 			System.err.println("No destination block stack >:/");
 			return node;
@@ -51,8 +51,8 @@ class MoveBlockAction implements Action, NodeUpdater
 			return node;
 		}
 		
-		node = WorldUtil.updateBlockStackAt( node, nodeX, nodeY, nodeSizePower, x0, y0, null, block0 );
-		node = WorldUtil.updateBlockStackAt( node, nodeX, nodeY, nodeSizePower, x1, y1, block1, null );
+		node = RSTUtil.updateBlockStackAt( node, nodeX, nodeY, nodeSizePower, x0, y0, null, block0 );
+		node = RSTUtil.updateBlockStackAt( node, nodeX, nodeY, nodeSizePower, x1, y1, block1, null );
 		
 		return node;
 	}

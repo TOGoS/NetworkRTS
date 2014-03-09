@@ -5,12 +5,12 @@ import java.util.List;
 import togos.networkrts.experimental.shape.RectIntersector;
 import togos.networkrts.util.BitAddressUtil;
 
-public abstract class BaseWorldNode implements WorldNode
+public abstract class BaseRSTNode implements RSTNode
 {
 	protected final long minBitAddress, maxBitAddress;
 	protected final long nextAutoUpdateTime;
 	
-	protected BaseWorldNode( long minId, long maxId, long nextAutoUpdateTime ) {
+	protected BaseRSTNode( long minId, long maxId, long nextAutoUpdateTime ) {
 		this.minBitAddress = minId; this.maxBitAddress = maxId;
 		this.nextAutoUpdateTime = nextAutoUpdateTime;
 	}
@@ -19,9 +19,9 @@ public abstract class BaseWorldNode implements WorldNode
 	@Override public long getMaxBitAddress() { return maxBitAddress; }
 	@Override public long getNextAutoUpdateTime() { return this.nextAutoUpdateTime; }
 	
-	protected abstract WorldNode _update( int x, int y, int sizePower, long time, Message[] messages, List<Action> results );
+	protected abstract RSTNode _update( int x, int y, int sizePower, long time, Message[] messages, List<Action> results );
 	
-	@Override public WorldNode update( int x, int y, int sizePower, long time, Message[] messages, List<Action> results ) {
+	@Override public RSTNode update( int x, int y, int sizePower, long time, Message[] messages, List<Action> results ) {
 		int relevantMessageCount = 0;
 		int size = 1<<sizePower;
 		for( Message m : messages ) {

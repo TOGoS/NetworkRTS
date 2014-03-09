@@ -7,7 +7,7 @@ import togos.networkrts.util.BitAddressUtil;
 
 public class Block implements BitAddressRange, HasAutoUpdateTime
 {
-	public final BlockStackNode stack;
+	public final BlockStackRSTNode stack;
 	
 	public final long bitAddress;
 	public final ImageHandle imageHandle;
@@ -17,7 +17,7 @@ public class Block implements BitAddressRange, HasAutoUpdateTime
 		this.bitAddress = BitAddresses.forceType( BitAddresses.TYPE_BLOCK, bitAddress );
 		this.imageHandle = imageHandle;
 		this.behavior = behavior;
-		this.stack = BlockStackNode.create( this );
+		this.stack = BlockStackRSTNode.create( this );
 	}
 	
 	public Block( ImageHandle imageHandle ) {

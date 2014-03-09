@@ -6,16 +6,16 @@ import java.util.List;
 import togos.networkrts.experimental.game19.world.Action;
 import togos.networkrts.experimental.game19.world.ActionContext;
 import togos.networkrts.experimental.game19.world.Message;
-import togos.networkrts.experimental.game19.world.WorldNode;
+import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.experimental.shape.RectIntersector;
 import togos.networkrts.util.BitAddressUtil;
 
 public class Simulator implements ActionContext
 {
-	WorldNode rootNode;
+	RSTNode rootNode;
 	int rootX, rootY, rootSizePower;
 	
-	public void setRoot( WorldNode n, int x0, int y0, int sizePower ) {
+	public void setRoot( RSTNode n, int x0, int y0, int sizePower ) {
 		this.rootNode = n;
 		this.rootX = x0;
 		this.rootY = y0;
@@ -26,7 +26,7 @@ public class Simulator implements ActionContext
 	 * If null is returned, no update is needed for messages or time.
 	 * Otherwise an array of possibly relevant messages is returned. 
 	 */
-	protected Message[] needsUpdate( WorldNode n, int x, int y, int sizePower, long time, Message[] messages ) {
+	protected Message[] needsUpdate( RSTNode n, int x, int y, int sizePower, long time, Message[] messages ) {
 		int relevantMessageCount = 0;
 		int size = 1<<sizePower;
 		for( Message m : messages ) {
@@ -56,12 +56,12 @@ public class Simulator implements ActionContext
 	
 	//// Action context
 	
-	@Override public WorldNode getNode() { return rootNode; }
+	@Override public RSTNode getNode() { return rootNode; }
 	@Override public int getNodeX() { return rootX; }
 	@Override public int getNodeY() { return rootY; }
 	@Override public int getNodeSizePower() { return rootSizePower; }
 	
-	@Override public void setNode( WorldNode n ) {
+	@Override public void setNode( RSTNode n ) {
 		rootNode = n;
 	}
 	

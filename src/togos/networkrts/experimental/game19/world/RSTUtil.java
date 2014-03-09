@@ -1,12 +1,12 @@
 package togos.networkrts.experimental.game19.world;
 
-import togos.networkrts.experimental.game19.world.WorldNode.NodeType;
+import togos.networkrts.experimental.game19.world.RSTNode.NodeType;
 import togos.networkrts.experimental.shape.RectIntersector;
 import togos.networkrts.util.BitAddressUtil;
 
-public class WorldUtil
+public class RSTUtil
 {
-	public static WorldNode fillShape( WorldNode orig, int x, int y, int sizePower, RectIntersector shape, NodeUpdater filler ) {
+	public static RSTNode fillShape( RSTNode orig, int x, int y, int sizePower, RectIntersector shape, NodeUpdater filler ) {
 		int size = 1<<sizePower;
 		switch( shape.rectIntersection( x, y, size, size ) ) {
 		case RectIntersector.INCLUDES_NONE: return orig;
@@ -14,8 +14,8 @@ public class WorldUtil
 			if( orig.getNodeType() == NodeType.QUADTREE ) {
 				int subSizePower = sizePower-1;
 				int subSize = 1<<subSizePower;
-				WorldNode[] subNodes = orig.getSubNodes();
-				return QuadTreeNode.create( new WorldNode[] {
+				RSTNode[] subNodes = orig.getSubNodes();
+				return QuadRSTNode.create( new RSTNode[] {
 					// TODO: Could ensure that at least one sub node has actually been changed
 					fillShape( subNodes[0], x        , y        , subSizePower, shape, filler ),
 					fillShape( subNodes[1], x+subSize, y        , subSizePower, shape, filler ),
@@ -56,8 +56,8 @@ public class WorldUtil
 	 * being done toward the root when several updates
 	 * are being done in a small area.
 	 */
-	public static WorldNode updateNodeContaining(
-		WorldNode node, int nodeX, int nodeY, int nodeSizePower,
+	public static RSTNode updateNodeContaining(
+		RSTNode node, int nodeX, int nodeY, int nodeSizePower,
 		int x0, int y0, int x1, int y1,
 		NodeUpdater updater
 	) {
@@ -88,19 +88,19 @@ public class WorldUtil
 		default: throw new RuntimeException("Unpossible!");
 		}
 		
-		WorldNode[] subNodes = node.getSubNodes();
-		WorldNode subNode = subNodes[cIdx];
-		WorldNode newSubNode = updateNodeContaining( subNode, subX, subY, subSizePower, x0, y0, x1, y1, updater );
+		RSTNode[] subNodes = node.getSubNodes();
+		RSTNode subNode = subNodes[cIdx];
+		RSTNode newSubNode = updateNodeContaining( subNode, subX, subY, subSizePower, x0, y0, x1, y1, updater );
 		if( newSubNode == subNode ) return node;
 		
-		WorldNode[] newSubNodes = new WorldNode[4];
+		RSTNode[] newSubNodes = new RSTNode[4];
 		for( int i=0; i<4; ++i ) {
 			newSubNodes[i] = i == cIdx ? newSubNode : subNodes[i];
 		}
-		return QuadTreeNode.create( newSubNodes );
+		return QuadRSTNode.create( newSubNodes );
 	}
 	
-	public static WorldNode updateNodeContaining(
+	public static RSTNode updateNodeContaining(
 		NodeInstance n,
 		int x0, int y0, int x1, int y1,
 		NodeUpdater updater
@@ -108,7 +108,7 @@ public class WorldUtil
 		return updateNodeContaining( n.getNode(), n.getNodeX(), n.getNodeY(), n.getNodeSizePower(), x0, y0, x1, y1, updater );
 	}
 	
-	public static BlockStack getBlockStackAt( WorldNode node, int nodeX, int nodeY, int nodeSizePower, int x, int y ) {
+	public static BlockStack getBlockStackAt( RSTNode node, int nodeX, int nodeY, int nodeSizePower, int x, int y ) {
 		int nodeSize = 1<<nodeSizePower;
 		if( x < nodeX || y < nodeY || x >= nodeX+nodeSize || y >= nodeY+nodeSize ) return null;
 		
@@ -120,7 +120,7 @@ public class WorldUtil
 		case QUADTREE:
 		}
 		
-		WorldNode[] subNodes = node.getSubNodes();
+		RSTNode[] subNodes = node.getSubNodes();
 		int subSizePower = nodeSizePower-1;
 		int subSize = 1<<subSizePower;
 		
@@ -133,17 +133,17 @@ public class WorldUtil
 		return null;
 	}
 	
-	public static WorldNode updateBlockStackAt( WorldNode node, int nodeX, int nodeY, int nodeSizePower, int x, int y, Block toBeAdded, Block toBeRemoved ) {
+	public static RSTNode updateBlockStackAt( RSTNode node, int nodeX, int nodeY, int nodeSizePower, int x, int y, Block toBeAdded, Block toBeRemoved ) {
 		int nodeSize = 1<<nodeSizePower;
 		if( x < nodeX || y < nodeY || x >= nodeX+nodeSize || y >= nodeY+nodeSize ) return node;
 		
 		switch( node.getNodeType() ) {
 		case BLOCKSTACK:
-			WorldNode blockStack = node;
-			WorldNode newBlockStack = node;
+			RSTNode blockStack = node;
+			RSTNode newBlockStack = node;
 			
-			if( toBeRemoved != null ) newBlockStack = BlockStackNode.withoutBlock(newBlockStack, toBeRemoved);
-			if( toBeAdded   != null ) newBlockStack = BlockStackNode.withBlock(newBlockStack, toBeAdded);
+			if( toBeRemoved != null ) newBlockStack = BlockStackRSTNode.withoutBlock(newBlockStack, toBeRemoved);
+			if( toBeAdded   != null ) newBlockStack = BlockStackRSTNode.withBlock(newBlockStack, toBeAdded);
 			
 			if( blockStack == newBlockStack ) return node;
 			return newBlockStack;
@@ -152,22 +152,22 @@ public class WorldUtil
 		case QUADTREE:
 		}
 		
-		WorldNode[] subNodes = node.getSubNodes();
+		RSTNode[] subNodes = node.getSubNodes();
 		int subSizePower = nodeSizePower-1;
 		int subSize = 1<<subSizePower;
-		WorldNode[] newSubNodes = new WorldNode[4];
+		RSTNode[] newSubNodes = new RSTNode[4];
 		newSubNodes[0] = updateBlockStackAt(subNodes[0], nodeX        , nodeY        , subSizePower, x, y, toBeAdded, toBeRemoved );
 		newSubNodes[1] = updateBlockStackAt(subNodes[1], nodeX+subSize, nodeY        , subSizePower, x, y, toBeAdded, toBeRemoved );
 		newSubNodes[2] = updateBlockStackAt(subNodes[2], nodeX        , nodeY+subSize, subSizePower, x, y, toBeAdded, toBeRemoved );
 		newSubNodes[3] = updateBlockStackAt(subNodes[3], nodeX+subSize, nodeY+subSize, subSizePower, x, y, toBeAdded, toBeRemoved );
-		return QuadTreeNode.createBasedOn( newSubNodes, node );
+		return QuadRSTNode.createBasedOn( newSubNodes, node );
 	}
 	
-	public static WorldNode updateBlockStackAt( NodeInstance n, int x, int y, Block toBeAdded, Block toBeRemoved ) {
+	public static RSTNode updateBlockStackAt( NodeInstance n, int x, int y, Block toBeAdded, Block toBeRemoved ) {
 		return updateBlockStackAt( n.getNode(), n.getNodeX(), n.getNodeY(), n.getNodeSizePower(), x, y, toBeAdded, toBeRemoved );
 	}
 	
-	public static BlockInstance findBlock( WorldNode n, int x, int y, int sizePower, long minBa, long maxBa ) {
+	public static BlockInstance findBlock( RSTNode n, int x, int y, int sizePower, long minBa, long maxBa ) {
 		if( !BitAddressUtil.rangesIntersect(n, minBa, maxBa) ) return null;
 		
 		switch( n.getNodeType() ) {
@@ -184,7 +184,7 @@ public class WorldUtil
 			BlockInstance p;
 			int subSizePower = sizePower-1;
 			int subSize = 1<<subSizePower;
-			WorldNode[] subNodes = n.getSubNodes();
+			RSTNode[] subNodes = n.getSubNodes();
 			if( (p = findBlock(subNodes[0], x        , y        , subSizePower, minBa, maxBa)) != null ) return p;
 			if( (p = findBlock(subNodes[1], x+subSize, y        , subSizePower, minBa, maxBa)) != null ) return p;
 			if( (p = findBlock(subNodes[2], x        , y+subSize, subSizePower, minBa, maxBa)) != null ) return p;
@@ -196,7 +196,7 @@ public class WorldUtil
 		return null;
 	}
 	
-	public static BlockInstance findBlock( WorldNode n, int x, int y, int sizePower, int id ) {
+	public static BlockInstance findBlock( RSTNode n, int x, int y, int sizePower, int id ) {
 		return findBlock( n, x, y, sizePower, BitAddresses.withMinFlags(id), BitAddresses.withMaxFlags(id) );
 	}
 	
