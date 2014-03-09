@@ -7,19 +7,16 @@ import togos.networkrts.experimental.game19.world.Action;
 import togos.networkrts.experimental.game19.world.ActionContext;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.RSTNode;
+import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.shape.RectIntersector;
 import togos.networkrts.util.BitAddressUtil;
 
 public class Simulator implements ActionContext
 {
-	RSTNode rootNode;
-	int rootX, rootY, rootSizePower;
+	World world;
 	
-	public void setRoot( RSTNode n, int x0, int y0, int sizePower ) {
-		this.rootNode = n;
-		this.rootX = x0;
-		this.rootY = y0;
-		this.rootSizePower = sizePower;
+	public void setRoot(World world) {
+		this.world = world;
 	}
 	
 	/**
@@ -50,20 +47,16 @@ public class Simulator implements ActionContext
 		incomingMessages.clear();
 		
 		List<Action> actions = new ArrayList<Action>();
-		rootNode = rootNode.update( rootX, rootY, rootSizePower, time, messages, actions );
+		int rstSize = 1<<world.rstSizePower;
+		world = new World( world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, messages, actions ), world.rstSizePower, world.entities );
 		for( Action act : actions ) act.apply(this);
 	}
 	
 	//// Action context
 	
-	@Override public RSTNode getNode() { return rootNode; }
-	@Override public int getNodeX() { return rootX; }
-	@Override public int getNodeY() { return rootY; }
-	@Override public int getNodeSizePower() { return rootSizePower; }
-	
-	@Override public void setNode( RSTNode n ) {
-		rootNode = n;
-	}
+	@Override public World getWorld() { return world; }
+	@Override public void setWorld( World w ) {
+		world = w; }
 	
 	@Override public void enqueueMessage( Message m ) {
 		incomingMessages.add(m);

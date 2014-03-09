@@ -4,9 +4,11 @@ import togos.networkrts.experimental.game19.world.Action;
 import togos.networkrts.experimental.game19.world.ActionContext;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
-import togos.networkrts.experimental.game19.world.NodeUpdater;
+import togos.networkrts.experimental.game19.world.RSTNodeInstance;
+import togos.networkrts.experimental.game19.world.RSTNodeUpdater;
 import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.experimental.game19.world.RSTUtil;
+import togos.networkrts.experimental.game19.world.World;
 
 /**
  * Removes and re-adds a specific snapshot of a block
@@ -16,7 +18,7 @@ import togos.networkrts.experimental.game19.world.RSTUtil;
  * player block may be updated before this action is applied,
  * in which case the wrong version will be removed/added.
  */
-class MoveBlockAction implements Action, NodeUpdater
+class MoveBlockAction implements Action, RSTNodeUpdater
 {
 	final Block block0;
 	final int x0, y0;
@@ -38,7 +40,10 @@ class MoveBlockAction implements Action, NodeUpdater
 		int y0 = Math.min(this.y0, this.y1);
 		int y1 = Math.max(this.y0, this.y1)+1;
 		
-		ctx.setNode( RSTUtil.updateNodeContaining( ctx, x0, y0, x1, y1, this) );
+		World world = ctx.getWorld();
+		RSTNodeInstance oldRst = world.getRstNodeInstance();
+		RSTNode newRst = RSTUtil.updateNodeContaining( oldRst, x0, y0, x1, y1, this);
+		ctx.setWorld( new World(newRst, world.rstSizePower, world.entities) );
 	}
 
 	@Override public RSTNode update( RSTNode node, int nodeX, int nodeY, int nodeSizePower ) {

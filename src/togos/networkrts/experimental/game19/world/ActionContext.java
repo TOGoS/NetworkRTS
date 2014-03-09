@@ -1,12 +1,9 @@
 package togos.networkrts.experimental.game19.world;
 
-public interface ActionContext extends NodeInstance
+//TODO: Delete, replace with messages to the simulator
+public interface ActionContext
 {
-	public RSTNode getNode();
-	public int getNodeX();
-	public int getNodeY();
-	public int getNodeSizePower();
-	
-	public void setNode(RSTNode n);
+	public World getWorld();
+	public void setWorld(World w);
 	public void enqueueMessage(Message m);
 }

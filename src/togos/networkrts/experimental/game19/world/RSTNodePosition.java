@@ -1,10 +1,10 @@
 package togos.networkrts.experimental.game19.world;
 
-public class NodePosition
+public class RSTNodePosition
 {
 	public final int x, y, sizePower;
 	
-	public NodePosition( int x, int y, int sizePower ) {
+	public RSTNodePosition( int x, int y, int sizePower ) {
 		this.x = x; this.y = y;
 		this.sizePower = sizePower;
 	}

@@ -1,10 +1,10 @@
 package togos.networkrts.experimental.game19.world.gen;
 
-import togos.networkrts.experimental.game19.world.NodeUpdater;
+import togos.networkrts.experimental.game19.world.RSTNodeUpdater;
 import togos.networkrts.experimental.game19.world.QuadRSTNode;
 import togos.networkrts.experimental.game19.world.RSTNode;
 
-public class SolidNodeFiller implements NodeUpdater
+public class SolidNodeFiller implements RSTNodeUpdater
 {
 	final RSTNode leafNode;
 	final int leafSizePower;

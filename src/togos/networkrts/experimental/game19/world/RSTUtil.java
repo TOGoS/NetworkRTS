@@ -6,7 +6,7 @@ import togos.networkrts.util.BitAddressUtil;
 
 public class RSTUtil
 {
-	public static RSTNode fillShape( RSTNode orig, int x, int y, int sizePower, RectIntersector shape, NodeUpdater filler ) {
+	public static RSTNode fillShape( RSTNode orig, int x, int y, int sizePower, RectIntersector shape, RSTNodeUpdater filler ) {
 		int size = 1<<sizePower;
 		switch( shape.rectIntersection( x, y, size, size ) ) {
 		case RectIntersector.INCLUDES_NONE: return orig;
@@ -59,7 +59,7 @@ public class RSTUtil
 	public static RSTNode updateNodeContaining(
 		RSTNode node, int nodeX, int nodeY, int nodeSizePower,
 		int x0, int y0, int x1, int y1,
-		NodeUpdater updater
+		RSTNodeUpdater updater
 	) {
 		int nodeSize = 1<<nodeSizePower;
 		// This is a no-op if the node and the rectangle don't overlap: 
@@ -101,9 +101,9 @@ public class RSTUtil
 	}
 	
 	public static RSTNode updateNodeContaining(
-		NodeInstance n,
+		RSTNodeInstance n,
 		int x0, int y0, int x1, int y1,
-		NodeUpdater updater
+		RSTNodeUpdater updater
 	) {
 		return updateNodeContaining( n.getNode(), n.getNodeX(), n.getNodeY(), n.getNodeSizePower(), x0, y0, x1, y1, updater );
 	}
@@ -163,7 +163,7 @@ public class RSTUtil
 		return QuadRSTNode.createBasedOn( newSubNodes, node );
 	}
 	
-	public static RSTNode updateBlockStackAt( NodeInstance n, int x, int y, Block toBeAdded, Block toBeRemoved ) {
+	public static RSTNode updateBlockStackAt( RSTNodeInstance n, int x, int y, Block toBeAdded, Block toBeRemoved ) {
 		return updateBlockStackAt( n.getNode(), n.getNodeX(), n.getNodeY(), n.getNodeSizePower(), x, y, toBeAdded, toBeRemoved );
 	}
 	
@@ -200,7 +200,7 @@ public class RSTUtil
 		return findBlock( n, x, y, sizePower, BitAddresses.withMinFlags(id), BitAddresses.withMaxFlags(id) );
 	}
 	
-	public static BlockInstance findBlock( NodeInstance n, int id ) {
+	public static BlockInstance findBlock( RSTNodeInstance n, int id ) {
 		return findBlock( n.getNode(), n.getNodeX(), n.getNodeY(), n.getNodeSizePower(), BitAddresses.withMinFlags(id), BitAddresses.withMaxFlags(id) );
 	}
 

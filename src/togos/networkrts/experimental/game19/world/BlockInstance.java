@@ -1,6 +1,6 @@
 package togos.networkrts.experimental.game19.world;
 
-public class BlockInstance extends NodePosition
+public class BlockInstance extends RSTNodePosition
 {
 	public final int indexInStack;
 	public final Block block;

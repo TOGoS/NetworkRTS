@@ -23,19 +23,22 @@ import togos.networkrts.experimental.game19.scene.VisibilityChecker;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
+import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.IDGenerator;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
-import togos.networkrts.experimental.game19.world.NodePosition;
+import togos.networkrts.experimental.game19.world.RSTNodePosition;
 import togos.networkrts.experimental.game19.world.QuadRSTNode;
 import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.experimental.game19.world.RSTUtil;
+import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.beh.NoBehavior;
 import togos.networkrts.experimental.game19.world.beh.RandomWalkBehavior;
 import togos.networkrts.experimental.game19.world.beh.WalkingBehavior;
 import togos.networkrts.experimental.game19.world.encoding.WorldConverter;
 import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
 import togos.networkrts.experimental.game19.world.sim.Simulator;
+import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
 import togos.networkrts.experimental.shape.TBoundless;
 import togos.networkrts.experimental.shape.TCircle;
 import togos.networkrts.ui.ImageCanvas;
@@ -204,25 +207,31 @@ public class ServerClientDemo
 				Block player = new Block(playerBlockId|BitAddresses.BLOCK_SOLID, dudeImage, new WalkingBehavior(2, 0, -1));
 				Block stupidBall = new Block(ballBlockId|BitAddresses.BLOCK_PHYS|BitAddresses.BLOCK_SOLID, ballImage, NoBehavior.instance);
 				
-				int worldSizePower = 24;
-				int worldDataOrigin = -(1<<(worldSizePower-1));
-				
-				RSTNode n = QuadRSTNode.createHomogeneous(bricks.stack, worldSizePower);
-				n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( -2, -2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
-				n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
-				
-				Random r = new Random();
-				for( int i=0; i<50; ++i ) {
-					n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+				final Simulator sim;
+				{
+					World world;
+					int worldSizePower = 24;
+					int worldDataOrigin = -(1<<(worldSizePower-1));
+					
+					RSTNode n = QuadRSTNode.createHomogeneous(bricks.stack, worldSizePower);
+					n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( -2, -2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+					n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+					
+					Random r = new Random();
+					for( int i=0; i<50; ++i ) {
+						n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+					}
+					
+					n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -2, -2, dude, null);
+					n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -3, -2, dude, null);
+					n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -2, dude, null);
+					n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -0, player, null);
+					n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -5, -0, stupidBall, null);
+					
+					world = new World(n, worldSizePower, new EntitySpatialTreeIndex<NonTile>());
+					sim = new Simulator();
+					sim.setWorld( world );
 				}
-				
-				n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -2, -2, dude, null);
-				n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -3, -2, dude, null);
-				n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -2, dude, null);
-				n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -0, player, null);
-				n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -5, -0, stupidBall, null);
-				final Simulator sim = new Simulator();
-				sim.setRoot( n, worldDataOrigin, worldDataOrigin, worldSizePower );
 				
 				long simTime = 0;
 				while(true) {
@@ -232,9 +241,10 @@ public class ServerClientDemo
 					}
 					
 					sim.update(simTime);
-					n = sim.getNode();
+					World world = sim.getWorld();
+					int worldRadius = 1<<(world.rstSizePower-1);
 					
-					NodePosition playerPosition = RSTUtil.findBlock(n, sim.getNodeX(), sim.getNodeY(), sim.getNodeSizePower(), playerBlockId);
+					RSTNodePosition playerPosition = RSTUtil.findBlock(world.rst, -worldRadius, -worldRadius, world.rstSizePower, playerBlockId);
 					double centerX, centerY;
 					if( playerPosition != null ) {
 						centerX = playerPosition.getCenterX();
@@ -256,13 +266,13 @@ public class ServerClientDemo
 					Scene s;
 					if( sendTiles ) {
 						TileLayerData layerData = new TileLayerData( ldWidth, ldHeight, 1 );
-						WorldConverter.nodeToLayerData( n, worldDataOrigin, worldDataOrigin, 0, 1<<worldSizePower, layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, ldWidth, ldHeight );
+						WorldConverter.nodeToLayerData( world.rst, -worldRadius, -worldRadius, 0, 1<<world.rstSizePower, layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, ldWidth, ldHeight );
 						VisibilityChecker.calculateAndApplyVisibility(layerData, ldCenterX, ldCenterY, 0);
 						Layer l = new Layer( layerData, -ldWidth/2.0, -ldHeight/2.0, new Layer.VisibilityClip(-ldWidth/2.0, -ldHeight/2.0, ldWidth/2.0, ldHeight/2.0), false, null, 0, 0, 0 );
 						s = new Scene( l, 0, 0, 1 );
 					} else {
-						int size = 1<<sim.getNodeSizePower();
-						Layer l = new Layer( new QuadTreeLayerData(sim.getNode(), size), -size/2.0, -size/2.0, new Layer.VisibilityClip(-ldWidth/2.0, -ldHeight/2.0, ldWidth/2.0, ldHeight/2.0), false, null, 0, 0, 0 );
+						int size = 1<<world.rstSizePower;
+						Layer l = new Layer( new QuadTreeLayerData(world.rst, size), -size/2.0, -size/2.0, new Layer.VisibilityClip(-ldWidth/2.0, -ldHeight/2.0, ldWidth/2.0, ldHeight/2.0), false, null, 0, 0, 0 );
 						s = new Scene( l, -centerX, -centerY, 1 );
 					}
 					c.setScene(s);
