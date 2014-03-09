@@ -14,11 +14,10 @@ public class EntityRanges
 	/**
 	 * Returns true if all of AABBs, bit address ranges, and auto update time ranges intersect.
 	 * 
-	 * Auto update time ranges are 0..a.nextAutoUpdateTime and b.nextAutoUpdateTime..infinity,
-	 * so argument order is important.
+	 * Auto update time is not checked.
 	 */
 	public static boolean intersects( EntityRange a, EntityRange b ) {
-		return BitAddressUtil.rangesIntersect(a, b) && a.getAabb().intersects(b.getAabb()); // && a.getNextAutoUpdateTime() <= b.getNextAutoUpdateTime();
+		return BitAddressUtil.rangesIntersect(a, b) && a.getAabb().intersects(b.getAabb());
 	}
 
 	public static EntityRange forAABB(final AABB aabb) {
