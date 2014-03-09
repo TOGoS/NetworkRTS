@@ -5,7 +5,7 @@ import togos.networkrts.util.BitAddressUtil;
 public class EntityRanges
 {
 	public static final EntityRange BOUNDLESS = new EntityRange() {
-		@Override public AABB getAABB() { return AABB.BOUNDLESS; }
+		@Override public AABB getAabb() { return AABB.BOUNDLESS; }
 		@Override public long getMaxBitAddress() { return BitAddressUtil.MAX_ADDRESS; }
 		@Override public long getMinBitAddress() { return BitAddressUtil.MIN_ADDRESS; }
 		@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }
@@ -18,12 +18,12 @@ public class EntityRanges
 	 * so argument order is important.
 	 */
 	public static boolean intersects( EntityRange a, EntityRange b ) {
-		return BitAddressUtil.rangesIntersect(a, b) && a.getAABB().intersects(b.getAABB()); // && a.getNextAutoUpdateTime() <= b.getNextAutoUpdateTime();
+		return BitAddressUtil.rangesIntersect(a, b) && a.getAabb().intersects(b.getAabb()); // && a.getNextAutoUpdateTime() <= b.getNextAutoUpdateTime();
 	}
 
 	public static EntityRange forAABB(final AABB aabb) {
 		return new EntityRange() {
-			@Override public AABB getAABB() { return aabb; }
+			@Override public AABB getAabb() { return aabb; }
 			@Override public long getMaxBitAddress() { return BitAddressUtil.MAX_ADDRESS; }
 			@Override public long getMinBitAddress() { return BitAddressUtil.MIN_ADDRESS; }
 			@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }

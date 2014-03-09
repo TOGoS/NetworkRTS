@@ -174,7 +174,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 			public Bouncer update( Bouncer e, EntityShell<Bouncer> shell ) {
 				collisionCheckEntity = e;
 				collisionTargetEntity = null;
-				entityIndex.forEachEntity( EntityRanges.forAABB(e.getAABB()), collisionChecker );
+				entityIndex.forEachEntity( EntityRanges.forAABB(e.getAabb()), collisionChecker );
 				return collisionTargetEntity == null ? e : 
 					e.behavior.onCollision( targetTime, e, collisionTargetEntity, shell );
 			}

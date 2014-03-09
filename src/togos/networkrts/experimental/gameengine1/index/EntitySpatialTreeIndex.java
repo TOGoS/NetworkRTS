@@ -45,7 +45,7 @@ public class EntitySpatialTreeIndex<EC extends EntityRange> implements EntityInd
 				bMinX = maxX, bMinY = maxY, bMinZ = maxZ,
 				bMaxX = minX, bMaxY = minY, bMaxZ = minZ;
 			for( EntityRange e : oldEntities ) {
-				AABB aabb = e.getAABB();
+				AABB aabb = e.getAabb();
 				assert aabb.isFinite();
 				bMinX = Math.min(bMinX, aabb.minX);
 				bMinY = Math.min(bMinY, aabb.minY);
@@ -79,7 +79,7 @@ public class EntitySpatialTreeIndex<EC extends EntityRange> implements EntityInd
 			
 			localEntities = new ArrayList<EC>();
 			for( EC e : oldEntities ) {
-				AABB aabb = e.getAABB();
+				AABB aabb = e.getAabb();
 				if( subNodeA.contains(aabb) ) {
 					subNodeA.add(e);
 				} else if( subNodeB.contains(aabb) ) {
@@ -127,7 +127,7 @@ public class EntitySpatialTreeIndex<EC extends EntityRange> implements EntityInd
 		// Note: This subdivision algorithm sucks.
 		public void add(EC e) {
 			assert !frozen;
-			AABB aabb = e.getAABB();
+			AABB aabb = e.getAabb();
 			assert contains(aabb);
 			
 			minBitAddress &= e.getMinBitAddress();
@@ -150,7 +150,7 @@ public class EntitySpatialTreeIndex<EC extends EntityRange> implements EntityInd
 		}
 		
 		public EntityTreeNode<EC> with(EC e) {
-			AABB aabb = e.getAABB();
+			AABB aabb = e.getAabb();
 			assert contains(aabb);
 			EntityTreeNode<EC> n = thaw();
 			n.add(e);
@@ -173,7 +173,7 @@ public class EntitySpatialTreeIndex<EC extends EntityRange> implements EntityInd
 			if( !intersects(bounds) ) return;
 			
 			for( EC e : localEntities ) {
-				if( e.getAABB().intersects(bounds) ) callback.visit(e);
+				if( e.getAabb().intersects(bounds) ) callback.visit(e);
 			}
 			if( hasSubNodes() ) {
 				subNodeA.forEachEntityIntersecting(bounds, callback);
@@ -216,7 +216,7 @@ public class EntitySpatialTreeIndex<EC extends EntityRange> implements EntityInd
 		}
 		@Override public long getMinBitAddress() { return minBitAddress; }
 		@Override public long getMaxBitAddress() { return maxBitAddress; }
-		@Override public AABB getAABB() { return this; }
+		@Override public AABB getAabb() { return this; }
 		@Override public long getNextAutoUpdateTime() { return nextAutoUpdateTime; }
 	}
 	
@@ -286,7 +286,7 @@ public class EntitySpatialTreeIndex<EC extends EntityRange> implements EntityInd
 	}
 	
 	public int getTotalEntityCount() { return entityTree.totalEntityCount; }
-	@Override public AABB getAABB() { return entityTree.getAABB(); }
+	@Override public AABB getAabb() { return entityTree.getAabb(); }
 	@Override public long getMinBitAddress() { return entityTree.getMinBitAddress(); }
 	@Override public long getMaxBitAddress() { return entityTree.getMaxBitAddress(); }
 	@Override public long getNextAutoUpdateTime() { return entityTree.getNextAutoUpdateTime(); }

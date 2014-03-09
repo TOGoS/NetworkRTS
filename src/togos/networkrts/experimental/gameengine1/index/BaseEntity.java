@@ -17,7 +17,7 @@ public class BaseEntity extends AABB implements EntityRange
 		this.nextAutoUpdateTime = nextAutoUpdateTime;
 	}
 	
-	@Override public AABB getAABB() { return this; }
+	@Override public AABB getAabb() { return this; }
 	@Override public long getMaxBitAddress() { return maxBitAddress; }
 	@Override public long getMinBitAddress() { return minBitAddress; }
 	@Override public long getNextAutoUpdateTime() { return nextAutoUpdateTime; }
