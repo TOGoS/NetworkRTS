@@ -1,8 +1,11 @@
 package togos.networkrts.cereal;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import togos.networkrts.util.Getter;
 import togos.networkrts.util.ResourceHandle;
@@ -11,7 +14,7 @@ import togos.networkrts.util.ResourceNotFound;
 
 public class CerealDecoder implements Getter<Object>
 {
-	static class DecodeState {
+	public static class DecodeState {
 		private final ArrayList<OperationType> opTypes;
 		private final ArrayList<Object> stack;
 		private boolean frozen = false;
@@ -32,7 +35,7 @@ public class CerealDecoder implements Getter<Object>
 		
 		// Opcode registration
 		
-		public synchronized void addOperationTypes( ArrayList<OperationType> opcodes ) {
+		public synchronized void addOperationTypes( Collection<OperationType> opcodes ) {
 			if( frozen ) throw new RuntimeException("DecodeState is frozen; you cannot get it's stack mutable!");
 			this.opTypes.addAll(0, opcodes);
 		}
@@ -59,21 +62,25 @@ public class CerealDecoder implements Getter<Object>
 			stack.add(index, item);
 		}
 		
-		public synchronized void freeze() {
+		public synchronized DecodeState freeze() {
 			this.frozen = true;
+			return this;
 		}
 		public synchronized DecodeState thaw() {
 			return frozen ? new DecodeState( opTypes, stack ) : this;
 		}
 
-		public DecodeState process( byte[] data, int i, CerealDecoder coolCodec ) throws InvalidEncoding {
+		public DecodeState process( byte[] data, int i, CerealDecoder coolCodec ) throws InvalidEncoding, ResourceNotFound {
 			if( i == data.length ) return this;
 			
 			DecodeState ds = thaw();
 			opstream: while( i < data.length ) {
-				for( OperationType opType : opTypes ) {
+				for( OperationType opType : ds.opTypes ) {
 					int i2 = opType.apply( data, i, ds, coolCodec );
-					if( i2 != i ) continue opstream;
+					if( i2 != i ) {
+						i = i2;
+						continue opstream;
+					}
 				}
 				throw new InvalidEncoding(String.format("Opcode 0x%02x is not defined", data[i]));
 			}
@@ -81,19 +88,28 @@ public class CerealDecoder implements Getter<Object>
 		}
 	}
 	
-	protected static final DecodeState INITIAL_DECODE_STATE = new DecodeState( ScalarLiteralOps.INSTANCE.ops );
+	protected static final Map<String, OperationLibrary> OP_LIBS = new HashMap<String,OperationLibrary>();
+	
+	/*
+	protected static final IMPORT_LIBRARY_OP = new  
+	
+	protected static final List PREDEFINED_OPS = Collections.singletonList()
+	
+	protected final DecodeState INITIAL_DECODE_STATE = new DecodeState( PREDEFINED_OPS );
+	 */
 	
 	// loading process
 	// chunkRepo --(byte[])--> decodeToDecodeState --(DecodeState)--> decodeStateCache
 	
 	protected final Getter<byte[]> chunkSource;
 	protected final ResourceHandlePool decodeStateCache = new ResourceHandlePool();
+	protected final DecodeState initialDecodeState;
 	
-	public CerealDecoder( Getter<byte[]> chunkSource ) {
+	public CerealDecoder( Getter<byte[]> chunkSource, DecodeState initialDecodeState ) {
 		this.chunkSource = chunkSource;
 		
-		decodeStateCache.<DecodeState>get(CerealUtil.CEREAL_SCHEMA_BITPRINT_URN).setValue(INITIAL_DECODE_STATE);
-		decodeStateCache.<DecodeState>get(CerealUtil.CEREAL_SCHEMA_SHA1_URN).setValue(INITIAL_DECODE_STATE);
+		decodeStateCache.<DecodeState>get(CerealUtil.CEREAL_SCHEMA_SHA1_URN).setValue(initialDecodeState);
+		this.initialDecodeState = initialDecodeState.freeze();
 	}
 	
 	protected static boolean equals( byte[] a, int offsetA, byte[] b, int offsetB, int length ) {

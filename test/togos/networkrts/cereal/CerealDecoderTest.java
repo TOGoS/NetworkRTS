@@ -2,24 +2,24 @@ package togos.networkrts.cereal;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 
+import junit.framework.TestCase;
 import togos.networkrts.util.MemoryRepo;
 import togos.networkrts.util.ResourceNotFound;
-import junit.framework.TestCase;
 
 public class CerealDecoderTest extends TestCase
 {
 	MemoryRepo repo;
 	CerealDecoder decoder;
 	
-	public void setUp() {
-		repo = new MemoryRepo();
-		decoder = new CerealDecoder(repo);
+	protected static OperationMetaLibrary defaultMetaLibrary = new OperationMetaLibrary();
+	static {
+		defaultMetaLibrary.addLibrary( ScalarLiteralOps.INSTANCE );
 	}
 	
-	protected void encodeNumber( double num, OutputStream os ) throws IOException {
-		
+	public void setUp() {
+		repo = new MemoryRepo();
+		decoder = new CerealDecoder(repo, defaultMetaLibrary.getInitialDecodeState());
 	}
 	
 	protected byte[] encodeNumber( double num ) {
@@ -27,7 +27,7 @@ public class CerealDecoderTest extends TestCase
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			CerealUtil.writeTbbHeader( CerealUtil.CEREAL_SCHEMA_REF, baos );
 			CerealUtil.writeLibImport( ScalarLiteralOps.INSTANCE.sha1, baos );
-			ScalarLiteralOps.writeNumber( num, baos );
+			ScalarLiteralOps.writeNativeNumber( num, baos );
 			return baos.toByteArray();
 		} catch( IOException e ) {
 			// Won't happen!

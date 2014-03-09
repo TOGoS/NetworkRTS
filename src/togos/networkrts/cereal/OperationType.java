@@ -1,6 +1,7 @@
 package togos.networkrts.cereal;
 
 import togos.networkrts.cereal.CerealDecoder.DecodeState;
+import togos.networkrts.util.ResourceNotFound;
 
 interface OperationType
 {
@@ -16,5 +17,5 @@ interface OperationType
 	 *   this opcode did not apply.
 	 * @throws InvalidEncoding 
 	 */
-	public int apply( byte[] data, int offset, DecodeState ds, CerealDecoder context ) throws InvalidEncoding;
+	public int apply( byte[] data, int offset, DecodeState ds, CerealDecoder context ) throws InvalidEncoding, ResourceNotFound;
 }
