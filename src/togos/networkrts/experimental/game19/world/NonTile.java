@@ -17,12 +17,16 @@ public class NonTile implements EntityRange
 		}
 	}
 	
+	public final long referenceTime;
+	public final double x, y;
 	public final AABB physicalAabb;
 	public final long minBitAddress, maxBitAddress;
 	public final long nextAutoUpdateTime;
 	public final Icon icon;
 	
-	public NonTile( AABB physicalAabb, long minBa, long maxBa, long nextAut, Icon icon ) {
+	public NonTile( long referenceTime, double x, double y, AABB physicalAabb, long minBa, long maxBa, long nextAut, Icon icon ) {
+		this.referenceTime = referenceTime;
+		this.x = x; this.y = y;
 		this.physicalAabb = physicalAabb;
 		this.minBitAddress = minBa;
 		this.maxBitAddress = maxBa;
@@ -35,9 +39,9 @@ public class NonTile implements EntityRange
 		return new AABB( x-diameter, y-diameter, -diameter, x+diameter, y+diameter, +diameter );
 	}
 	
-	public static NonTile create( double x, double y, ImageHandle image, float diameter ) {
+	public static NonTile create( long referenceTime, double x, double y, ImageHandle image, float diameter ) {
 		Icon icon = new Icon( image, -diameter/2, -diameter/2, diameter, diameter );
-		return new NonTile( ccbb(x,y,diameter), BitAddressUtil.MAX_ADDRESS, BitAddressUtil.MIN_ADDRESS, Long.MAX_VALUE, icon );
+		return new NonTile( referenceTime, x, y, ccbb(x,y,diameter), BitAddressUtil.MAX_ADDRESS, BitAddressUtil.MIN_ADDRESS, Long.MAX_VALUE, icon );
 	}
 	
 	@Override public AABB getAabb() { return physicalAabb; }
