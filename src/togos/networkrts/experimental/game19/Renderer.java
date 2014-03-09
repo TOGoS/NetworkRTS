@@ -9,9 +9,11 @@ import java.awt.image.BufferedImage;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
 import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
+import togos.networkrts.experimental.game19.scene.QuadTreeLayerData;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
+import togos.networkrts.experimental.game19.world.WorldNode;
 import togos.networkrts.util.Getter;
 import togos.networkrts.util.ResourceNotFound;
 
@@ -77,10 +79,52 @@ public class Renderer
 		}
 	}
 	
+	protected void drawRstNode( WorldNode node, double x, double y, double size, Graphics g, int clipMinX, int clipMinY, int clipMaxX, int clipMaxY ) {
+		if( x >= clipMaxX || y >= clipMaxY || x+size <= clipMinX || y+size <= clipMinY ) return;
+		
+		switch( node.getNodeType() ) {
+		case QUADTREE:
+			WorldNode[] subNodes = node.getSubNodes();
+			double subSize = size/2;
+			drawRstNode( subNodes[0], x        , y        , subSize, g, clipMinX, clipMinY, clipMaxX, clipMaxY );
+			drawRstNode( subNodes[1], x+subSize, y        , subSize, g, clipMinX, clipMinY, clipMaxX, clipMaxY );
+			drawRstNode( subNodes[2], x        , y+subSize, subSize, g, clipMinX, clipMinY, clipMaxX, clipMaxY );
+			drawRstNode( subNodes[3], x+subSize, y+subSize, subSize, g, clipMinX, clipMinY, clipMaxX, clipMaxY );
+			break;
+		case BLOCKSTACK:
+			int ix = (int)Math.floor(x);
+			int iy = (int)Math.floor(y);
+			int isize = (int)Math.ceil(size);
+			
+			final Getter<BufferedImage> imageGetter = resourceContext.imageGetter;
+			for( Block b : node.getBlocks() ) {
+				ImageHandle ih = b.imageHandle;
+				if( ih.isCompletelyTransparent ) continue;
+				try {
+					g.drawImage( ih.getScaled(imageGetter,isize,isize), ix, iy, null );
+				} catch( ResourceNotFound e ) {
+					System.err.println("Couldn't load image "+ih.original.getUri());
+					g.setColor( Color.PINK );
+					g.fillRect( ix+1, iy+1, isize-2, isize-2 );
+				}
+			}
+			break;
+		default:
+			System.err.println("Node type not handled by renderer: "+node.getNodeType());
+		}
+	}
+	
 	protected void _drawLayerData( Layer layer, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy ) {
 		Object ld = layer.data;
 		if( ld instanceof TileLayerData ) {
 			_drawLayerData( (TileLayerData)ld, lx+layer.dataOffsetX, ly+layer.dataOffsetY, ldist, g, scale, scx, scy );
+		} else if( ld instanceof QuadTreeLayerData ) {
+			double dscale = scale / ldist;
+			int x = (int)Math.round(scx + (lx + layer.dataOffsetX) * dscale);
+			int y = (int)Math.round(scy + (ly + layer.dataOffsetY) * dscale);
+			int nodeSize = (int)Math.round( ((QuadTreeLayerData)ld).size * dscale );
+			Rectangle r = g.getClipBounds();
+			drawRstNode( ((QuadTreeLayerData)ld).node, x, y, nodeSize, g, r.x, r.y, r.x+r.width, r.y+r.height );
 		} else {
 			System.err.println("Don't know how to draw "+(ld == null ? "null" : ld.getClass())+" layer data");
 		}
@@ -103,6 +147,17 @@ public class Renderer
 		_drawLayerData( layer, lx, ly, ldist, g, scale, scx, scy );
 	}
 	
+	/**
+	 * 
+	 * @param layer
+	 * @param lx x position on screen at which to center the object, not taking parallax into account
+	 * @param ly y position on screen at which to center the object, not taking parallax into account
+	 * @param ldist distance behind screen to object
+	 * @param g
+	 * @param scale rendering scale
+	 * @param scx x position on screen where parallax offset = 0 (usually center)
+	 * @param scy y position on screen where parallax offset = 0 (usually center)
+	 */
 	public void draw( Layer layer, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy ) {
 		if( layer.visibilityClip != null ) {
 			Shape oldClip = g.getClipBounds();

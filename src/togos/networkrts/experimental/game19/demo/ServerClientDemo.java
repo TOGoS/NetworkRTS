@@ -17,6 +17,7 @@ import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
+import togos.networkrts.experimental.game19.scene.QuadTreeLayerData;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.scene.VisibilityChecker;
 import togos.networkrts.experimental.game19.world.BitAddresses;
@@ -251,11 +252,19 @@ public class ServerClientDemo
 					int ldCenterX = ldWidth/2;
 					int ldCenterY = ldHeight/2;
 					
-					TileLayerData layerData = new TileLayerData( ldWidth, ldHeight, 1 );
-					WorldConverter.nodeToLayerData( n, worldDataOrigin, worldDataOrigin, 0, 1<<worldSizePower, layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, ldWidth, ldHeight );
-					VisibilityChecker.calculateAndApplyVisibility(layerData, ldCenterX, ldCenterY, 0);
-					Layer l = new Layer( layerData, -ldWidth/2.0, -ldHeight/2.0, new Layer.VisibilityClip(-ldWidth/2.0, -ldHeight/2.0, ldWidth/2.0, ldHeight/2.0), false, null, 0, 0, 0 );
-					Scene s = new Scene( l, 0, 0, 1 );
+					boolean sendTiles = true;
+					Scene s;
+					if( sendTiles ) {
+						TileLayerData layerData = new TileLayerData( ldWidth, ldHeight, 1 );
+						WorldConverter.nodeToLayerData( n, worldDataOrigin, worldDataOrigin, 0, 1<<worldSizePower, layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, ldWidth, ldHeight );
+						VisibilityChecker.calculateAndApplyVisibility(layerData, ldCenterX, ldCenterY, 0);
+						Layer l = new Layer( layerData, -ldWidth/2.0, -ldHeight/2.0, new Layer.VisibilityClip(-ldWidth/2.0, -ldHeight/2.0, ldWidth/2.0, ldHeight/2.0), false, null, 0, 0, 0 );
+						s = new Scene( l, 0, 0, 1 );
+					} else {
+						int size = 1<<sim.getNodeSizePower();
+						Layer l = new Layer( new QuadTreeLayerData(sim.getNode(), size), -size/2.0, -size/2.0, new Layer.VisibilityClip(-ldWidth/2.0, -ldHeight/2.0, ldWidth/2.0, ldHeight/2.0), false, null, 0, 0, 0 );
+						s = new Scene( l, -centerX, -centerY, 1 );
+					}
 					c.setScene(s);
 					
 					Thread.sleep(40);

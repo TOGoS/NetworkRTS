@@ -4,6 +4,8 @@ import java.util.List;
 
 import togos.networkrts.util.BitAddressRange;
 
+// TODO: Rename to RSTNode (Regular Solid Tree Node)
+// Also rename subclasses accordingly.
 public interface WorldNode extends BlockStack, BitAddressRange
 {
 	public enum NodeType {
