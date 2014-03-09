@@ -9,11 +9,17 @@ import org.bitpedia.util.TigerTree;
 public class BitprintDigest extends MessageDigest
 {
 	public static String format( byte[] hash ) {
+		assert hash.length >= 44;
+		
 		byte[] sha1Hash = new byte[20];
 		System.arraycopy( hash, 0, sha1Hash, 0, 20);
 		byte[] tigerTreeHash = new byte[24];
 		System.arraycopy( hash, 20, tigerTreeHash, 0, 24);
 		return Base32.encode(sha1Hash) + "." + Base32.encode(tigerTreeHash);
+	}
+	
+	public static String toUrn( byte[] hash ) {
+		return "urn:bitprint:"+format(hash);
 	}
 	
 	MessageDigest sha1;

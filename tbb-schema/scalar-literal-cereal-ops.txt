@@ -1,0 +1,11 @@
+Scalar literal ops.
+
+0x02 : small byte string, length given by next byte
+0x03 : long byte string, length given by next 2 bytes
+0x04-0x07 : maybe reserved for unsigned integers
+0x08-0x0F : integer and floating-point numbers
+  of bits 1abc,
+  a indicates type: signed int (1) or float (0)
+  b c indicate size: 8-bit (0), 16-bit (1), 32-bit (2), or 64-bit (4)
+0x80-0xFF : small integers -64 to 63, where
+  0xC0 = -64, 0xFF = -1, 0x80 = 0, 0x3F = 63

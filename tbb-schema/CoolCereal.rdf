@@ -1,0 +1,28 @@
+<Schema xmlns="http://ns.nuke24.net/TBB/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+	<format xml:space="preserve" xml:lang="en">
+		CoolCereal serialization format, based on TBB\x81.
+		Additional documentation may be available at
+		http://www.nuke24.net/docs/2014/CoolCereal.html
+		
+		The referenced TBB schema document may be:
+		- This RDF document, which gives an empty stack and a single
+		  'load opcode library' opcode, or
+		- Another CoolCereal blob, which will be interpreted to initialize
+		  the opcode library and stack.  i.e. a preamble.  This serves as
+		  a compression scheme and has the exact same effect as including
+		  the referenced blob inline would.
+		
+		The payload (after the TBB header) format is a bytecode stream.
+		
+		The only predefined opcode, 0x01, reads the following 20 bytes
+		from the bytecode stream, interprets it as the name of an opcode
+		library, and registers the opcodes.  Interpretation of the name
+		is not specified.  It may reference a text file describing the
+		opcodes, or some machine-readable format.
+		
+		Opcodes defined later take precedence over earlier-defined ones.
+		
+		The value left on top of the stack after the entire instruction
+		stream has been interpreted is the serialized value.
+	</format>
+</Schema>
