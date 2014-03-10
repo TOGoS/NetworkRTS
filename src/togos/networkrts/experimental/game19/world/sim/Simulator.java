@@ -48,7 +48,7 @@ public class Simulator implements ActionContext
 		
 		List<Action> actions = new ArrayList<Action>();
 		int rstSize = 1<<world.rstSizePower;
-		world = new World( world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, messages, actions ), world.rstSizePower, world.entities );
+		world = new World( world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, messages, actions ), world.rstSizePower, world.nonTiles );
 		for( Action act : actions ) act.apply(this);
 	}
 	

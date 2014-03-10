@@ -6,13 +6,13 @@ public class World
 {
 	public final RSTNode rst;
 	public final int rstSizePower;
-	public final EntitySpatialTreeIndex<NonTile> entities;
+	public final EntitySpatialTreeIndex<NonTile> nonTiles;
 	// May need a separate index for 'watchers'
 	
-	public World(RSTNode rst, int rstSizePower, EntitySpatialTreeIndex<NonTile> entities ) {
+	public World(RSTNode rst, int rstSizePower, EntitySpatialTreeIndex<NonTile> nonTiles ) {
 		this.rst = rst;
 		this.rstSizePower = rstSizePower;
-		this.entities = entities;
+		this.nonTiles = nonTiles;
 	}
 	
 	public RSTNodeInstance getRstNodeInstance() {

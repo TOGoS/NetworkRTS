@@ -6,7 +6,6 @@ import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
 
-
 public class TileLayerData {
 	/** Width and height in cell units */
 	public final int width, height, depth;

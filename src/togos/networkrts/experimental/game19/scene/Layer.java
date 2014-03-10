@@ -14,6 +14,10 @@ public class Layer
 	/** Offset of the top left corner of the data from layer's origin */
 	public final double dataOffsetX, dataOffsetY;
 	
+	/**
+	 * Section of the layer that is visible
+	 * (offsets are relative to the layer's origin)
+	 **/
 	public final VisibilityClip visibilityClip;
 	
 	public final boolean nextIsBackground;

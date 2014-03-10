@@ -9,6 +9,8 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -17,19 +19,20 @@ import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
+import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
 import togos.networkrts.experimental.game19.scene.QuadTreeLayerData;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.scene.VisibilityChecker;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
-import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.IDGenerator;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
-import togos.networkrts.experimental.game19.world.RSTNodePosition;
+import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.QuadRSTNode;
 import togos.networkrts.experimental.game19.world.RSTNode;
+import togos.networkrts.experimental.game19.world.RSTNodePosition;
 import togos.networkrts.experimental.game19.world.RSTUtil;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.beh.NoBehavior;
@@ -38,22 +41,28 @@ import togos.networkrts.experimental.game19.world.beh.WalkingBehavior;
 import togos.networkrts.experimental.game19.world.encoding.WorldConverter;
 import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
 import togos.networkrts.experimental.game19.world.sim.Simulator;
+import togos.networkrts.experimental.gameengine1.index.AABB;
+import togos.networkrts.experimental.gameengine1.index.EntityRange;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
+import togos.networkrts.experimental.gameengine1.index.Visitor;
 import togos.networkrts.experimental.shape.TBoundless;
 import togos.networkrts.experimental.shape.TCircle;
 import togos.networkrts.ui.ImageCanvas;
+import togos.networkrts.util.BitAddressUtil;
 
 public class ServerClientDemo
 {
-	static class Scene {
+	public static class Scene {
 		public final Layer layer;
-		public final double layerX, layerY, layerDistance;
+		public final Iterable<NonTile> nonTiles;
+		// Point within the scene that should be centered on (usually the player)
+		public final double poiX, poiY; 
 		
-		public Scene( Layer layer, double x, double y, double dist ) {
+		public Scene( Layer layer,  Iterable<NonTile> nonTiles, double poiX, double poiY ) {
 			this.layer = layer;
-			this.layerX = x;
-			this.layerY = y;
-			this.layerDistance = dist;
+			this.nonTiles = nonTiles;
+			this.poiX = poiX;
+			this.poiY = poiY;
 		}
 	}
 	
@@ -76,7 +85,8 @@ public class ServerClientDemo
 				g.setClip(0, 0, sceneBuffer.getWidth(), sceneBuffer.getHeight());
 				g.setColor( sceneBackgroundColor );
 				g.fillRect( 0, 0, sceneBuffer.getWidth(), sceneBuffer.getHeight() );
-				renderer.draw( s.layer, s.layerX, s.layerY, s.layerDistance, g, cellScale, sceneBuffer.getWidth()/2, sceneBuffer.getHeight()/2 );
+				renderer.draw( s, -s.poiX, -s.poiY, 2, g, 32, sceneBuffer.getWidth()/2, sceneBuffer.getHeight()/2 );
+				//renderer.draw( s.layer, s.layerX, s.layerY, s.layerDistance, g, cellScale, sceneBuffer.getWidth()/2, sceneBuffer.getHeight()/2 );
 			}
 			setImage(sceneBuffer);
 		}
@@ -259,23 +269,47 @@ public class ServerClientDemo
 					
 					int ldWidth = 21;
 					int ldHeight = 15;
+					// center of layer data
 					int ldCenterX = ldWidth/2;
 					int ldCenterY = ldHeight/2;
 					
+					// TODO: Only collect the ones actually visible
+					final List<NonTile> visibleNonTiles = new ArrayList<NonTile>();
+					
+					EntityRange unbounded = new EntityRange() {
+						@Override public AABB getAabb() { return AABB.BOUNDLESS; }
+						@Override public long getMinBitAddress() { return BitAddressUtil.MIN_ADDRESS; }
+						@Override public long getMaxBitAddress() { return BitAddressUtil.MAX_ADDRESS; }
+						@Override public long getNextAutoUpdateTime() { return 0; }
+					};
+					
+					world.nonTiles.forEachEntity( unbounded, new Visitor<NonTile>() {
+						@Override public void visit( NonTile v ) {
+							visibleNonTiles.add(v);
+						}
+					});
+					
+					// Add one for demonstration...
+					visibleNonTiles.add( NonTile.create(0, 0, 0, dudeImage, 2f) );
+					
+					// There are various ways to go about this:
+					// - do visibility checks, send only visible area
+					// - send nearby quadtree nodes
+					// - send entire world
+					
 					boolean sendTiles = true;
-					Scene s;
+					Layer l;
+					VisibilityClip visibilityClip = new Layer.VisibilityClip(intCenterX-ldCenterX, intCenterY-ldCenterY, intCenterX-ldCenterX+ldWidth, intCenterY-ldCenterY+ldHeight);
 					if( sendTiles ) {
 						TileLayerData layerData = new TileLayerData( ldWidth, ldHeight, 1 );
 						WorldConverter.nodeToLayerData( world.rst, -worldRadius, -worldRadius, 0, 1<<world.rstSizePower, layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, ldWidth, ldHeight );
 						VisibilityChecker.calculateAndApplyVisibility(layerData, ldCenterX, ldCenterY, 0);
-						Layer l = new Layer( layerData, -ldWidth/2.0, -ldHeight/2.0, new Layer.VisibilityClip(-ldWidth/2.0, -ldHeight/2.0, ldWidth/2.0, ldHeight/2.0), false, null, 0, 0, 0 );
-						s = new Scene( l, 0, 0, 1 );
+						l = new Layer( layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, visibilityClip, false, null, 0, 0, 0 );
 					} else {
 						int size = 1<<world.rstSizePower;
-						Layer l = new Layer( new QuadTreeLayerData(world.rst, size), -size/2.0, -size/2.0, new Layer.VisibilityClip(-ldWidth/2.0, -ldHeight/2.0, ldWidth/2.0, ldHeight/2.0), false, null, 0, 0, 0 );
-						s = new Scene( l, -centerX, -centerY, 1 );
+						l = new Layer( new QuadTreeLayerData(world.rst, size), -size/2.0, -size/2.0, null, false, null, 0, 0, 0 );
 					}
-					c.setScene(s);
+					c.setScene(new Scene( l, visibleNonTiles, centerX, centerY ));
 					
 					Thread.sleep(40);
 					simTime += 1;

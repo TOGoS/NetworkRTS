@@ -43,7 +43,7 @@ class MoveBlockAction implements Action, RSTNodeUpdater
 		World world = ctx.getWorld();
 		RSTNodeInstance oldRst = world.getRstNodeInstance();
 		RSTNode newRst = RSTUtil.updateNodeContaining( oldRst, x0, y0, x1, y1, this);
-		ctx.setWorld( new World(newRst, world.rstSizePower, world.entities) );
+		ctx.setWorld( new World(newRst, world.rstSizePower, world.nonTiles) );
 	}
 
 	@Override public RSTNode update( RSTNode node, int nodeX, int nodeY, int nodeSizePower ) {

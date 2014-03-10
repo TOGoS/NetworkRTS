@@ -6,6 +6,7 @@ import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.image.BufferedImage;
 
+import togos.networkrts.experimental.game19.demo.ServerClientDemo.Scene;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
 import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
@@ -166,13 +167,12 @@ public class Renderer
 			
 			VisibilityClip vc = layer.visibilityClip;
 			
-			int sx = (int)Math.round(scx+vc.minX*scaleOnScreen);
-			int sy = (int)Math.round(scy+vc.minY*scaleOnScreen);
-			
+			int sx = (int)Math.round((lx+vc.minX)*scaleOnScreen+scx);
+			int sy = (int)Math.round((ly+vc.minY)*scaleOnScreen+scy);
 			g.clipRect(
 				sx, sy,
-				(int)Math.round(scx+vc.maxX*scaleOnScreen) - sx,
-				(int)Math.round(scy+vc.maxY*scaleOnScreen) - sy
+				(int)Math.round((lx+vc.maxX)*scaleOnScreen+scx) - sx,
+				(int)Math.round((ly+vc.maxY)*scaleOnScreen+scy) - sy
 			);
 			
 			_draw( layer, lx, ly, ldist, g, scale, scx, scy );
@@ -181,5 +181,10 @@ public class Renderer
 		} else {
 			_draw( layer, lx, ly, ldist, g, scale, scx, scy );
 		}
+	}
+	
+	public void draw( Scene s, double x, double y, double dist, Graphics g, double scale, double scx, double scy ) {
+		draw( s.layer, x, y, dist, g, scale, scx, scy );
+		// TODO: draw non-tiles
 	}
 }
