@@ -274,7 +274,13 @@ public class ServerClientDemo
 					n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -0, player, null);
 					n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -5, -0, stupidBall, null);
 					
-					world = new World(n, worldSizePower, new EntitySpatialTreeIndex<NonTile>());
+					EntitySpatialTreeIndex<NonTile> nonTiles = new EntitySpatialTreeIndex<NonTile>();
+					for( int i=0; i<10; ++i ) {
+						NonTile baller = NonTile.create(0, r.nextGaussian()*10, r.nextGaussian()*10, ballImage, 2f);
+						nonTiles = nonTiles.with(baller);
+					}
+					
+					world = new World(n, worldSizePower, nonTiles);
 					sim = new Simulator();
 					sim.setWorld( world );
 				}
@@ -326,7 +332,7 @@ public class ServerClientDemo
 					});
 					
 					// Add one for demonstration...
-					visibleNonTiles.add( NonTile.create(0, 0, 0, dudeImage, 2f) );
+					//visibleNonTiles.add( NonTile.create(0, 0, 0, dudeImage, 2f) );
 					
 					// There are various ways to go about this:
 					// - do visibility checks, send only visible area
