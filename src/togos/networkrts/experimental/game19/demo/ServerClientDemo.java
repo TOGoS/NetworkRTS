@@ -69,7 +69,15 @@ public class ServerClientDemo
 	static class SceneCanvas extends ImageCanvas {
 		private static final long serialVersionUID = 1L;
 
-		BufferedImage sceneBuffer = new BufferedImage(512, 384, BufferedImage.TYPE_INT_RGB); // Much faster than ARGB!
+		protected BufferedImage sceneBuffer; // = new BufferedImage(512, 384, BufferedImage.TYPE_INT_RGB); // Much faster than ARGB!
+		protected synchronized BufferedImage getSceneBuffer( int width, int height ) {
+			if( sceneBuffer == null || sceneBuffer.getWidth() != width || sceneBuffer.getHeight() != height ) {
+				return sceneBuffer = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+			} else {
+				return sceneBuffer;
+			}
+		}
+		
 		int cellScale = 24;
 		
 		protected final Renderer renderer;
@@ -78,17 +86,35 @@ public class ServerClientDemo
 		}
 		
 		Color sceneBackgroundColor = new Color(0.2f, 0, 0);
+		Scene scene;
 		
-		public void setScene( Scene s ) {
-			synchronized( sceneBuffer ) {
-				Graphics g = sceneBuffer.getGraphics();
-				g.setClip(0, 0, sceneBuffer.getWidth(), sceneBuffer.getHeight());
-				g.setColor( sceneBackgroundColor );
-				g.fillRect( 0, 0, sceneBuffer.getWidth(), sceneBuffer.getHeight() );
-				renderer.draw( s, -s.poiX, -s.poiY, 2, g, 32, sceneBuffer.getWidth()/2, sceneBuffer.getHeight()/2 );
-				//renderer.draw( s.layer, s.layerX, s.layerY, s.layerDistance, g, cellScale, sceneBuffer.getWidth()/2, sceneBuffer.getHeight()/2 );
+		public synchronized void setScene( Scene s ) {
+			this.scene = s;
+			notifyAll();
+		}
+		
+		public void redrawLoop() throws InterruptedException {
+			Scene s = scene;
+			while( true ) {
+				synchronized(this) {
+					while( scene == s || scene == null ) wait();
+					s = scene;
+				}
+				int wid = getWidth(), hei = getHeight();
+				//while( wid > 768 || hei > 512 ) {
+				//	wid >>= 1; hei >>= 1;
+				//}
+				BufferedImage sb = getSceneBuffer(wid, hei);
+				synchronized( sb ) {
+					Graphics g = sb.getGraphics();
+					g.setClip(0, 0, sb.getWidth(), sceneBuffer.getHeight());
+					g.setColor( sceneBackgroundColor );
+					g.fillRect( 0, 0, sb.getWidth(), sb.getHeight() );
+					renderer.draw( s, -s.poiX, -s.poiY, 2, g, 32, sb.getWidth()/2, sb.getHeight()/2 );
+					//renderer.draw( s.layer, s.layerX, s.layerY, s.layerDistance, g, cellScale, sceneBuffer.getWidth()/2, sceneBuffer.getHeight()/2 );
+				}
+				setImage(sb);
 			}
-			setImage(sceneBuffer);
 		}
 	}
 	
@@ -108,13 +134,23 @@ public class ServerClientDemo
 		public void startUi() {
 			final Frame f = new Frame("Game19 Render Demo");
 			f.add(sceneCanvas);
+			final Thread redrawThread = new Thread() {
+				@Override public void run() {
+					try {
+						sceneCanvas.redrawLoop();
+					} catch( InterruptedException e ) {
+					}
+				}
+			};
 			f.addWindowListener(new WindowAdapter() {
 				@Override public void windowClosing(WindowEvent evt) {
 					f.dispose();
+					redrawThread.interrupt();
 				}
 			});
 			f.pack();
 			f.setVisible(true);
+			redrawThread.start();
 		}
 	}
 	
@@ -228,7 +264,7 @@ public class ServerClientDemo
 					n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
 					
 					Random r = new Random();
-					for( int i=0; i<50; ++i ) {
+					for( int i=0; i<100; ++i ) {
 						n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
 					}
 					
@@ -267,8 +303,8 @@ public class ServerClientDemo
 					int intCenterX = (int)Math.floor(centerX);
 					int intCenterY = (int)Math.floor(centerY);
 					
-					int ldWidth = 21;
-					int ldHeight = 15;
+					int ldWidth = 40;
+					int ldHeight = 30;
 					// center of layer data
 					int ldCenterX = ldWidth/2;
 					int ldCenterY = ldHeight/2;
