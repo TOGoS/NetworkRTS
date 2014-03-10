@@ -14,6 +14,7 @@ import togos.networkrts.experimental.game19.scene.QuadTreeLayerData;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
+import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.util.Getter;
 import togos.networkrts.util.ResourceNotFound;
@@ -25,6 +26,16 @@ public class Renderer
 	
 	public Renderer( ResourceContext resourceContext ) {
 		this.resourceContext = resourceContext;
+	}
+	
+	protected void draw( ImageHandle ih, int x, int y, int width, int height, Graphics g ) {
+		try {
+			g.drawImage( ih.getScaled(resourceContext.imageGetter, width, height), x, y, null );
+		} catch( ResourceNotFound e ) {
+			System.err.println("Couldn't load image "+ih.original.getUri());
+			g.setColor( Color.PINK );
+			g.fillRect( x+1, y+1, width-2, height-2 );
+		}
 	}
 	
 	protected void _drawLayerData( TileLayerData tileData, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy ) {
@@ -185,6 +196,17 @@ public class Renderer
 	
 	public void draw( Scene s, double x, double y, double dist, Graphics g, double scale, double scx, double scy ) {
 		draw( s.layer, x, y, dist, g, scale, scx, scy );
-		// TODO: draw non-tiles
+		
+		double sscale = scale/dist;
+		for( NonTile nt : s.nonTiles ) {
+			draw(
+				nt.icon.image,
+				(int)(scx+sscale*(x+nt.x+nt.icon.imageX)),
+				(int)(scy+sscale*(y+nt.y-nt.icon.imageY)),
+				(int)(sscale*nt.icon.imageWidth),
+				(int)(sscale*nt.icon.imageHeight),
+				g
+			);
+		}
 	}
 }

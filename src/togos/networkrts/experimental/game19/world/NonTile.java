@@ -7,7 +7,7 @@ import togos.networkrts.util.BitAddressUtil;
 
 public class NonTile implements EntityRange
 {
-	static class Icon {
+	public static class Icon {
 		public final ImageHandle image;
 		public final float imageX, imageY, imageWidth, imageHeight;
 		public Icon( ImageHandle image, float x, float y, float w, float h ) {
