@@ -232,8 +232,16 @@ public class EntitySpatialTreeIndex<EC extends EntityRange> implements EntityInd
 		this(new EntityTreeNode<EC>());
 	}
 	
+	protected EntitySpatialTreeIndex<EC> withTree( EntityTreeNode<EC> tree ) {
+		return tree == entityTree ? this : new EntitySpatialTreeIndex<EC>(tree);
+	}
+	
 	protected EntitySpatialTreeIndex<EC> thaw() {
-		return new EntitySpatialTreeIndex<EC>(entityTree.thaw());
+		return withTree(entityTree.thaw());
+	}
+	
+	public EntitySpatialTreeIndex<EC> freeze() {
+		return withTree(entityTree.freeze());
 	}
 	
 	public void add(EC e) {
@@ -251,25 +259,6 @@ public class EntitySpatialTreeIndex<EC extends EntityRange> implements EntityInd
 	public void forEachEntity(EntityRange er, Visitor<EC> callback) {
 		entityTree.forEachEntity(er, callback);
 	}
-	
-	/*
-	public EntityIndex updateEntities( final EntityUpdater u ) {
-		final EntityIndex newIndex = new EntityIndex();
-		final EntityShell shell = new EntityShell() {
-			@Override public void add( Entity e ) {
-				newIndex.add(e);
-			}
-		};
-		entityTree.forEachEntity( Entity.FLAG_EXISTING, new Visitor<Entity>() {
-			@Override public void visit(Entity e) {
-				if( (e = u.update(e, shell)) != null ) {
-					newIndex.add(e);
-				}
-			}
-		});
-		return newIndex;
-	}
-	*/
 	
 	@Override
 	public EntitySpatialTreeIndex<EC> updateEntities( EntityRange er, final EntityUpdater<EC> u ) {
