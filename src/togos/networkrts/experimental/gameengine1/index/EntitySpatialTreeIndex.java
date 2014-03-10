@@ -244,15 +244,9 @@ public class EntitySpatialTreeIndex<EC extends EntityRange> implements EntityInd
 		return withTree(entityTree.freeze());
 	}
 	
-	public void add(EC e) {
-		entityTree.add(e);
-	}
-	
 	@Override
 	public EntitySpatialTreeIndex<EC> with(EC e) {
-		EntitySpatialTreeIndex<EC> newIndex = thaw();
-		newIndex.add(e);
-		return newIndex;
+		return withTree(entityTree.with(e));
 	}
 	
 	@Override

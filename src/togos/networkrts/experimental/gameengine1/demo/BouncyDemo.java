@@ -341,7 +341,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 				10, 1, i == 0 ? Color.GREEN : Color.WHITE,
 				CoolEntityBehavior.INSTANCE
 			);
-			sim.entityIndex.add(e);
+			sim.entityIndex = sim.entityIndex.with(e);
 		}
 		for( int i=0; i<800; ++i ) {
 			Bouncer e = new Bouncer(
@@ -353,7 +353,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 				CoolEntityBehavior.INSTANCE
 				//0, NULL_BEHAVIOR
 			);
-			sim.entityIndex.add(e);
+			sim.entityIndex = sim.entityIndex.with(e);
 		}
 		
 		final Frame frame = new Frame();
