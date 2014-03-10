@@ -1,6 +1,7 @@
 package togos.networkrts.experimental.gameengine1.index;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 import togos.networkrts.util.BitAddressUtil;
 
@@ -190,18 +191,20 @@ public class EntitySpatialTreeIndex<EC extends EntityRange> implements EntityInd
 		 * 
 		 * Returns null if the entire node would be updated.
 		 */
-		public EntityTreeNode<EC> update( EntityRange er, EntityUpdater<EC> u, EntityShell<EC> shell ) {
+		public EntityTreeNode<EC> update( EntityRange er, EntityUpdater<EC> u, Collection<EC> newEntities ) {
 			if( !EntityRanges.intersects(er, this) ) return this;
 			
+			// TODO: If no entities are changed, return self
+			// rather than pushing unchanged entities into the newEntities list
 			for( EC e : localEntities ) {
-				EC updated = EntityRanges.intersects(er, e) ? u.update(e, shell) : e;
-				if( updated != null ) shell.add( updated );
+				EC updated = EntityRanges.intersects(er, e) ? u.update(e, newEntities) : e;
+				if( updated != null ) newEntities.add( updated );
 			}
 			
 			if( !hasSubNodes() ) return null;
 			
-			EntityTreeNode<EC> newNodeA = subNodeA.update(er, u, shell);
-			EntityTreeNode<EC> newNodeB = subNodeB.update(er, u, shell);
+			EntityTreeNode<EC> newNodeA = subNodeA.update(er, u, newEntities);
+			EntityTreeNode<EC> newNodeB = subNodeB.update(er, u, newEntities);
 			
 			if( newNodeA == null && newNodeB == null ) return null;
 			
@@ -270,18 +273,10 @@ public class EntitySpatialTreeIndex<EC extends EntityRange> implements EntityInd
 	
 	@Override
 	public EntitySpatialTreeIndex<EC> updateEntities( EntityRange er, final EntityUpdater<EC> u ) {
-		final ArrayList<EC> newEntityList = new ArrayList<EC>();
-		newEntityList.clear();
-		EntityShell<EC> shell = new EntityShell<EC>() {
-			@Override public void add(EC e) {
-				newEntityList.add(e);
-			}
-		};
-		EntityTreeNode<EC> newEntityTree = entityTree.update(er, u, shell);
+		final ArrayList<EC> newEntities = new ArrayList<EC>();
+		EntityTreeNode<EC> newEntityTree = entityTree.update(er, u, newEntities);
 		if( newEntityTree == null ) newEntityTree = new EntityTreeNode<EC>();
-		for( EC e : newEntityList ) {
-			newEntityTree.add(e);
-		}
+		for( EC e : newEntities ) newEntityTree.add(e);
 		return new EntitySpatialTreeIndex<EC>(newEntityTree.freeze());
 	}
 	

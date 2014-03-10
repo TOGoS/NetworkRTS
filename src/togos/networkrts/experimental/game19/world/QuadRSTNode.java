@@ -1,5 +1,6 @@
 package togos.networkrts.experimental.game19.world;
 
+import java.util.Collection;
 import java.util.List;
 
 public class QuadRSTNode extends BaseRSTNode
@@ -56,7 +57,7 @@ public class QuadRSTNode extends BaseRSTNode
 	
 	@Override protected RSTNode _update(
 		int x, int y, int sizePower, long time,
-		Message[] messages, List<Action> results
+		Collection<Message> messages, List<Action> results
 	) {
 		RSTNode[] newSubNodes = new RSTNode[4];
 		int subSizePower = sizePower-1;

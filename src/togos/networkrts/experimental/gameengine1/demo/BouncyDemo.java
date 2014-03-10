@@ -18,7 +18,6 @@ import togos.networkrts.experimental.gameengine1.index.BaseEntity;
 import togos.networkrts.experimental.gameengine1.index.EntityIndex;
 import togos.networkrts.experimental.gameengine1.index.EntityRange;
 import togos.networkrts.experimental.gameengine1.index.EntityRanges;
-import togos.networkrts.experimental.gameengine1.index.EntityShell;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
 import togos.networkrts.experimental.gameengine1.index.EntityUpdater;
 import togos.networkrts.experimental.gameengine1.index.Visitor;
@@ -94,14 +93,9 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 	
 	interface EntityBehavior<EC extends EntityRange>
 	{
-		public EC onMove( long time, EC self, EntityShell<EC> shell );
-		public EC onCollision( long time, EC self, Bouncer other, EntityShell<EC> shell );
+		public EC onMove( long time, EC self, Collection<EC> newEntities );
+		public EC onCollision( long time, EC self, Bouncer other, Collection<EC> newEntities );
 	}
-	
-	static final EntityBehavior<EntityRange> NULL_BEHAVIOR = new EntityBehavior<EntityRange>() {
-		@Override public EntityRange onMove( long time, EntityRange self, EntityShell<EntityRange> shell ) { return self; }
-		@Override public EntityRange onCollision( long time, EntityRange self, Bouncer other, EntityShell<EntityRange> shell ) { return self; }
-	};
 	
 	protected static final boolean solidCollision( Bouncer e1, Bouncer e2 ) {
 		assert e1 != e2;
@@ -134,7 +128,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 				return Math.abs(v) < min ? 0 : v;
 			}
 			
-			@Override public Bouncer update( Bouncer e, EntityShell<Bouncer> shell ) {
+			@Override public Bouncer update( Bouncer e, Collection<Bouncer> newEntities ) {
 				e = e.withUpdatedPosition(targetTime);
 				if( e != null && e.y <= e.radius && e.vy <= 0 ) {
 					if( Math.abs(e.vy) < gravity/10 ) {
@@ -154,7 +148,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 					}
 				}
 				if( e != null ) {
-					e = e.behavior.onMove( targetTime, e, shell );
+					e = e.behavior.onMove( targetTime, e, newEntities );
 				}
 				return e;
 			}
@@ -171,13 +165,12 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 					}
 				}
 			};
-			@Override
-			public Bouncer update( Bouncer e, EntityShell<Bouncer> shell ) {
+			@Override public Bouncer update( Bouncer e, Collection<Bouncer> newEntities ) {
 				collisionCheckEntity = e;
 				collisionTargetEntity = null;
 				entityIndex.forEachEntity( EntityRanges.forAABB(e.getAabb()), collisionChecker );
 				return collisionTargetEntity == null ? e : 
-					e.behavior.onCollision( targetTime, e, collisionTargetEntity, shell );
+					e.behavior.onCollision( targetTime, e, collisionTargetEntity, newEntities );
 			}
 		} );
 		currentTime = targetTime;
@@ -193,12 +186,12 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 	protected void handleEvent(final Signal evt) {
 		entityIndex = entityIndex.updateEntities(EntityRanges.BOUNDLESS, new EntityUpdater<Bouncer>() {
 			@Override
-			public Bouncer update( Bouncer e, EntityShell<Bouncer> shell ) {
+			public Bouncer update( Bouncer e, Collection<Bouncer> newEntities ) {
 				if( evt == Signal.BREAK ) {
 					if( e.radius >= 2 && Math.random() < 0.1 ) {
 						// Asplode!
 						for( int i=0; i<4; ++i ) {
-							shell.add( new Bouncer(
+							newEntities.add( new Bouncer(
 								e.minBitAddress, e.maxBitAddress, e.time,
 								e.x, e.y, e.z,
 								e.vx + Math.random()*200-100, e.vy + Math.random()*400-200, 0, //e.vz + Math.random()*200-100,
@@ -243,7 +236,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 			);
 		}
 		
-		@Override public Bouncer onMove( long time, Bouncer self, EntityShell<Bouncer> shell ) {
+		@Override public Bouncer onMove( long time, Bouncer self, Collection<Bouncer> newEntities ) {
 			return (self.color == Color.RED && (time - lastCollisionTime >= 1000) ) ?
 				withColorAndBehavior( self, Color.WHITE, this ) : self;
 		}
@@ -252,7 +245,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 			return x + vx*dt + ax*dt*dt/2;
 		}
 		
-		@Override public Bouncer onCollision( long time, Bouncer self, Bouncer other, EntityShell<Bouncer> shell ) {
+		@Override public Bouncer onCollision( long time, Bouncer self, Bouncer other, Collection<Bouncer> newEntities ) {
 			assert self != null;
 			assert other != null;
 			

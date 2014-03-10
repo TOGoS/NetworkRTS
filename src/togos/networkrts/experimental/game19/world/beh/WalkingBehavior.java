@@ -1,5 +1,6 @@
 package togos.networkrts.experimental.game19.world.beh;
 
+import java.util.Collection;
 import java.util.List;
 
 import togos.networkrts.experimental.game19.world.Action;
@@ -25,7 +26,7 @@ public class WalkingBehavior implements BlockBehavior
 	@Override public long getMinBitAddress() { return BitAddressUtil.MAX_ADDRESS; }
 	@Override public long getMaxBitAddress() { return BitAddressUtil.MIN_ADDRESS; }
 	@Override public long getNextAutoUpdateTime() { return walkDirection == -1 ? Long.MAX_VALUE : nextStepTime; }
-	@Override public Block update( Block b, int x, int y, int sizePower, long time,	Message[] messages, List<Action> results ) {
+	@Override public Block update( Block b, int x, int y, int sizePower, long time,	Collection<Message> messages, List<Action> results ) {
 		int newWalkDir = walkDirection;
 		
 		for( Message m : messages ) {

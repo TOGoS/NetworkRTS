@@ -55,4 +55,8 @@ public class AABB {
 			isFinite(minX) && isFinite(minY) && isFinite(minZ) &&
 			isFinite(maxX) && isFinite(maxY) && isFinite(maxZ);
 	}
+	
+	public final AABB shiftedBy( double dx, double dy, double dz ) {
+		return new AABB(minX+dx, minY+dy, minZ+dz, maxX+dx, maxY+dy, maxZ+dz);
+	}
 }

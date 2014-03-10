@@ -1,5 +1,6 @@
 package togos.networkrts.experimental.game19.world;
 
+import java.util.Collection;
 import java.util.List;
 
 import togos.networkrts.util.BitAddressRange;
@@ -22,5 +23,5 @@ public interface RSTNode extends BlockStack, BitAddressRange
 	public Block[] getBlocks();
 	public RSTNode[] getSubNodes();
 	
-	public RSTNode update( int x, int y, int sizePower, long time, Message[] messages, List<Action> results );
+	public RSTNode update( int x, int y, int sizePower, long time, Collection<Message> messages, List<Action> results );
 }

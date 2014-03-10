@@ -48,4 +48,12 @@ public class NonTile implements EntityRange
 	@Override public long getMinBitAddress() { return minBitAddress; }
 	@Override public long getMaxBitAddress() { return maxBitAddress; }
 	@Override public long getNextAutoUpdateTime() { return nextAutoUpdateTime; }
+
+	public NonTile withPosition(long referenceTime, double x, double y) {
+		double dx = x-this.x, dy = y-this.y;
+		return new NonTile(
+			referenceTime, x, y, this.physicalAabb.shiftedBy(dx, dy, 0),
+			minBitAddress, maxBitAddress, nextAutoUpdateTime, icon
+		);
+	}
 }
