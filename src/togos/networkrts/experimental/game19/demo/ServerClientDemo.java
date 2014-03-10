@@ -43,6 +43,7 @@ import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
 import togos.networkrts.experimental.game19.world.sim.Simulator;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.experimental.gameengine1.index.EntityRange;
+import togos.networkrts.experimental.gameengine1.index.EntityRanges;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
 import togos.networkrts.experimental.gameengine1.index.Visitor;
 import togos.networkrts.experimental.shape.TBoundless;
@@ -318,14 +319,7 @@ public class ServerClientDemo
 					// TODO: Only collect the ones actually visible
 					final List<NonTile> visibleNonTiles = new ArrayList<NonTile>();
 					
-					EntityRange unbounded = new EntityRange() {
-						@Override public AABB getAabb() { return AABB.BOUNDLESS; }
-						@Override public long getMinBitAddress() { return BitAddressUtil.MIN_ADDRESS; }
-						@Override public long getMaxBitAddress() { return BitAddressUtil.MAX_ADDRESS; }
-						@Override public long getNextAutoUpdateTime() { return 0; }
-					};
-					
-					world.nonTiles.forEachEntity( unbounded, new Visitor<NonTile>() {
+					world.nonTiles.forEachEntity( EntityRanges.BOUNDLESS, new Visitor<NonTile>() {
 						@Override public void visit( NonTile v ) {
 							visibleNonTiles.add(v);
 						}
