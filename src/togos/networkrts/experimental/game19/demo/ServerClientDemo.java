@@ -47,9 +47,19 @@ import togos.networkrts.experimental.gameengine1.index.Visitor;
 import togos.networkrts.experimental.shape.TBoundless;
 import togos.networkrts.experimental.shape.TCircle;
 import togos.networkrts.ui.ImageCanvas;
+import togos.networkrts.util.BitAddressUtil;
 
 public class ServerClientDemo
 {
+	// TODO: Move VisibilityClip from Layer into Scene.
+	// TODO: Move cell visibility into Scene
+	//   (so it can be drawn over everything, including sprites)
+	
+	/**
+	 * A scene represents a portion of the world.
+	 * The primary use for a scene is to send the part of the world
+	 * that a character can see to a client to display.
+	 */
 	public static class Scene {
 		public final Layer layer;
 		public final Iterable<NonTile> nonTiles;
@@ -322,9 +332,6 @@ public class ServerClientDemo
 						}
 					});
 					
-					// Add one for demonstration...
-					//visibleNonTiles.add( NonTile.create(0, 0, 0, dudeImage, 2f) );
-					
 					// There are various ways to go about this:
 					// - do visibility checks, send only visible area
 					// - send nearby quadtree nodes
@@ -336,7 +343,7 @@ public class ServerClientDemo
 					if( sendTiles ) {
 						TileLayerData layerData = new TileLayerData( ldWidth, ldHeight, 1 );
 						WorldConverter.nodeToLayerData( world.rst, -worldRadius, -worldRadius, 0, 1<<world.rstSizePower, layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, ldWidth, ldHeight );
-						VisibilityChecker.calculateAndApplyVisibility(layerData, ldCenterX, ldCenterY, 0);
+						VisibilityChecker.calculateAndApplyVisibility(layerData, ldCenterX, ldCenterY, 0, 16);
 						l = new Layer( layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, visibilityClip, false, null, 0, 0, 0 );
 					} else {
 						int size = 1<<world.rstSizePower;
