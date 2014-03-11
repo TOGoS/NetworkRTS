@@ -1,7 +1,9 @@
 package togos.networkrts.experimental.game19.world;
 
+import togos.networkrts.experimental.gameengine1.index.EntityRange;
 import togos.networkrts.experimental.shape.RectIntersector;
 import togos.networkrts.util.BitAddressRange;
+import togos.networkrts.util.BitAddressUtil;
 
 public class Message implements BitAddressRange
 {
@@ -13,6 +15,8 @@ public class Message implements BitAddressRange
 	}
 	
 	public final long minBitAddress, maxBitAddress;
+	// TODO: Replace RectIntersector with something less sucky
+	// so that isApplicableTo can take spatial range into account more easily
 	public final RectIntersector targetShape;
 	public final MessageType type;
 	public final Object payload;
@@ -30,4 +34,8 @@ public class Message implements BitAddressRange
 
 	@Override public long getMinBitAddress() { return minBitAddress; }
 	@Override public long getMaxBitAddress() { return maxBitAddress; }
+
+	public boolean isApplicableTo(EntityRange er) {
+		return BitAddressUtil.rangesIntersect(this, er);
+	}
 }

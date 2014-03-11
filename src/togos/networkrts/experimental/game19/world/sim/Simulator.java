@@ -50,7 +50,9 @@ public class Simulator implements ActionContext
 	
 	Random r = new Random();
 	protected NonTile updateNonTile( NonTile nt, long time, World w, Collection<Message> incomingMessages, Collection<NonTile> generatedNonTiles, Collection<Message> generatedMessages ) {
-		return nt.withPosition( time, nt.x + r.nextGaussian(), nt.y + r.nextGaussian() );
+		nt = nt.withUpdatedPosition(time);
+		nt = nt.behavior.update( nt, time, w, incomingMessages, generatedMessages );
+		return nt;
 	}
 	
 	protected EntitySpatialTreeIndex<NonTile> updateNonTiles( final World w, final long time, final Collection<Message> incomingMessages, final Collection<Message> generatedMessages ) {
@@ -67,9 +69,9 @@ public class Simulator implements ActionContext
 	}
 	
 	protected void update( long time, Collection<Message> incomingMessages ) {
-		List<Message> newMessages = new ArrayList<Message>();
 		List<Action> actions = new ArrayList<Action>(); // TODO: remove
 		do {
+			List<Message> newMessages = new ArrayList<Message>();
 			int rstSize = 1<<world.rstSizePower;
 			world = new World(
 				world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, incomingMessages, actions ),
@@ -77,7 +79,6 @@ public class Simulator implements ActionContext
 				updateNonTiles(world, time, incomingMessages, newMessages)
 			);
 			incomingMessages = newMessages;
-			newMessages = new ArrayList<Message>();
 		} while( incomingMessages.size() > 0 );
 		for( Action act : actions ) act.apply(this);
 	}

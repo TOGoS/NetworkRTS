@@ -12,7 +12,7 @@ public class World
 	public World(RSTNode rst, int rstSizePower, EntitySpatialTreeIndex<NonTile> nonTiles ) {
 		this.rst = rst;
 		this.rstSizePower = rstSizePower;
-		this.nonTiles = nonTiles;
+		this.nonTiles = nonTiles.freeze();
 	}
 	
 	public RSTNodeInstance getRstNodeInstance() {

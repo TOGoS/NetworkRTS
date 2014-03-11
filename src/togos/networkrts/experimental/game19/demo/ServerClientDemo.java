@@ -10,6 +10,7 @@ import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.Random;
@@ -30,6 +31,7 @@ import togos.networkrts.experimental.game19.world.IDGenerator;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.NonTile;
+import togos.networkrts.experimental.game19.world.NonTileBehavior;
 import togos.networkrts.experimental.game19.world.QuadRSTNode;
 import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.experimental.game19.world.RSTNodePosition;
@@ -170,6 +172,7 @@ public class ServerClientDemo
 		final ResourceContext resourceContext = new ResourceContext(new File(".ccouch"));
 		final Client c = new Client(resourceContext);
 		final int playerBlockId = idGenerator.newId();
+		final int playerNonTileId = idGenerator.newId();
 		final int ballBlockId = idGenerator.newId();
 		final int dudeBlockId = idGenerator.newId();
 		c.startUi();
@@ -224,7 +227,8 @@ public class ServerClientDemo
 				
 				int dir = dir(dirX, dirY);
 				if( dir != oldDir ) {
-					messageQueue.add(new Message(playerBlockId, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(dir) ));
+					messageQueue.add(new Message(playerBlockId, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(dir)));
+					messageQueue.add(new Message(playerNonTileId, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(dir)));
 					oldDir = dir;
 				}
 			}
@@ -282,11 +286,56 @@ public class ServerClientDemo
 					n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -0, player, null);
 					n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -5, -0, stupidBall, null);
 					
+					NonTileBehavior ballerBehavior = new NonTileBehavior() {
+						Random r = new Random();
+						@Override public NonTile update(NonTile nt, long time, World w, Collection<Message> messages, Collection<Message> outgoingMessages) {
+							return nt.withPosition(time, nt.x+r.nextGaussian(), nt.y+r.nextGaussian());
+						}
+					};
+					
 					EntitySpatialTreeIndex<NonTile> nonTiles = new EntitySpatialTreeIndex<NonTile>();
 					for( int i=0; i<10; ++i ) {
-						NonTile baller = NonTile.create(0, r.nextGaussian()*10, r.nextGaussian()*10, ballImage, 2f);
-						nonTiles = nonTiles.with(baller);
+						NonTile baller = NonTile.create(0, r.nextGaussian()*10, r.nextGaussian()*10, ballImage, 2f, ballerBehavior);
+						//nonTiles = nonTiles.with(baller);
 					}
+					
+					class PlayerNTBehavior implements NonTileBehavior {
+						final long messageBitAddress;
+						
+						public PlayerNTBehavior(long id) {
+							this.messageBitAddress = id;
+						}
+						
+						@Override
+						public NonTile update(NonTile nt, long time, World w,
+							Collection<Message> messages, Collection<Message> outgoingMessages
+						) {
+							double newVx = nt.vx, newVy = nt.vy;
+							for( Message m : messages ) {
+								if( m.isApplicableTo(nt) && BitAddressUtil.rangeContains(m, messageBitAddress)) {
+									Object p = m.payload;
+									if( p instanceof Number ) {
+										// Change our direction!
+										switch( ((Number) p).intValue() ) {
+										case -1: newVx =  0; newVy =  0; break;
+										case  0: newVx = +1; newVy =  0; break;
+										case  1: newVx = +1; newVy = +1; break;
+										case  2: newVx =  0; newVy = +1; break;
+										case  3: newVx = -1; newVy = +1; break;
+										case  4: newVx = -1; newVy =  0; break;
+										case  5: newVx = -1; newVy = -1; break;
+										case  6: newVx =  0; newVy = -1; break;
+										case  7: newVx = +1; newVy = -1; break;
+										}
+									}
+								}
+							}
+							return nt.withVelocity(time-1, newVx, newVy);
+						}
+					}
+					
+					NonTile playerNonTile = NonTile.create(0, 0, 0, dudeImage, 3f, new PlayerNTBehavior(playerNonTileId)).withId(playerNonTileId);
+					nonTiles = nonTiles.with(playerNonTile);
 					
 					world = new World(n, worldSizePower, nonTiles);
 					sim = new Simulator();
@@ -317,8 +366,8 @@ public class ServerClientDemo
 					int intCenterX = (int)Math.floor(centerX);
 					int intCenterY = (int)Math.floor(centerY);
 					
-					int ldWidth = 40;
-					int ldHeight = 30;
+					int ldWidth = 41;
+					int ldHeight = 31;
 					// center of layer data
 					int ldCenterX = ldWidth/2;
 					int ldCenterY = ldHeight/2;
@@ -352,7 +401,7 @@ public class ServerClientDemo
 					c.setScene(new Scene( l, visibleNonTiles, centerX, centerY ));
 					
 					Thread.sleep(40);
-					simTime += 1;
+					++simTime;
 				}
 			}
 		};
