@@ -2,6 +2,7 @@ package togos.networkrts.experimental.game19.world.thing.jetman;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.WeakHashMap;
 
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
@@ -17,6 +18,21 @@ public class JetManIcons
 		return new Icon(ih, -0.5f, -0.5f, 1, 1 ); 
 	}
 	
+	static final WeakHashMap<Icon,Icon> flipped = new WeakHashMap<Icon,Icon>();
+	
+	protected static final Icon flipIcon( Icon i ) {
+		return new Icon(i.image, i.imageX, i.imageY, -i.imageWidth, i.imageHeight);
+	}
+	
+	public static final Icon flipped( Icon i ) {
+		Icon f = flipped.get(i);
+		if( f == null ) {
+			f = flipIcon(i);
+			flipped.put(i, f);
+		}
+		return f;
+	}
+
 	public static JetManIcons load(ResourceContext rc) throws IOException {
 		JetManIcons jetManImages = new JetManIcons();
 		jetManImages.walking = new Icon[] {

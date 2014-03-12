@@ -126,7 +126,7 @@ public class JetManBehavior implements NonTileBehavior {
 				if( sendTiles ) {
 					TileLayerData layerData = new TileLayerData( ldWidth, ldHeight, 1 );
 					WorldConverter.nodeToLayerData( world.rst, -worldRadius, -worldRadius, 0, 1<<world.rstSizePower, layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, ldWidth, ldHeight );
-					VisibilityChecker.calculateAndApplyVisibility(layerData, ldCenterX, ldCenterY, 0, 16);
+					VisibilityChecker.calculateAndApplyVisibility(layerData, ldCenterX, ldCenterY, 0, 32);
 					l = new Layer( layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, visibilityClip, false, null, 0, 0, 0 );
 				} else {
 					int size = 1<<world.rstSizePower;
@@ -145,9 +145,9 @@ public class JetManBehavior implements NonTileBehavior {
 		Collision c = findCollisionWithRst(nt, world, BitAddresses.BLOCK_SOLID);
 		if( c != null ) {
 			// TODO: Don't assume direction = down (2)
+			feetOnGround = true;
 			newY -= c.overlap;
 			newVy = 0;
-			feetOnGround = true;
 		}
 		
 		int newThrustDir = state.thrustDir;
@@ -163,56 +163,72 @@ public class JetManBehavior implements NonTileBehavior {
 			}
 		}
 		boolean facingLeft = state.facingLeft;
-		boolean goUp = false, goDown = false;
-		boolean goLeft = false, goRight = false; 
+		boolean goUp = false, goForward =  false;
 		// Change our direction!
 		switch( newThrustDir ) {
-		case -1: break;
 		case  0:
-			goRight = true;
+			facingLeft = false;
+			goForward = true;
 			break;
-		 case 1:
-			goRight = true;
-			goDown = true;
+		case 1:
+			facingLeft = false;
+			goForward = true;
 			break;
 		case  2:
-			goDown = true;
 			break;
 		case  3:
-			goLeft = true;
-			goDown = true;
+			facingLeft = true;
+			goForward = true;
 			break;
 		case  4:
-			goLeft = true;
+			facingLeft = true;
+			goForward = true;
 			break;
 		case  5:
-			goLeft = true;
+			facingLeft = true;
+			goForward = true;
 			goUp = true;
 			break;
 		case  6:
 			goUp = true;
 			break;
 		case  7:
-			goRight = true;
+			facingLeft = false;
+			goForward = true;
 			goUp = true;
 			break;
+		default:
 		}
-		if( goRight ) facingLeft = false;
 		
-		newVy = newVy + (goUp ? -0.001 : +0.001);
-		newVx = newVx + (goLeft ? -0.002 : goRight ? +0.002 : 0); 
+		newVy = newVy + (goUp ? -0.002 : +0.002);
+		if( feetOnGround ) {
+			double walkSpeed = 0.05;
+			if( goForward && Math.abs(newVx) <= walkSpeed ) {
+				newVx = facingLeft ? -walkSpeed : walkSpeed; 
+			} else if( !goForward && Math.abs(newVx) <= walkSpeed ) {
+				newVx = 0;
+			} else {
+				newVx *= 0.6;
+			}
+		} else {
+			newVx = newVx + (goForward ? 0.003 : 0) * (facingLeft ? -1 : 1);
+		}
 		
-		int newWalkState = state.walkState + 1;
-		if( (newWalkState>>3) >= jetManIcons.walking.length ) {
+		int newWalkState = state.walkState + ((feetOnGround && newVx != 0) ? 1 : 0);
+		if( (newWalkState>>2) >= jetManIcons.walking.length ) {
 			newWalkState = 0;
 		}
 		
 		JetManState newState = new JetManState(newWalkState, newThrustDir, facingLeft);
 		
-		Icon newImage = goUp ?
-			(goRight ? jetManIcons.jetUpAndForward : jetManIcons.jetUp) :
-			(goRight ? jetManIcons.jetForward : feetOnGround ? jetManIcons.walking[newWalkState>>3] : jetManIcons.fall0);
+		Icon newIcon =
+			goUp && goForward ? jetManIcons.jetUpAndForward :
+			goUp              ? jetManIcons.jetUp :
+			feetOnGround      ? jetManIcons.walking[newWalkState>>2] :
+			goForward         ? jetManIcons.jetForward :
+			jetManIcons.fall0;
+		if( facingLeft ) newIcon = JetManIcons.flipped(newIcon);
 		
-		return nt.withIcon(newImage).withPositionAndVelocity(time, newX, newY, newVx, newVy).withBehavior(withState(newState));
+		return nt.withIcon(newIcon).withPositionAndVelocity(time, newX, newY, newVx, newVy).withBehavior(withState(newState));
 	}
 }

@@ -11,11 +11,20 @@ import togos.networkrts.util.ResourceNotFound;
 
 public class ImageHandle
 {
+	static class BufferedImageWithFlipBits extends BufferedImage {
+		public final int fWidth, fHeight;
+		public BufferedImageWithFlipBits(int width, int height, int mode) {
+			super(Math.abs(width), Math.abs(height), mode);
+			fWidth = width;
+			fHeight = height;
+		}
+	}
+
 	public final ResourceHandle<BufferedImage> original;
 	protected volatile boolean metadataInitialized;
 	public volatile boolean isCompletelyOpaque;
 	public volatile boolean isCompletelyTransparent;
-	protected transient SoftReference<BufferedImage>[] scaled;
+	protected transient SoftReference<BufferedImageWithFlipBits>[] scaled;
 	
 	public ImageHandle( ResourceHandle<BufferedImage> unscaled ) {
 		this.original = unscaled;
@@ -57,31 +66,34 @@ public class ImageHandle
 		return image;
 	}
 	
-	protected BufferedImage scale( Getter<BufferedImage> populator, int width, int height ) throws ResourceNotFound {
+	protected BufferedImageWithFlipBits scale( Getter<BufferedImage> populator, int width, int height ) throws ResourceNotFound {
 		BufferedImage original = getOriginal(populator);
 		ensureMetadataInitialized(original);
-		BufferedImage b = new BufferedImage(width, height, isCompletelyOpaque ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB);
+		final int dx0, dy0, dx1, dy1;
+		if( width  < 0 ) { dx0 = -width ; dx1 = 0; } else { dx0 = 0; dx1 = width ; }
+		if( height < 0 ) { dy0 = -height; dy1 = 0; } else { dy0 = 0; dy1 = height; }
+		BufferedImageWithFlipBits b = new BufferedImageWithFlipBits(width, height, isCompletelyOpaque ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g = (Graphics2D)b.getGraphics();
 		//g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); // That's for primitive geometry
 		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-		g.drawImage( original, 0, 0, width, height, 0, 0, original.getWidth(), original.getHeight(), null);
+		g.drawImage( original, dx0, dy0, dx1, dy1, 0, 0, original.getWidth(), original.getHeight(), null);
 		return b;
 	}
 	
 	public synchronized BufferedImage getScaled( Getter<BufferedImage> populator, int width, int height ) throws ResourceNotFound {
 		int firstAvailableSlot = -1;
-		int hash = (width ^ (height << 16));
+		int hash = (width ^ (height << 16)) & Integer.MAX_VALUE;
 		
 		if( scaled == null ) {
 			@SuppressWarnings("unchecked")
-			SoftReference<BufferedImage>[] _scaled = (SoftReference<BufferedImage>[])new SoftReference[31];
+			SoftReference<BufferedImageWithFlipBits>[] _scaled = (SoftReference<BufferedImageWithFlipBits>[])new SoftReference[31];
 			scaled = _scaled;
 		}
 		
 		for( int i=0; i<scaled.length; ++i ) {
 			int idx = (hash + i) % scaled.length;
-			SoftReference<BufferedImage> s = scaled[idx];
-			BufferedImage b;
+			SoftReference<BufferedImageWithFlipBits> s = scaled[idx];
+			BufferedImageWithFlipBits b;
 			if( s == null ) {
 				// Nobody's even tried to fill this slot, therefore our scaled
 				// image hasn't yet been generated, so exit the loop.
@@ -97,7 +109,7 @@ public class ImageHandle
 				continue;
 			}
 			
-			if( b.getWidth() == width && b.getHeight() == height ) {
+			if( b.fWidth == width && b.fHeight == height ) {
 				return b;
 			}
 		}
@@ -107,8 +119,8 @@ public class ImageHandle
 		
 		// Oh no, doing work in synchronized block!
 		// But maybe it will be okay.
-		BufferedImage b = scale( populator, width, height );
-		scaled[firstAvailableSlot] = new SoftReference<BufferedImage>(b); 
+		BufferedImageWithFlipBits b = scale( populator, width, height );
+		scaled[firstAvailableSlot] = new SoftReference<BufferedImageWithFlipBits>(b); 
 		return b;
 	}
 }
