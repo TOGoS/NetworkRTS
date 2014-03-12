@@ -6,7 +6,7 @@ public class QueuelessRealTimeEventSource<EventClass> implements RealTimeEventSo
 	boolean closed;
 	EventClass incomingEvent;
 	
-	@Override public synchronized boolean recv( long returnBy, EventBuffer buf ) throws InterruptedException {
+	@Override public synchronized boolean recv( long returnBy, EventBuffer<EventClass> buf ) throws InterruptedException {
 		if( returnBy < buf.time ) returnBy = buf.time; // Ensure that -inf is treated as < +inf
 		long waitTime;
 		EventClass evt;

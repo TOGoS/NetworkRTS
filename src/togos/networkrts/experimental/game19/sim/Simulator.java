@@ -1,153 +1,82 @@
 package togos.networkrts.experimental.game19.sim;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.concurrent.LinkedBlockingQueue;
 
+import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Message;
-import togos.networkrts.experimental.game19.world.MessageSet;
-import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.World;
-import togos.networkrts.experimental.gameengine1.index.EntityRanges;
-import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
-import togos.networkrts.experimental.gameengine1.index.EntityUpdater;
+import togos.networkrts.experimental.gensim.EventLooper;
+import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
 
 public class Simulator
 {
-	// This is terribly over-engineered
-	// It's meant as a somewhat thread-safe (if used as intended) 
-	// way to collect both incoming messages and messages
-	// generated within the simulation to be later (after frozen)
-	// presented as a MessageSet
-	static class ArrayMessageSet extends ArrayList<Message> implements MessageSet, UpdateContext
-	{
-		protected static final ArrayMessageSet EMPTY = new ArrayMessageSet().freeze();
+	static class TaskRunner extends Thread {
+		protected LinkedBlockingQueue<AsyncTask> incomingTasks;
+		protected UpdateContext ctx;
 		
-		private static final long serialVersionUID = 1L;
-		
-		public ArrayMessageSet() { super(); }
-		public ArrayMessageSet(Collection<Message> m) { super(m); }
-		
-		@Override public MessageSet subsetApplicableTo( double minX, double minY, double maxX, double maxY, long minBitAddress, long maxBitAddress ) {
-			// TODO?
-			return this;
+		public TaskRunner( String name, LinkedBlockingQueue<AsyncTask> incomingTasks, UpdateContext ctx ) {
+			super(name);
+			this.incomingTasks = incomingTasks;
+			this.ctx = ctx;
 		}
 		
-		boolean frozen = false;
-		public synchronized ArrayMessageSet freeze() {
-			if( size() == 0 && EMPTY != null ) return EMPTY;
-			frozen = true;
-			return this;
+		public void run() {
+			while( !interrupted() ) {
+				AsyncTask task;
+				try {
+					task = incomingTasks.take();
+				} catch( InterruptedException e ) {
+					System.err.println(getName()+" interrupted while waiting for incoming tasks");
+					interrupt();
+					return;
+				}
+				task.run( ctx );
+			}
 		}
-		public ArrayMessageSet with( Message m ) {
-			synchronized(this) {
-				if( !frozen ) {
-					add(m);
-					return this;
+	}
+	
+	protected QueuelessRealTimeEventSource<Message> incomingMessages = new QueuelessRealTimeEventSource<Message>();
+	protected LinkedBlockingQueue<Message> outgoingMessages = new LinkedBlockingQueue<Message>();
+	protected LinkedBlockingQueue<AsyncTask> asyncTaskQueue = new LinkedBlockingQueue<AsyncTask>();
+	protected TaskRunner taskRunner = new TaskRunner("Async task runner", asyncTaskQueue, new UpdateContext() {
+		@Override public void sendMessage( Message m ) {
+			if( (m.minBitAddress & BitAddresses.TYPE_EXTERNAL) == BitAddresses.TYPE_EXTERNAL ) {
+				outgoingMessages.add(m);
+			}
+			if( (m.maxBitAddress & BitAddresses.TYPE_EXTERNAL) == 0 ) {
+				// Put back into incoming message queue!
+				try {
+					incomingMessages.post(m);
+				} catch( InterruptedException e ) {
+					System.err.println("Interrupted while posting message to incoming message queue from async task");
+					e.printStackTrace();
+					Thread.currentThread().interrupt();
 				}
 			}
-			ArrayMessageSet ms = new ArrayMessageSet(this);
-			ms.add(m);
-			return ms;
 		}
-		
-		public ArrayMessageSet cleared() {
-			synchronized( this ) {
-				if( !frozen ) {
-					clear();
-					return this;
-				}
-			}
-			return new ArrayMessageSet();
+		@Override public void startAsyncTask( AsyncTask at ) {
+			asyncTaskQueue.add(at);
 		}
-		
-		// Under 'correct' use, this does not need to be synchronized
-		@Override public synchronized void sendMessage( Message m ) {
-			assert !frozen;
-			add(m);
-		}
+	});
+	protected EventLooper<Message> looper;
+	protected Simulation simulation;
+	
+	public Simulator( World world ) {
+		simulation = new Simulation(world, asyncTaskQueue, outgoingMessages);
+		looper = new EventLooper<Message>(incomingMessages, simulation, 10);
 	}
 	
-	protected World world;
-	protected ArrayMessageSet incomingMessages = new ArrayMessageSet();
-	
-	public Simulator(World world) {
-		this.world = world;
+	public void start() {
+		taskRunner.start();
+		looper.start();
 	}
 	
-	public World getWorld() {
-		return world;
+	public void halt() {
+		taskRunner.interrupt();
+		looper.interrupt();
 	}
 	
-	protected NonTile updateNonTile( NonTile nt, long time, World w, MessageSet incomingMessages, NonTileUpdateContext updateContext ) {
-		nt = nt.withUpdatedPosition(time);
-		nt = nt.behavior.update( nt, time, w, incomingMessages, updateContext );
-		return nt;
-	}
-	
-	static class NNTLNonTileUpdateContext implements NonTileUpdateContext {
-		protected final Collection<NonTile> nonTileList;
-		protected final UpdateContext updateContext;
-		
-		private NNTLNonTileUpdateContext( UpdateContext updateContext, Collection<NonTile> nonTileList ) {
-			this.updateContext = updateContext;
-			this.nonTileList = nonTileList;
-		}
-		
-		public static NNTLNonTileUpdateContext get( NNTLNonTileUpdateContext oldInstance, UpdateContext updateContext, Collection<NonTile> nonTileList ) {
-			return oldInstance == null || oldInstance.nonTileList == nonTileList ?
-				oldInstance : new NNTLNonTileUpdateContext(updateContext, nonTileList);
-		}
-		
-		@Override public void sendMessage( Message m ) { updateContext.sendMessage(m); }
-		@Override public void addNonTile( NonTile nt ) { nonTileList.add(nt); }
-	}
-	
-	protected EntitySpatialTreeIndex<NonTile> updateNonTiles( final World w, final long time, final MessageSet incomingMessages, final UpdateContext updateContext ) {
-		return world.nonTiles.updateEntities(EntityRanges.BOUNDLESS, new EntityUpdater<NonTile>() {
-			// TODO: this is very unoptimized
-			// it doesn't take advantage of the tree structure at all
-			// for determining what messages need to be delivered, etc
-			// which could be a problem if there are lots of entities * lots of messages
-			
-			NNTLNonTileUpdateContext nntlntuc;
-			
-			@Override public NonTile update(NonTile nt, Collection<NonTile> generatedNonTiles) {
-				return updateNonTile(nt, time, w, incomingMessages,
-					NNTLNonTileUpdateContext.get(nntlntuc, updateContext, generatedNonTiles));
-			}
-		});
-	}
-	
-	protected void update( long time, MessageSet incomingMessages ) {
-		do {
-			ArrayMessageSet newMessages = new ArrayMessageSet();
-			int rstSize = 1<<world.rstSizePower;
-			world = new World(
-				world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, incomingMessages, newMessages ),
-				world.rstSizePower,
-				updateNonTiles(world, time, incomingMessages, newMessages)
-			);
-			incomingMessages = newMessages;
-		} while( incomingMessages.size() > 0 );
-	}
-	
-	public void update( long time) {
-		// TODO: This is not thread-safe at all!
-		// In case someone's thinking of adding incoming messages
-		// e.g. as they are received from a socket.
-		// I expect this to be completely rewritten, anyway.
-		update( time, takeIncomingMessages() );
-	}
-	
-	protected synchronized MessageSet takeIncomingMessages() {
-		try {
-			return incomingMessages.freeze();
-		} finally {
-			incomingMessages = incomingMessages.cleared();
-		}
-	}
-	
-	public synchronized void enqueueMessage( Message m ) {
-		incomingMessages = incomingMessages.with(m);
+	public void enqueueMessage( Message m ) throws InterruptedException {
+		incomingMessages.post(m);
 	}
 }

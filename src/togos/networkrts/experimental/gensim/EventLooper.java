@@ -1,5 +1,6 @@
 package togos.networkrts.experimental.gensim;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -9,7 +10,7 @@ import java.util.List;
  * If processing a tick takes longer than that, the simulation slows.
  * i.e. this will not try to 'catch up' to match real time.
  */
-public class EventLooper<EventClass>
+public class EventLooper<EventClass> extends Thread
 {
 	/** Minimum number of milliseconds between steps. */
 	final long minStepInterval;
@@ -18,14 +19,21 @@ public class EventLooper<EventClass>
 	
 	protected AutoEventUpdatable2<EventClass> stepper;
 	
-	public EventLooper( RealTimeEventSource<EventClass> eventSource, AutoEventUpdatable2<EventClass> ticker, long minStepInterval ) {
+	public EventLooper( String name, RealTimeEventSource<EventClass> eventSource, AutoEventUpdatable2<EventClass> ticker, long minStepInterval ) {
+		super(name);
+		assert minStepInterval > 0;
+		
 		this.eventSource = eventSource;
 		this.stepper = ticker;
 		this.minStepInterval = minStepInterval;
 		this.eBuf = new EventBuffer<EventClass>(eventSource.getCurrentTime());
 	}
 	
-	public void run() throws Exception {
+	public EventLooper( RealTimeEventSource<EventClass> eventSource, AutoEventUpdatable2<EventClass> ticker, long minStepInterval ) {
+		this("Event looper", eventSource, ticker, minStepInterval);
+	}
+	
+	public void _run() throws IOException, InterruptedException {
 		long previousTickStartTime = eventSource.getCurrentTime() - minStepInterval / 2;
 		while( eventSource.hasMoreEvents() || stepper.getNextAutoUpdateTime() < AutoEventUpdatable.TIME_INFINITY ) {
 			final List<EventClass> incomingEvents;
@@ -33,7 +41,7 @@ public class EventLooper<EventClass>
 			final long currentTime = eventSource.getCurrentTime();
 			final long nextAutoTick = stepper.getNextAutoUpdateTime();
 			
-			long nextAutoTickTime = previousTickStartTime + (nextAutoTick - currentTick) * minStepInterval;
+			long nextAutoTickTime = nextAutoTick == Long.MAX_VALUE ? Long.MAX_VALUE : previousTickStartTime + (nextAutoTick - currentTick) * minStepInterval;
 			if( nextAutoTickTime < currentTime+1 ) {
 				System.err.println("Simulation running slow!  Tick took "+(currentTime-previousTickStartTime)+" milliseconds");
 				nextAutoTickTime = currentTime + 1;
@@ -56,8 +64,23 @@ public class EventLooper<EventClass>
 				incomingEvents = Collections.<EventClass>emptyList();
 			}
 			
+			assert nextTick < Long.MAX_VALUE;
+			
 			previousTickStartTime = currentTime;
 			stepper = stepper.update(nextTick, incomingEvents);
+		}
+	}
+	
+	public void run() {
+		try {
+			_run();
+		} catch( IOException e ) {
+			System.err.println(getName()+" had IOException while reading incoming events:");
+			e.printStackTrace();
+			interrupt();
+		} catch( InterruptedException e ) {
+			System.err.println(getName()+" interrupted while waiting for incoming events");
+			interrupt();
 		}
 	}
 }

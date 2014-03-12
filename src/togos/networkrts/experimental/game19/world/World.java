@@ -1,8 +1,9 @@
 package togos.networkrts.experimental.game19.world;
 
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
+import togos.networkrts.util.HasNextAutoUpdateTime;
 
-public class World
+public class World implements HasNextAutoUpdateTime
 {
 	public final RSTNode rst;
 	public final int rstSizePower;
@@ -22,5 +23,9 @@ public class World
 			@Override public int getNodeY() { return -(1<<(rstSizePower-1)); }
 			@Override public int getNodeSizePower() { return rstSizePower; }
 		};
+	}
+	
+	public long getNextAutoUpdateTime() {
+		return Math.min( rst.getNextAutoUpdateTime(), nonTiles.getNextAutoUpdateTime() );
 	}
 }

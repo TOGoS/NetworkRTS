@@ -7,6 +7,8 @@ public class BitAddresses
 {
 	public static final long TYPE_NODE    = 0x1000000000000000l;
 	public static final long TYPE_BLOCK   = 0x2000000000000000l;
+	public static final long TYPE_NONTILE = 0x4000000000000000l;
+	public static final long TYPE_EXTERNAL= 0x8000000000000000l;
 	
 	// Block flags
 	public static final long BLOCK_SOLID  = 0x0000000100000000l;

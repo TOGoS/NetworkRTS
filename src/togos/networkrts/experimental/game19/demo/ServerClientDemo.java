@@ -9,22 +9,18 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Queue;
 import java.util.Random;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
-import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
-import togos.networkrts.experimental.game19.scene.QuadTreeLayerData;
-import togos.networkrts.experimental.game19.scene.TileLayerData;
-import togos.networkrts.experimental.game19.scene.VisibilityChecker;
+import togos.networkrts.experimental.game19.sim.AsyncTask;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.game19.sim.Simulator;
+import togos.networkrts.experimental.game19.sim.UpdateContext;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
@@ -39,11 +35,8 @@ import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.experimental.game19.world.RSTUtil;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.beh.NoBehavior;
-import togos.networkrts.experimental.game19.world.encoding.WorldConverter;
 import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
-import togos.networkrts.experimental.gameengine1.index.EntityRanges;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
-import togos.networkrts.experimental.gameengine1.index.Visitor;
 import togos.networkrts.experimental.shape.TBoundless;
 import togos.networkrts.experimental.shape.TCircle;
 import togos.networkrts.ui.ImageCanvas;
@@ -163,13 +156,16 @@ public class ServerClientDemo
 	}
 	
 	public static void main( String[] args ) throws Exception {
-		final ConcurrentLinkedQueue<Message> messageQueue = new ConcurrentLinkedQueue<Message>(); 
+		final LinkedBlockingQueue<Message> messageQueue = new LinkedBlockingQueue<Message>(); 
 		
 		IDGenerator idGenerator = new IDGenerator();
 		
 		final ResourceContext resourceContext = new ResourceContext(new File(".ccouch"));
 		final Client c = new Client(resourceContext);
-		final int playerNonTileId = idGenerator.newId();
+		final int playerId = idGenerator.newId();
+		final long playerNonTileBa = BitAddresses.forceType(BitAddresses.TYPE_NONTILE, playerId);
+		final int clientId = idGenerator.newId();
+		final long clientBa = BitAddresses.forceType(BitAddresses.TYPE_EXTERNAL, clientId);
 		c.startUi();
 		c.sceneCanvas.addKeyListener(new KeyListener() {
 			boolean[] keysDown = new boolean[8];
@@ -222,7 +218,7 @@ public class ServerClientDemo
 				
 				int dir = dir(dirX, dirY);
 				if( dir != oldDir ) {
-					messageQueue.add(new Message(playerNonTileId, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(dir)));
+					messageQueue.add(new Message(playerId, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(dir)));
 					oldDir = dir;
 				}
 			}
@@ -286,9 +282,11 @@ public class ServerClientDemo
 					
 					class PlayerNTBehavior implements NonTileBehavior {
 						final long messageBitAddress;
+						final long clientBitAddress;
 						
-						public PlayerNTBehavior(long id) {
+						public PlayerNTBehavior(long id, long clientId) {
 							this.messageBitAddress = id;
+							this.clientBitAddress = clientId;
 						}
 						
 						@Override
@@ -315,17 +313,30 @@ public class ServerClientDemo
 									}
 								}
 							}
+							updateContext.startAsyncTask( new AsyncTask() {
+								@Override
+								public void run( UpdateContext ctx ) {
+									// TODO Auto-generated method stub
+								}
+							});
 							return nt.withVelocity(time-1, newVx, newVy);
 						}
 					}
 					
-					NonTile playerNonTile = NonTile.create(0, 0, 0, dudeImage, 3f, new PlayerNTBehavior(playerNonTileId)).withId(playerNonTileId);
+					NonTile playerNonTile = NonTile.create(0, 0, 0, dudeImage, 3f, new PlayerNTBehavior(playerNonTileBa, clientBa)).withId(playerId);
 					nonTiles = nonTiles.with(playerNonTile);
 					
 					world = new World(n, worldSizePower, nonTiles);
 					sim = new Simulator( world );
 				}
 				
+				sim.start();
+				
+				while( true ) {
+					sim.enqueueMessage(messageQueue.take());
+				}
+				
+				/*
 				long simTime = 0;
 				while(true) {
 					Message m;
@@ -347,7 +358,7 @@ public class ServerClientDemo
 						centerX = 0;
 						centerY = 0;
 					}
-					*/
+					* /
 					double centerX = 0, centerY = 0;
 					
 					int intCenterX = (int)Math.floor(centerX);
@@ -390,6 +401,7 @@ public class ServerClientDemo
 					Thread.sleep(40);
 					++simTime;
 				}
+				*/
 			}
 		};
 		simulatorThread.setDaemon(true);

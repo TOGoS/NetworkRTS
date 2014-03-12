@@ -18,11 +18,11 @@ public abstract class BaseMutableAutoUpdatable<EventClass> implements AutoEventU
 		return t == null ? Long.MAX_VALUE : t.time;
 	}
 	
-	@Override public final BaseMutableAutoUpdatable<EventClass> update( long targetTime, EventClass evt ) throws Exception {
+	@Override public final BaseMutableAutoUpdatable<EventClass> update( long targetTime, EventClass evt ) {
 		return update( targetTime, Collections.singletonList(evt) );
 	}
 	
-	@Override public final BaseMutableAutoUpdatable<EventClass> update( long targetTime, Collection<EventClass> events ) throws Exception {
+	@Override public final BaseMutableAutoUpdatable<EventClass> update( long targetTime, Collection<EventClass> events ) {
 		if( targetTime < currentTime ) {
 			throw new RuntimeException("Tried to rewind time from "+currentTime+" to "+targetTime);
 		}

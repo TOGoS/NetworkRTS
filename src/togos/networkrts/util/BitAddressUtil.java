@@ -54,7 +54,7 @@ public class BitAddressUtil
 	public static boolean rangeContains( BitAddressRange r, long v ) {
 		return rangeContains( r.getMinBitAddress(), r.getMaxBitAddress(), v );
 	}
-
+	
 	public static long toMinAddress( long addy ) {
 		return addy == NO_ADDRESS ? MAX_ADDRESS : addy;
 	}
