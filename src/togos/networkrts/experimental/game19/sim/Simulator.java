@@ -6,13 +6,10 @@ import java.util.Collection;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
-import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.gameengine1.index.EntityRanges;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
 import togos.networkrts.experimental.gameengine1.index.EntityUpdater;
-import togos.networkrts.experimental.shape.RectIntersector;
-import togos.networkrts.util.BitAddressUtil;
 
 public class Simulator
 {
@@ -79,27 +76,6 @@ public class Simulator
 	
 	public World getWorld() {
 		return world;
-	}
-	
-	/**
-	 * If null is returned, no update is needed for messages or time.
-	 * Otherwise an array of possibly relevant messages is returned. 
-	 */
-	protected Message[] needsUpdate( RSTNode n, int x, int y, int sizePower, long time, Message[] messages ) {
-		int relevantMessageCount = 0;
-		int size = 1<<sizePower;
-		for( Message m : messages ) {
-			boolean relevance =
-				BitAddressUtil.rangesIntersect(n, m) &&
-				m.targetShape.rectIntersection( x, y, size, size ) != RectIntersector.INCLUDES_NONE;
-			relevantMessageCount += relevance ? 1 : 0;
-		}
-		if( relevantMessageCount == 0 ) {
-			return time < n.getNextAutoUpdateTime() ? null : Message.EMPTY_LIST;
-		} else {
-			// TODO: if some are relevant but others not, could filter here 
-			return messages;
-		}
 	}
 	
 	protected NonTile updateNonTile( NonTile nt, long time, World w, MessageSet incomingMessages, NonTileUpdateContext updateContext ) {
