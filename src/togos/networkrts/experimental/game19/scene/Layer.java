@@ -13,20 +13,12 @@ public class Layer
 	public final Object data;
 	/** Offset of the top left corner of the data from layer's origin */
 	public final double dataOffsetX, dataOffsetY;
-	
-	/**
-	 * Section of the layer that is visible
-	 * (offsets are relative to the layer's origin)
-	 **/
-	public final VisibilityClip visibilityClip;
-	
 	public final boolean nextIsBackground;
 	public final Layer next;
 	public final double nextOffsetX, nextOffsetY;
 	public final double nextParallaxDistance;
 	
-	public Layer( Object data, double dox, double doy, VisibilityClip visibilityClip, boolean nextIsBackground, Layer next, double nox, double noy, double npd ) {
-		this.visibilityClip = visibilityClip;
+	public Layer( Object data, double dox, double doy, boolean nextIsBackground, Layer next, double nox, double noy, double npd ) {
 		this.nextIsBackground = nextIsBackground;
 		this.data = data; this.dataOffsetX = dox; this.dataOffsetY = doy;
 		this.next = next; this.nextOffsetX = nox; this.nextOffsetY = noy;

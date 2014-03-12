@@ -17,7 +17,7 @@ import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
-import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
+import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
 import togos.networkrts.experimental.game19.sim.Simulator;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
@@ -25,9 +25,7 @@ import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
 import togos.networkrts.experimental.game19.world.IDGenerator;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
-import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
-import togos.networkrts.experimental.game19.world.NonTileBehavior;
 import togos.networkrts.experimental.game19.world.QuadRSTNode;
 import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.experimental.game19.world.RSTUtil;
@@ -58,12 +56,18 @@ public class ServerClientDemo
 		public final Iterable<NonTile> nonTiles;
 		// Point within the scene that should be centered on (usually the player)
 		public final double poiX, poiY; 
+		/**
+		 * Section of the scene that is visible
+		 * (offsets are relative to the layer's origin)
+		 **/
+		public final VisibilityClip visibilityClip;
 		
-		public Scene( Layer layer,  Iterable<NonTile> nonTiles, double poiX, double poiY ) {
+		public Scene( Layer layer,  Iterable<NonTile> nonTiles, double poiX, double poiY, VisibilityClip visibilityClip ) {
 			this.layer = layer;
 			this.nonTiles = nonTiles;
 			this.poiX = poiX;
 			this.poiY = poiY;
+			this.visibilityClip = visibilityClip;
 		}
 	}
 	
@@ -79,7 +83,7 @@ public class ServerClientDemo
 			}
 		}
 		
-		int pixelsPerMeter = 24;
+		int pixelsPerMeter = 8;
 		
 		protected final Renderer renderer;
 		public SceneCanvas( ResourceContext resourceContext ) {
@@ -94,6 +98,10 @@ public class ServerClientDemo
 			notifyAll();
 		}
 		
+		protected int roundEven(double v) {
+			return 2*(int)Math.round(v/2);
+		}
+		
 		public void redrawLoop() throws InterruptedException {
 			Scene s = null;
 			while( true ) {
@@ -101,10 +109,11 @@ public class ServerClientDemo
 					while( scene == s || scene == null ) wait();
 					s = scene;
 				}
-				int wid = getWidth(), hei = getHeight();
-				while( wid > 768 || hei > 512 ) {
-					wid >>= 1; hei >>= 1;
-				}
+				VisibilityClip vc = s.visibilityClip;
+				int vcWidth  = roundEven(pixelsPerMeter*(vc.maxX-vc.minX));
+				int vcHeight = roundEven(pixelsPerMeter*(vc.maxY-vc.minY));
+				int wid = Math.min(vcWidth, getWidth());
+				int hei = Math.min(vcHeight,getHeight());
 				BufferedImage sb = getSceneBuffer(wid, hei);
 				synchronized( sb ) {
 					Graphics g = sb.getGraphics();
@@ -237,8 +246,8 @@ public class ServerClientDemo
 		c.messageQueue = messageQueue;
 		
 		ImageHandle brickImage = resourceContext.storeImageHandle(new File("tile-images/dumbrick1.png"));
-		ImageHandle dudeImage = resourceContext.storeImageHandle(new File("tile-images/dude.png"));
-		ImageHandle ballImage = resourceContext.storeImageHandle(new File("tile-images/stupid-ball.png"));
+		//ImageHandle dudeImage = resourceContext.storeImageHandle(new File("tile-images/dude.png"));
+		//ImageHandle ballImage = resourceContext.storeImageHandle(new File("tile-images/stupid-ball.png"));
 		
 		final JetManIcons jetManIcons = JetManIcons.load(resourceContext);
 		
@@ -259,18 +268,7 @@ public class ServerClientDemo
 				n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
 			}
 			
-			NonTileBehavior ballerBehavior = new NonTileBehavior() {
-				Random r = new Random();
-				@Override public NonTile update(NonTile nt, long time, World w, MessageSet messages, NonTileUpdateContext updateContext) {
-					return nt.withPosition(time, nt.x+r.nextGaussian(), nt.y+r.nextGaussian());
-				}
-			};
-			
 			EntitySpatialTreeIndex<NonTile> nonTiles = new EntitySpatialTreeIndex<NonTile>();
-			for( int i=0; i<10; ++i ) {
-				NonTile baller = NonTile.create(0, r.nextGaussian()*10, r.nextGaussian()*10, ballImage, 2f, ballerBehavior);
-				//nonTiles = nonTiles.with(baller);
-			}
 			
 			NonTile playerNonTile = new NonTile(0, 0, 0, 0, 0,
 				new AABB(-0.25, -0.5, -0.5, +0.25, +0.5, +0.5),

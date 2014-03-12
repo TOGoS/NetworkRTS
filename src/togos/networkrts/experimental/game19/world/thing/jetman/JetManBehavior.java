@@ -114,7 +114,7 @@ public class JetManBehavior implements NonTileBehavior {
 				int intCenterY = (int)Math.floor(centerY);
 				
 				int ldWidth = 41;
-				int ldHeight = 31;
+				int ldHeight = 30;
 				// center of layer data
 				int ldCenterX = ldWidth/2;
 				int ldCenterY = ldHeight/2;
@@ -135,17 +135,17 @@ public class JetManBehavior implements NonTileBehavior {
 				
 				boolean sendTiles = true;
 				Layer l;
-				VisibilityClip visibilityClip = new Layer.VisibilityClip(intCenterX-ldCenterX, intCenterY-ldCenterY, intCenterX-ldCenterX+ldWidth, intCenterY-ldCenterY+ldHeight);
+				VisibilityClip visibilityClip = new Layer.VisibilityClip(centerX-(ldWidth-1)/2, centerY-(ldHeight-1)/2, centerX+(ldWidth-1)/2, centerY+(ldHeight-1)/2);
 				if( sendTiles ) {
 					TileLayerData layerData = new TileLayerData( ldWidth, ldHeight, 1 );
 					WorldConverter.nodeToLayerData( world.rst, -worldRadius, -worldRadius, 0, 1<<world.rstSizePower, layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, ldWidth, ldHeight );
 					VisibilityChecker.calculateAndApplyVisibility(layerData, ldCenterX, ldCenterY, 0, 32);
-					l = new Layer( layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, visibilityClip, false, null, 0, 0, 0 );
+					l = new Layer( layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, false, null, 0, 0, 0 );
 				} else {
 					int size = 1<<world.rstSizePower;
-					l = new Layer( new QuadTreeLayerData(world.rst, size), -size/2.0, -size/2.0, null, false, null, 0, 0, 0 );
+					l = new Layer( new QuadTreeLayerData(world.rst, size), -size/2.0, -size/2.0, false, null, 0, 0, 0 );
 				}
-				Scene scene = new Scene( l, visibleNonTiles, centerX, centerY );
+				Scene scene = new Scene( l, visibleNonTiles, centerX, centerY, visibilityClip );
 				ctx.sendMessage(new Message(clientBitAddress, clientBitAddress, MessageType.INCOMING_PACKET, scene));
 			}
 		});

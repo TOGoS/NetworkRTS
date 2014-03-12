@@ -7,9 +7,9 @@ Make content creation possible/fun
 Continuous movement entities
 - Separate
   - Fast (bullet) entities
-  - Normal dynamic entities
+  * Normal dynamic entities
   - Static (not requiring continuous update) entities
-  - Quadtree for solids
+  * Quadtree for solids
 
 Image compositor
 - Diffuse

@@ -142,13 +142,13 @@ public class Renderer
 		}
 	}
 	
-	protected void _draw( Layer layer, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy ) {
+	public void draw( Layer layer, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy ) {
 		if( ldist <= 0 ) {
 			throw new RuntimeException("Distance must be positive, but "+ldist+" was given");
 		}
 
 		if( (drawBackgrounds || !layer.nextIsBackground) && layer.next != null ) {
-			_draw( layer.next, lx + layer.nextOffsetX, ly + layer.nextOffsetY, ldist + layer.nextParallaxDistance, g, scale, scx, scy );
+			draw( layer.next, lx + layer.nextOffsetX, ly + layer.nextOffsetY, ldist + layer.nextParallaxDistance, g, scale, scx, scy );
 		} else {
 			// Draw the background a solid color:
 			Rectangle r = g.getClipBounds();
@@ -159,42 +159,7 @@ public class Renderer
 		_drawLayerData( layer, lx, ly, ldist, g, scale, scx, scy );
 	}
 	
-	/**
-	 * 
-	 * @param layer
-	 * @param lx x position on screen at which to center the object, not taking parallax into account
-	 * @param ly y position on screen at which to center the object, not taking parallax into account
-	 * @param ldist distance behind screen to object
-	 * @param g
-	 * @param scale rendering scale
-	 * @param scx x position on screen where parallax offset = 0 (usually center)
-	 * @param scy y position on screen where parallax offset = 0 (usually center)
-	 */
-	public void draw( Layer layer, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy ) {
-		if( layer.visibilityClip != null ) {
-			Shape oldClip = g.getClipBounds();
-			
-			double scaleOnScreen = scale / ldist;
-			
-			VisibilityClip vc = layer.visibilityClip;
-			
-			int sx = (int)Math.round((lx+vc.minX)*scaleOnScreen+scx);
-			int sy = (int)Math.round((ly+vc.minY)*scaleOnScreen+scy);
-			g.clipRect(
-				sx, sy,
-				(int)Math.round((lx+vc.maxX)*scaleOnScreen+scx) - sx,
-				(int)Math.round((ly+vc.maxY)*scaleOnScreen+scy) - sy
-			);
-			
-			_draw( layer, lx, ly, ldist, g, scale, scx, scy );
-			
-			g.setClip(oldClip);
-		} else {
-			_draw( layer, lx, ly, ldist, g, scale, scx, scy );
-		}
-	}
-	
-	public void draw( Scene s, double x, double y, double dist, Graphics g, double scale, double scx, double scy ) {
+	protected void _draw( Scene s, double x, double y, double dist, Graphics g, double scale, double scx, double scy ) {
 		draw( s.layer, x, y, dist, g, scale, scx, scy );
 		
 		double sscale = scale/dist;
@@ -207,6 +172,30 @@ public class Renderer
 				(int)(sscale*nt.icon.imageHeight),
 				g
 			);
+		}
+	}
+	
+	public void draw( Scene s, double x, double y, double dist, Graphics g, double scale, double scx, double scy ) {
+		if( s.visibilityClip != null ) {
+			Shape oldClip = g.getClipBounds();
+			
+			double scaleOnScreen = scale / dist;
+			
+			VisibilityClip vc = s.visibilityClip;
+			
+			int sx = (int)Math.round((x+vc.minX)*scaleOnScreen+scx);
+			int sy = (int)Math.round((y+vc.minY)*scaleOnScreen+scy);
+			g.clipRect(
+				sx, sy,
+				(int)Math.round((x+vc.maxX)*scaleOnScreen+scx) - sx,
+				(int)Math.round((y+vc.maxY)*scaleOnScreen+scy) - sy
+			);
+			
+			_draw( s, x, y, dist, g, scale, scx, scy );
+			
+			g.setClip(oldClip);
+		} else {
+			_draw( s, x, y, dist, g, scale, scx, scy );
 		}
 	}
 }

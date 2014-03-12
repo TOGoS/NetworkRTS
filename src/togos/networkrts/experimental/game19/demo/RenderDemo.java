@@ -39,7 +39,6 @@ public class RenderDemo
 		}
 		return new Layer(
 			new TileLayerData( 5, 5, 2, blockStacks ), -2.5, -2.5,
-			null,
 			false, null, 0, 0, 0
 		);
 	}
