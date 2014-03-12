@@ -42,7 +42,6 @@ import togos.networkrts.ui.ImageCanvas;
 
 public class ServerClientDemo
 {
-	// TODO: Move VisibilityClip from Layer into Scene.
 	// TODO: Move cell visibility into Scene
 	//   (so it can be drawn over everything, including sprites)
 	
