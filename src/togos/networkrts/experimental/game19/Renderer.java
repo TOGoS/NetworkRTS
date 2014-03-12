@@ -201,8 +201,8 @@ public class Renderer
 		for( NonTile nt : s.nonTiles ) {
 			draw(
 				nt.icon.image,
-				(int)(scx+sscale*(x+nt.x+nt.vx/2+nt.icon.imageX)),
-				(int)(scy+sscale*(y+nt.y+nt.vy/2-nt.icon.imageY)),
+				(int)(scx+sscale*(x+nt.x+nt.icon.imageX)),
+				(int)(scy+sscale*(y+nt.y+nt.icon.imageY)),
 				(int)(sscale*nt.icon.imageWidth),
 				(int)(sscale*nt.icon.imageHeight),
 				g

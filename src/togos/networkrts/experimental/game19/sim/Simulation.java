@@ -92,13 +92,15 @@ public class Simulation implements AutoEventUpdatable2<Message>
 		return world;
 	}
 	
-	protected NonTile updateNonTile( NonTile nt, long time, World w, MessageSet incomingMessages, NonTileUpdateContext updateContext ) {
-		nt = nt.withUpdatedPosition(time);
-		nt = nt.behavior.update( nt, time, w, incomingMessages, updateContext );
-		return nt;
+	protected NonTile updateNonTile( NonTile nt, long time, World w, MessageSet incomingMessages, NonTileUpdateContext updateContext, int phase ) {
+		switch(phase) {
+		case 1: return nt.withUpdatedPosition(time);
+		case 2: return nt.behavior.update( nt, time, w, incomingMessages, updateContext );
+		}
+		throw new RuntimeException("Invalid phase "+phase);
 	}
 	
-	protected EntitySpatialTreeIndex<NonTile> updateNonTiles( final World w, final long time, final MessageSet incomingMessages, final UpdateContext updateContext ) {
+	protected EntitySpatialTreeIndex<NonTile> updateNonTiles( final World w, final long time, final MessageSet incomingMessages, final UpdateContext updateContext, final int phase ) {
 		return world.nonTiles.updateEntities(EntityRanges.BOUNDLESS, new EntityUpdater<NonTile>() {
 			// TODO: this is very unoptimized
 			// it doesn't take advantage of the tree structure at all
@@ -108,8 +110,9 @@ public class Simulation implements AutoEventUpdatable2<Message>
 			NNTLNonTileUpdateContext nntlntuc;
 			
 			@Override public NonTile update(NonTile nt, Collection<NonTile> generatedNonTiles) {
-				return updateNonTile(nt, time, w, incomingMessages,
-					NNTLNonTileUpdateContext.get(nntlntuc, updateContext, generatedNonTiles));
+				return updateNonTile(
+					nt, time, w, incomingMessages,
+					NNTLNonTileUpdateContext.get(nntlntuc, updateContext, generatedNonTiles), phase);
 			}
 		});
 	}
@@ -123,7 +126,11 @@ public class Simulation implements AutoEventUpdatable2<Message>
 			world = new World(
 				world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, incomingMessages, updateContext ),
 				world.rstSizePower,
-				updateNonTiles(world, time, incomingMessages, updateContext)
+				updateNonTiles(world, time, incomingMessages, updateContext, 1)
+			);
+			world = new World(
+				world.rst, world.rstSizePower,
+				updateNonTiles(world, time, incomingMessages, updateContext, 2)
 			);
 			incomingMessages = updateContext.newMessages;
 			this.time = time;

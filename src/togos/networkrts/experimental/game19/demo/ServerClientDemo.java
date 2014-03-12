@@ -287,8 +287,7 @@ public class ServerClientDemo
 					this.clientBitAddress = clientId;
 				}
 				
-				@Override
-				public NonTile update(NonTile nt, long time, World w,
+				@Override public NonTile update(final NonTile nt, long time, final World world,
 					MessageSet messages, NonTileUpdateContext updateContext
 				) {
 					double newVx = nt.vx, newVy = nt.vy;
@@ -311,16 +310,51 @@ public class ServerClientDemo
 							}
 						}
 					}
-					/*
 					updateContext.startAsyncTask( new AsyncTask() {
-						@Override
-						public void run( UpdateContext ctx ) {
-							// Create scene, send to client
+						@Override public void run( UpdateContext ctx ) {
+							int worldRadius = 1<<(world.rstSizePower-1);
+							double centerX = nt.x, centerY = nt.y;
+							
+							int intCenterX = (int)Math.floor(centerX);
+							int intCenterY = (int)Math.floor(centerY);
+							
+							int ldWidth = 41;
+							int ldHeight = 31;
+							// center of layer data
+							int ldCenterX = ldWidth/2;
+							int ldCenterY = ldHeight/2;
+							
+							// TODO: Only collect the ones actually visible
+							final List<NonTile> visibleNonTiles = new ArrayList<NonTile>();
+							
+							world.nonTiles.forEachEntity( EntityRanges.BOUNDLESS, new Visitor<NonTile>() {
+								@Override public void visit( NonTile v ) {
+									visibleNonTiles.add(v);
+								}
+							});
+							
+							// There are various ways to go about this:
+							// - do visibility checks, send only visible area
+							// - send nearby quadtree nodes
+							// - send entire world
+							
+							boolean sendTiles = true;
+							Layer l;
+							VisibilityClip visibilityClip = new Layer.VisibilityClip(intCenterX-ldCenterX, intCenterY-ldCenterY, intCenterX-ldCenterX+ldWidth, intCenterY-ldCenterY+ldHeight);
+							if( sendTiles ) {
+								TileLayerData layerData = new TileLayerData( ldWidth, ldHeight, 1 );
+								WorldConverter.nodeToLayerData( world.rst, -worldRadius, -worldRadius, 0, 1<<world.rstSizePower, layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, ldWidth, ldHeight );
+								VisibilityChecker.calculateAndApplyVisibility(layerData, ldCenterX, ldCenterY, 0, 16);
+								l = new Layer( layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, visibilityClip, false, null, 0, 0, 0 );
+							} else {
+								int size = 1<<world.rstSizePower;
+								l = new Layer( new QuadTreeLayerData(world.rst, size), -size/2.0, -size/2.0, null, false, null, 0, 0, 0 );
+							}
+							Scene scene = new Scene( l, visibleNonTiles, centerX, centerY );
+							ctx.sendMessage(new Message(clientBitAddress, clientBitAddress, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, scene));
 						}
 					});
-					*/
-					updateContext.sendMessage(new Message(clientBitAddress, clientBitAddress, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, w));
-					return nt.withVelocity(time-1, newVx, newVy);
+					return nt.withVelocity(time, newVx, newVy);
 				}
 			}
 			
@@ -365,58 +399,8 @@ public class ServerClientDemo
 						return;
 					}
 					
-					World world = (World)m.payload;
-					int worldRadius = 1<<(world.rstSizePower-1);
-					
-					/*
-					RSTNodePosition playerPosition = RSTUtil.findBlock(world.rst, -worldRadius, -worldRadius, world.rstSizePower);
-					double centerX, centerY;
-					if( playerPosition != null ) {
-						centerX = playerPosition.getCenterX();
-						centerY = playerPosition.getCenterY();
-					} else {
-						centerX = 0;
-						centerY = 0;
-					}
-					*/
-					double centerX = 0, centerY = 0;
-					
-					int intCenterX = (int)Math.floor(centerX);
-					int intCenterY = (int)Math.floor(centerY);
-					
-					int ldWidth = 41;
-					int ldHeight = 31;
-					// center of layer data
-					int ldCenterX = ldWidth/2;
-					int ldCenterY = ldHeight/2;
-					
-					// TODO: Only collect the ones actually visible
-					final List<NonTile> visibleNonTiles = new ArrayList<NonTile>();
-					
-					world.nonTiles.forEachEntity( EntityRanges.BOUNDLESS, new Visitor<NonTile>() {
-						@Override public void visit( NonTile v ) {
-							visibleNonTiles.add(v);
-						}
-					});
-					
-					// There are various ways to go about this:
-					// - do visibility checks, send only visible area
-					// - send nearby quadtree nodes
-					// - send entire world
-					
-					boolean sendTiles = true;
-					Layer l;
-					VisibilityClip visibilityClip = new Layer.VisibilityClip(intCenterX-ldCenterX, intCenterY-ldCenterY, intCenterX-ldCenterX+ldWidth, intCenterY-ldCenterY+ldHeight);
-					if( sendTiles ) {
-						TileLayerData layerData = new TileLayerData( ldWidth, ldHeight, 1 );
-						WorldConverter.nodeToLayerData( world.rst, -worldRadius, -worldRadius, 0, 1<<world.rstSizePower, layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, ldWidth, ldHeight );
-						VisibilityChecker.calculateAndApplyVisibility(layerData, ldCenterX, ldCenterY, 0, 16);
-						l = new Layer( layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, visibilityClip, false, null, 0, 0, 0 );
-					} else {
-						int size = 1<<world.rstSizePower;
-						l = new Layer( new QuadTreeLayerData(world.rst, size), -size/2.0, -size/2.0, null, false, null, 0, 0, 0 );
-					}
-					c.setScene(new Scene( l, visibleNonTiles, centerX, centerY ));
+					Scene scene = (Scene)m.payload;
+					c.setScene(scene);
 				}
 			}
 		};
