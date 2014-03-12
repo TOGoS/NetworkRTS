@@ -79,7 +79,7 @@ public class ServerClientDemo
 			}
 		}
 		
-		int cellScale = 24;
+		int pixelsPerMeter = 24;
 		
 		protected final Renderer renderer;
 		public SceneCanvas( ResourceContext resourceContext ) {
@@ -95,24 +95,23 @@ public class ServerClientDemo
 		}
 		
 		public void redrawLoop() throws InterruptedException {
-			Scene s = scene;
+			Scene s = null;
 			while( true ) {
 				synchronized(this) {
 					while( scene == s || scene == null ) wait();
 					s = scene;
 				}
 				int wid = getWidth(), hei = getHeight();
-				//while( wid > 768 || hei > 512 ) {
-				//	wid >>= 1; hei >>= 1;
-				//}
+				while( wid > 768 || hei > 512 ) {
+					wid >>= 1; hei >>= 1;
+				}
 				BufferedImage sb = getSceneBuffer(wid, hei);
 				synchronized( sb ) {
 					Graphics g = sb.getGraphics();
 					g.setClip(0, 0, sb.getWidth(), sceneBuffer.getHeight());
 					g.setColor( sceneBackgroundColor );
 					g.fillRect( 0, 0, sb.getWidth(), sb.getHeight() );
-					renderer.draw( s, -s.poiX, -s.poiY, 2, g, 32, sb.getWidth()/2, sb.getHeight()/2 );
-					//renderer.draw( s.layer, s.layerX, s.layerY, s.layerDistance, g, cellScale, sceneBuffer.getWidth()/2, sceneBuffer.getHeight()/2 );
+					renderer.draw( s, -s.poiX, -s.poiY, 1, g, pixelsPerMeter, sb.getWidth()/2, sb.getHeight()/2 );
 				}
 				setImage(sb);
 			}
