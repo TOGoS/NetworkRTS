@@ -25,7 +25,11 @@ public class NonTile implements EntityRange
 	public final Icon icon;
 	public final NonTileBehavior behavior;
 	
-	public NonTile( long referenceTime, double x, double y, double vx, double vy, AABB physicalAabb, long minBa, long maxBa, long nextAut, Icon icon, NonTileBehavior behavior ) {
+	public NonTile(
+		long referenceTime, double x, double y, double vx, double vy,
+		AABB physicalAabb, long minBa, long maxBa, long nextAut,
+		Icon icon, NonTileBehavior behavior
+	) {
 		this.referenceTime = referenceTime;
 		this.x = x; this.vx = vx;
 		this.y = y; this.vy = vy;
@@ -39,7 +43,8 @@ public class NonTile implements EntityRange
 	
 	/** 'Centered cube bounding box' */
 	static AABB ccbb( double x, double y, double diameter ) {
-		return new AABB( x-diameter, y-diameter, -diameter, x+diameter, y+diameter, +diameter );
+		double radius = diameter/2;
+		return new AABB( x-radius, y-radius, -radius, x+radius, y+radius, +radius );
 	}
 	
 	public static NonTile create( long referenceTime, double x, double y, Icon icon, float diameter, NonTileBehavior behavior ) {

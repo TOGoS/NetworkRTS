@@ -9,9 +9,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -20,14 +17,8 @@ import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
-import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
-import togos.networkrts.experimental.game19.scene.QuadTreeLayerData;
-import togos.networkrts.experimental.game19.scene.TileLayerData;
-import togos.networkrts.experimental.game19.scene.VisibilityChecker;
-import togos.networkrts.experimental.game19.sim.AsyncTask;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.game19.sim.Simulator;
-import togos.networkrts.experimental.game19.sim.UpdateContext;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
@@ -36,22 +27,20 @@ import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
-import togos.networkrts.experimental.game19.world.NonTile.Icon;
 import togos.networkrts.experimental.game19.world.NonTileBehavior;
 import togos.networkrts.experimental.game19.world.QuadRSTNode;
 import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.experimental.game19.world.RSTUtil;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.beh.NoBehavior;
-import togos.networkrts.experimental.game19.world.encoding.WorldConverter;
 import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
-import togos.networkrts.experimental.gameengine1.index.EntityRanges;
+import togos.networkrts.experimental.game19.world.thing.jetman.JetManBehavior;
+import togos.networkrts.experimental.game19.world.thing.jetman.JetManIcons;
+import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
-import togos.networkrts.experimental.gameengine1.index.Visitor;
 import togos.networkrts.experimental.shape.TBoundless;
 import togos.networkrts.experimental.shape.TCircle;
 import togos.networkrts.ui.ImageCanvas;
-import togos.networkrts.util.BitAddressUtil;
 
 public class ServerClientDemo
 {
@@ -158,50 +147,13 @@ public class ServerClientDemo
 				@Override public void windowClosing(WindowEvent evt) {
 					f.dispose();
 					redrawThread.interrupt();
+					// could shut down server nicely and stuff
+					System.exit(0);
 				}
 			});
 			f.pack();
 			f.setVisible(true);
 			redrawThread.start();
-		}
-	}
-	
-	static class JetManState {
-		public static final JetManState DEFAULT = new JetManState(0,0,false); 
-		
-		final int walkState, thrustDir;
-		final boolean facingLeft;
-		public JetManState( int walkState, int thrustDir, boolean facingLeft ) {
-			this.walkState = walkState;
-			this.thrustDir = thrustDir;
-			this.facingLeft = facingLeft;
-		}
-	}
-	
-	static class JetManIcons {
-		public Icon walk0, walk1, walk2, walk3, walk4, walk5;
-		public Icon fall0, flyUp, flyForward, jetUp, jetForward, jetUpAndForward;
-		
-		static Icon loadIcon(ResourceContext rc, String name) throws IOException {
-			ImageHandle ih = rc.storeImageHandle(new File("tile-images/JetMan/"+name));
-			return new Icon(ih, -0.5f, -0.5f, 1, 1 ); 
-		}
-		
-		static JetManIcons load(ResourceContext rc) throws IOException {
-			JetManIcons jetManImages = new JetManIcons();
-			jetManImages.walk0 = JetManIcons.loadIcon(rc, "Walk0.png");
-			jetManImages.walk1 = JetManIcons.loadIcon(rc, "Walk1.png");
-			jetManImages.walk2 = JetManIcons.loadIcon(rc, "Walk2.png");
-			jetManImages.walk3 = JetManIcons.loadIcon(rc, "Walk3.png");
-			jetManImages.walk4 = JetManIcons.loadIcon(rc, "Walk4.png");
-			jetManImages.walk5 = JetManIcons.loadIcon(rc, "Walk5.png");
-			jetManImages.fall0 = JetManIcons.loadIcon(rc, "Fall0.png");
-			jetManImages.flyUp = JetManIcons.loadIcon(rc, "FlyUp.png");
-			jetManImages.flyForward = JetManIcons.loadIcon(rc, "FlyForward.png");
-			jetManImages.jetUp = JetManIcons.loadIcon(rc, "JetUp.png");
-			jetManImages.jetForward = JetManIcons.loadIcon(rc, "JetForward.png");
-			jetManImages.jetUpAndForward = JetManIcons.loadIcon(rc, "JetUpAndForward.png");
-			return jetManImages;
 		}
 	}
 	
@@ -289,7 +241,7 @@ public class ServerClientDemo
 		ImageHandle dudeImage = resourceContext.storeImageHandle(new File("tile-images/dude.png"));
 		ImageHandle ballImage = resourceContext.storeImageHandle(new File("tile-images/stupid-ball.png"));
 		
-		final JetManIcons jetManImages = JetManIcons.load(resourceContext);
+		final JetManIcons jetManIcons = JetManIcons.load(resourceContext);
 		
 		Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance);
 		
@@ -321,138 +273,12 @@ public class ServerClientDemo
 				//nonTiles = nonTiles.with(baller);
 			}
 			
-			class PlayerNTBehavior implements NonTileBehavior {
-				final long messageBitAddress;
-				final long clientBitAddress;
-				final JetManState playerState;
-				
-				public PlayerNTBehavior(long id, long clientId, JetManState playerState) {
-					this.messageBitAddress = id;
-					this.clientBitAddress = clientId;
-					this.playerState = playerState;
-				}
-				
-				public PlayerNTBehavior(long id, long clientId) {
-					this(id, clientId, JetManState.DEFAULT);
-				}
-				
-				protected PlayerNTBehavior withState(JetManState ps) {
-					return new PlayerNTBehavior(messageBitAddress, clientBitAddress, ps);
-				}
-				
-				@Override public NonTile update(final NonTile nt, long time, final World world,
-					MessageSet messages, NonTileUpdateContext updateContext
-				) {
-					updateContext.startAsyncTask( new AsyncTask() {
-						@Override public void run( UpdateContext ctx ) {
-							int worldRadius = 1<<(world.rstSizePower-1);
-							double centerX = nt.x, centerY = nt.y;
-							
-							int intCenterX = (int)Math.floor(centerX);
-							int intCenterY = (int)Math.floor(centerY);
-							
-							int ldWidth = 41;
-							int ldHeight = 31;
-							// center of layer data
-							int ldCenterX = ldWidth/2;
-							int ldCenterY = ldHeight/2;
-							
-							// TODO: Only collect the ones actually visible
-							final List<NonTile> visibleNonTiles = new ArrayList<NonTile>();
-							
-							world.nonTiles.forEachEntity( EntityRanges.BOUNDLESS, new Visitor<NonTile>() {
-								@Override public void visit( NonTile v ) {
-									visibleNonTiles.add(v);
-								}
-							});
-							
-							// There are various ways to go about this:
-							// - do visibility checks, send only visible area
-							// - send nearby quadtree nodes
-							// - send entire world
-							
-							boolean sendTiles = true;
-							Layer l;
-							VisibilityClip visibilityClip = new Layer.VisibilityClip(intCenterX-ldCenterX, intCenterY-ldCenterY, intCenterX-ldCenterX+ldWidth, intCenterY-ldCenterY+ldHeight);
-							if( sendTiles ) {
-								TileLayerData layerData = new TileLayerData( ldWidth, ldHeight, 1 );
-								WorldConverter.nodeToLayerData( world.rst, -worldRadius, -worldRadius, 0, 1<<world.rstSizePower, layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, ldWidth, ldHeight );
-								VisibilityChecker.calculateAndApplyVisibility(layerData, ldCenterX, ldCenterY, 0, 16);
-								l = new Layer( layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, visibilityClip, false, null, 0, 0, 0 );
-							} else {
-								int size = 1<<world.rstSizePower;
-								l = new Layer( new QuadTreeLayerData(world.rst, size), -size/2.0, -size/2.0, null, false, null, 0, 0, 0 );
-							}
-							Scene scene = new Scene( l, visibleNonTiles, centerX, centerY );
-							ctx.sendMessage(new Message(clientBitAddress, clientBitAddress, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, scene));
-						}
-					});
-					
-					int newThrustDir = playerState.thrustDir;
-					for( Message m : messages ) {
-						if( m.isApplicableTo(nt) && BitAddressUtil.rangeContains(m, messageBitAddress)) {
-							Object p = m.payload;
-							if( p instanceof Number ) {
-								int _wd = ((Number)p).intValue();
-								if( _wd >= -1 && _wd <= 7 ) {
-									newThrustDir = _wd;
-								}
-							}
-						}
-					}
-					boolean facingLeft = playerState.facingLeft;
-					boolean goUp = false, goDown = false;
-					boolean goLeft = false, goRight = false; 
-					// Change our direction!
-					switch( newThrustDir ) {
-					case -1: break;
-					case  0:
-						goRight = true;
-						break;
-					 case 1:
-						goRight = true;
-						goDown = true;
-						break;
-					case  2:
-						goDown = true;
-						break;
-					case  3:
-						goLeft = true;
-						goDown = true;
-						break;
-					case  4:
-						goLeft = true;
-						break;
-					case  5:
-						goLeft = true;
-						goUp = true;
-						break;
-					case  6:
-						goUp = true;
-						break;
-					case  7:
-						goRight = true;
-						goUp = true;
-						break;
-					}
-					if( goRight ) facingLeft = false;
-					
-					// TODO: Collision detection!
-					double newVx = nt.vx, newVy = nt.vy;
-					newVy = nt.vy + (goUp ? -0.001 : +0.001);
-					newVx = nt.vx + (goLeft ? -0.002 : goRight ? +0.002 : 0); 
-					
-					JetManState newState = new JetManState(0, newThrustDir, facingLeft);
-					
-					Icon newImage = goUp ?
-						(goRight ? jetManImages.jetUpAndForward : jetManImages.jetUp) :
-						(goRight ? jetManImages.jetForward : jetManImages.fall0);
-					
-					return nt.withIcon(newImage).withVelocity(time, newVx, newVy).withBehavior(withState(newState));
-				}
-			}
-			
-			NonTile playerNonTile = NonTile.create(0, 0, 0, jetManImages.walk0, 1f, new PlayerNTBehavior(playerNonTileBa, clientBa)).withId(playerId);
+			NonTile playerNonTile = new NonTile(0, 0, 0, 0, 0,
+				new AABB(-0.25, -0.5, -0.5, +0.25, +0.5, +0.5),
+				playerNonTileBa, playerNonTileBa, 1,
+				jetManIcons.walking[0], 
+				new JetManBehavior(playerNonTileBa, clientBa, jetManIcons)
+			);
 			nonTiles = nonTiles.with(playerNonTile);
 			
 			world = new World(n, worldSizePower, nonTiles);

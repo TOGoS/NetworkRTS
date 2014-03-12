@@ -6,6 +6,7 @@ import java.util.Iterator;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.experimental.gameengine1.index.EntityRange;
 import togos.networkrts.experimental.shape.RectIntersector;
+import togos.networkrts.experimental.shape.TBoundless;
 import togos.networkrts.util.BitAddressRange;
 import togos.networkrts.util.BitAddressUtil;
 
@@ -19,8 +20,6 @@ public class Message implements BitAddressRange, MessageSet
 	}
 	
 	public final long minBitAddress, maxBitAddress;
-	// TODO: Replace RectIntersector with something less sucky
-	// so that isApplicableTo can take spatial range into account more easily
 	public final RectIntersector targetShape;
 	public final MessageType type;
 	public final Object payload;
@@ -30,6 +29,10 @@ public class Message implements BitAddressRange, MessageSet
 		this.targetShape = targetShape;
 		this.type = type;
 		this.payload = payload;
+	}
+	
+	public Message( long minBa, long maxBa, MessageType type, Object payload ) {
+		this( minBa, maxBa, TBoundless.INSTANCE, type, payload );
 	}
 	
 	public Message( int targetId, RectIntersector targetShape, MessageType type, Object payload ) {
