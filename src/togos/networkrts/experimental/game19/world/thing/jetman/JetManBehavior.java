@@ -14,6 +14,7 @@ import togos.networkrts.experimental.game19.sim.AsyncTask;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.game19.sim.UpdateContext;
 import togos.networkrts.experimental.game19.world.BitAddresses;
+import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
@@ -48,12 +49,27 @@ public class JetManBehavior implements NonTileBehavior {
 		return new JetManBehavior(messageBitAddress, clientBitAddress, ps, jetManIcons);
 	}
 	
-	class Collision {
-		final int direction;
-		final double overlap;
-		public Collision( int dir, double overlap ) {
-			this.direction = dir;
-			this.overlap = overlap;
+	static class Collision {
+		final BlockStack blockStack;
+		final double correctionX, correctionY;
+		
+		public Collision( BlockStack bs, double correctionX, double correctionY ) {
+			this.blockStack = bs;
+			this.correctionX = correctionX;
+			this.correctionY = correctionY;
+		}
+		
+		protected static double jaque( double leftOverlap, double rightOverlap ) {
+			if( leftOverlap < 0 && rightOverlap < 0 ) return 0;
+			return leftOverlap < rightOverlap ? -leftOverlap : rightOverlap;
+		}
+		
+		public static Collision forOverlap( BlockStack bs, AABB a, int blockX, int blockY, int blockSize ) {
+			//return new Collision( bs, 0, blockY-a.maxY);
+			return new Collision( bs,
+				jaque( a.maxX - blockX, (blockX+blockSize) - a.minX ),
+				jaque( a.maxY - blockY, (blockY+blockSize) - a.minY )
+			);
 		}
 	}
 	
@@ -75,10 +91,7 @@ public class JetManBehavior implements NonTileBehavior {
 			if( (c = findCollisionWithRst(a, subNodes[3], rstX+subSize, rstY+subSize, subSizePower, tileFlags)) != null ) return c;
 			return null;
 		case BLOCKSTACK:
-			// already know there's a collision!
-			// just determine specifics
-			// For now assume down!
-			return new Collision(2, a.maxY - rstY);
+			return Collision.forOverlap(rst, a, rstX, rstY, rstSize);
 		default:
 			throw new UnsupportedOperationException("Unrecognized RST node type "+rst.getNodeType());
 		}
@@ -144,10 +157,17 @@ public class JetManBehavior implements NonTileBehavior {
 		// TODO: Collision detection!
 		Collision c = findCollisionWithRst(nt, world, BitAddresses.BLOCK_SOLID);
 		if( c != null ) {
-			// TODO: Don't assume direction = down (2)
-			feetOnGround = true;
-			newY -= c.overlap;
-			newVy = 0;
+			if( c.correctionX != 0 && Math.abs(c.correctionX) < Math.abs(c.correctionY) ) {
+				newX += c.correctionX;
+				newVx *= -0.5;
+			} else {
+				newY += c.correctionY;
+				newVy *= -0.5;
+				if( c.correctionY < 0 && Math.abs(newVy) < 0.1 ) {
+					newVy = 0;
+					feetOnGround = true;
+				}
+			}
 		}
 		
 		int newThrustDir = state.thrustDir;
