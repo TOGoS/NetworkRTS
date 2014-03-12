@@ -9,6 +9,8 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -17,6 +19,10 @@ import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
+import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
+import togos.networkrts.experimental.game19.scene.QuadTreeLayerData;
+import togos.networkrts.experimental.game19.scene.TileLayerData;
+import togos.networkrts.experimental.game19.scene.VisibilityChecker;
 import togos.networkrts.experimental.game19.sim.AsyncTask;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.game19.sim.Simulator;
@@ -35,8 +41,11 @@ import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.experimental.game19.world.RSTUtil;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.beh.NoBehavior;
+import togos.networkrts.experimental.game19.world.encoding.WorldConverter;
 import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
+import togos.networkrts.experimental.gameengine1.index.EntityRanges;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
+import togos.networkrts.experimental.gameengine1.index.Visitor;
 import togos.networkrts.experimental.shape.TBoundless;
 import togos.networkrts.experimental.shape.TCircle;
 import togos.networkrts.ui.ImageCanvas;
@@ -235,7 +244,95 @@ public class ServerClientDemo
 		});
 		c.messageQueue = messageQueue;
 		
-		Thread simulatorThread = new Thread("World updater") {
+		ImageHandle brickImage = resourceContext.storeImageHandle(new File("tile-images/dumbrick1.png"));
+		ImageHandle dudeImage = resourceContext.storeImageHandle(new File("tile-images/dude.png"));
+		ImageHandle ballImage = resourceContext.storeImageHandle(new File("tile-images/stupid-ball.png"));
+		
+		Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance);
+		
+		final Simulator sim;
+		{
+			World world;
+			int worldSizePower = 24;
+			int worldDataOrigin = -(1<<(worldSizePower-1));
+			
+			RSTNode n = QuadRSTNode.createHomogeneous(bricks.stack, worldSizePower);
+			n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( -2, -2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+			n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+			
+			Random r = new Random();
+			for( int i=0; i<100; ++i ) {
+				n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+			}
+			
+			NonTileBehavior ballerBehavior = new NonTileBehavior() {
+				Random r = new Random();
+				@Override public NonTile update(NonTile nt, long time, World w, MessageSet messages, NonTileUpdateContext updateContext) {
+					return nt.withPosition(time, nt.x+r.nextGaussian(), nt.y+r.nextGaussian());
+				}
+			};
+			
+			EntitySpatialTreeIndex<NonTile> nonTiles = new EntitySpatialTreeIndex<NonTile>();
+			for( int i=0; i<10; ++i ) {
+				NonTile baller = NonTile.create(0, r.nextGaussian()*10, r.nextGaussian()*10, ballImage, 2f, ballerBehavior);
+				//nonTiles = nonTiles.with(baller);
+			}
+			
+			class PlayerNTBehavior implements NonTileBehavior {
+				final long messageBitAddress;
+				final long clientBitAddress;
+				
+				public PlayerNTBehavior(long id, long clientId) {
+					this.messageBitAddress = id;
+					this.clientBitAddress = clientId;
+				}
+				
+				@Override
+				public NonTile update(NonTile nt, long time, World w,
+					MessageSet messages, NonTileUpdateContext updateContext
+				) {
+					double newVx = nt.vx, newVy = nt.vy;
+					for( Message m : messages ) {
+						if( m.isApplicableTo(nt) && BitAddressUtil.rangeContains(m, messageBitAddress)) {
+							Object p = m.payload;
+							if( p instanceof Number ) {
+								// Change our direction!
+								switch( ((Number) p).intValue() ) {
+								case -1: newVx =  0; newVy =  0; break;
+								case  0: newVx = +1; newVy =  0; break;
+								case  1: newVx = +1; newVy = +1; break;
+								case  2: newVx =  0; newVy = +1; break;
+								case  3: newVx = -1; newVy = +1; break;
+								case  4: newVx = -1; newVy =  0; break;
+								case  5: newVx = -1; newVy = -1; break;
+								case  6: newVx =  0; newVy = -1; break;
+								case  7: newVx = +1; newVy = -1; break;
+								}
+							}
+						}
+					}
+					/*
+					updateContext.startAsyncTask( new AsyncTask() {
+						@Override
+						public void run( UpdateContext ctx ) {
+							// Create scene, send to client
+						}
+					});
+					*/
+					updateContext.sendMessage(new Message(clientBitAddress, clientBitAddress, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, w));
+					return nt.withVelocity(time-1, newVx, newVy);
+				}
+			}
+			
+			NonTile playerNonTile = NonTile.create(0, 0, 0, dudeImage, 3f, new PlayerNTBehavior(playerNonTileBa, clientBa)).withId(playerId);
+			nonTiles = nonTiles.with(playerNonTile);
+			
+			world = new World(n, worldSizePower, nonTiles);
+			sim = new Simulator( world );
+		}
+		
+		// Maybe the simulator should do this
+		Thread simulatorThread = new Thread("Incoming message enqueuer") {
 			@Override public void run() {
 				try {
 					_run();
@@ -246,106 +343,29 @@ public class ServerClientDemo
 			}
 			
 			public void _run() throws Exception {
-				ImageHandle brickImage = resourceContext.storeImageHandle(new File("tile-images/dumbrick1.png"));
-				ImageHandle dudeImage = resourceContext.storeImageHandle(new File("tile-images/dude.png"));
-				ImageHandle ballImage = resourceContext.storeImageHandle(new File("tile-images/stupid-ball.png"));
-				
-				Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance);
-				
-				final Simulator sim;
-				{
-					World world;
-					int worldSizePower = 24;
-					int worldDataOrigin = -(1<<(worldSizePower-1));
-					
-					RSTNode n = QuadRSTNode.createHomogeneous(bricks.stack, worldSizePower);
-					n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( -2, -2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
-					n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
-					
-					Random r = new Random();
-					for( int i=0; i<100; ++i ) {
-						n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
-					}
-					
-					NonTileBehavior ballerBehavior = new NonTileBehavior() {
-						Random r = new Random();
-						@Override public NonTile update(NonTile nt, long time, World w, MessageSet messages, NonTileUpdateContext updateContext) {
-							return nt.withPosition(time, nt.x+r.nextGaussian(), nt.y+r.nextGaussian());
-						}
-					};
-					
-					EntitySpatialTreeIndex<NonTile> nonTiles = new EntitySpatialTreeIndex<NonTile>();
-					for( int i=0; i<10; ++i ) {
-						NonTile baller = NonTile.create(0, r.nextGaussian()*10, r.nextGaussian()*10, ballImage, 2f, ballerBehavior);
-						//nonTiles = nonTiles.with(baller);
-					}
-					
-					class PlayerNTBehavior implements NonTileBehavior {
-						final long messageBitAddress;
-						final long clientBitAddress;
-						
-						public PlayerNTBehavior(long id, long clientId) {
-							this.messageBitAddress = id;
-							this.clientBitAddress = clientId;
-						}
-						
-						@Override
-						public NonTile update(NonTile nt, long time, World w,
-							MessageSet messages, NonTileUpdateContext updateContext
-						) {
-							double newVx = nt.vx, newVy = nt.vy;
-							for( Message m : messages ) {
-								if( m.isApplicableTo(nt) && BitAddressUtil.rangeContains(m, messageBitAddress)) {
-									Object p = m.payload;
-									if( p instanceof Number ) {
-										// Change our direction!
-										switch( ((Number) p).intValue() ) {
-										case -1: newVx =  0; newVy =  0; break;
-										case  0: newVx = +1; newVy =  0; break;
-										case  1: newVx = +1; newVy = +1; break;
-										case  2: newVx =  0; newVy = +1; break;
-										case  3: newVx = -1; newVy = +1; break;
-										case  4: newVx = -1; newVy =  0; break;
-										case  5: newVx = -1; newVy = -1; break;
-										case  6: newVx =  0; newVy = -1; break;
-										case  7: newVx = +1; newVy = -1; break;
-										}
-									}
-								}
-							}
-							updateContext.startAsyncTask( new AsyncTask() {
-								@Override
-								public void run( UpdateContext ctx ) {
-									// TODO Auto-generated method stub
-								}
-							});
-							return nt.withVelocity(time-1, newVx, newVy);
-						}
-					}
-					
-					NonTile playerNonTile = NonTile.create(0, 0, 0, dudeImage, 3f, new PlayerNTBehavior(playerNonTileBa, clientBa)).withId(playerId);
-					nonTiles = nonTiles.with(playerNonTile);
-					
-					world = new World(n, worldSizePower, nonTiles);
-					sim = new Simulator( world );
-				}
-				
 				sim.start();
 				
 				while( true ) {
 					sim.enqueueMessage(messageQueue.take());
 				}
-				
-				/*
-				long simTime = 0;
+			}
+		};
+		simulatorThread.setDaemon(true);
+		simulatorThread.start();
+		
+		Thread clientUpdateThread = new Thread("Client updater") {
+			public void run() {
 				while(true) {
 					Message m;
-					while( (m = messageQueue.poll()) != null ) {
-						sim.enqueueMessage(m);
+					try {
+						m = sim.outgoingMessages.take();
+					} catch( InterruptedException e ) {
+						System.err.println(getName()+" interrupted; quitting");
+						e.printStackTrace();
+						return;
 					}
 					
-					sim.update(simTime);
-					World world = sim.getWorld();
+					World world = (World)m.payload;
 					int worldRadius = 1<<(world.rstSizePower-1);
 					
 					/*
@@ -358,7 +378,7 @@ public class ServerClientDemo
 						centerX = 0;
 						centerY = 0;
 					}
-					* /
+					*/
 					double centerX = 0, centerY = 0;
 					
 					int intCenterX = (int)Math.floor(centerX);
@@ -397,14 +417,10 @@ public class ServerClientDemo
 						l = new Layer( new QuadTreeLayerData(world.rst, size), -size/2.0, -size/2.0, null, false, null, 0, 0, 0 );
 					}
 					c.setScene(new Scene( l, visibleNonTiles, centerX, centerY ));
-					
-					Thread.sleep(40);
-					++simTime;
 				}
-				*/
 			}
 		};
-		simulatorThread.setDaemon(true);
-		simulatorThread.start();
+		clientUpdateThread.setDaemon(true);
+		clientUpdateThread.start();
 	}
 }

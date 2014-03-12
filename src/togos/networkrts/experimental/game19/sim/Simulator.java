@@ -36,7 +36,7 @@ public class Simulator
 	}
 	
 	protected QueuelessRealTimeEventSource<Message> incomingMessages = new QueuelessRealTimeEventSource<Message>();
-	protected LinkedBlockingQueue<Message> outgoingMessages = new LinkedBlockingQueue<Message>();
+	public    LinkedBlockingQueue<Message> outgoingMessages = new LinkedBlockingQueue<Message>();
 	protected LinkedBlockingQueue<AsyncTask> asyncTaskQueue = new LinkedBlockingQueue<AsyncTask>();
 	protected TaskRunner taskRunner = new TaskRunner("Async task runner", asyncTaskQueue, new UpdateContext() {
 		@Override public void sendMessage( Message m ) {
