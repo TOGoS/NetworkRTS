@@ -61,9 +61,9 @@ public class Simulator
 	protected EventLooper<Message> looper;
 	protected Simulation simulation;
 	
-	public Simulator( World world ) {
+	public Simulator( World world, long minStepInterval ) {
 		simulation = new Simulation(world, asyncTaskQueue, outgoingMessages);
-		looper = new EventLooper<Message>(incomingMessages, simulation, 10);
+		looper = new EventLooper<Message>(incomingMessages, simulation, minStepInterval);
 	}
 	
 	public void start() {

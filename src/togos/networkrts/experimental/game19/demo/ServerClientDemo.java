@@ -9,6 +9,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -35,6 +36,7 @@ import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
+import togos.networkrts.experimental.game19.world.NonTile.Icon;
 import togos.networkrts.experimental.game19.world.NonTileBehavior;
 import togos.networkrts.experimental.game19.world.QuadRSTNode;
 import togos.networkrts.experimental.game19.world.RSTNode;
@@ -164,6 +166,45 @@ public class ServerClientDemo
 		}
 	}
 	
+	static class JetManState {
+		public static final JetManState DEFAULT = new JetManState(0,0,false); 
+		
+		final int walkState, thrustDir;
+		final boolean facingLeft;
+		public JetManState( int walkState, int thrustDir, boolean facingLeft ) {
+			this.walkState = walkState;
+			this.thrustDir = thrustDir;
+			this.facingLeft = facingLeft;
+		}
+	}
+	
+	static class JetManIcons {
+		public Icon walk0, walk1, walk2, walk3, walk4, walk5;
+		public Icon fall0, flyUp, flyForward, jetUp, jetForward, jetUpAndForward;
+		
+		static Icon loadIcon(ResourceContext rc, String name) throws IOException {
+			ImageHandle ih = rc.storeImageHandle(new File("tile-images/JetMan/"+name));
+			return new Icon(ih, -0.5f, -0.5f, 1, 1 ); 
+		}
+		
+		static JetManIcons load(ResourceContext rc) throws IOException {
+			JetManIcons jetManImages = new JetManIcons();
+			jetManImages.walk0 = JetManIcons.loadIcon(rc, "Walk0.png");
+			jetManImages.walk1 = JetManIcons.loadIcon(rc, "Walk1.png");
+			jetManImages.walk2 = JetManIcons.loadIcon(rc, "Walk2.png");
+			jetManImages.walk3 = JetManIcons.loadIcon(rc, "Walk3.png");
+			jetManImages.walk4 = JetManIcons.loadIcon(rc, "Walk4.png");
+			jetManImages.walk5 = JetManIcons.loadIcon(rc, "Walk5.png");
+			jetManImages.fall0 = JetManIcons.loadIcon(rc, "Fall0.png");
+			jetManImages.flyUp = JetManIcons.loadIcon(rc, "FlyUp.png");
+			jetManImages.flyForward = JetManIcons.loadIcon(rc, "FlyForward.png");
+			jetManImages.jetUp = JetManIcons.loadIcon(rc, "JetUp.png");
+			jetManImages.jetForward = JetManIcons.loadIcon(rc, "JetForward.png");
+			jetManImages.jetUpAndForward = JetManIcons.loadIcon(rc, "JetUpAndForward.png");
+			return jetManImages;
+		}
+	}
+	
 	public static void main( String[] args ) throws Exception {
 		final LinkedBlockingQueue<Message> messageQueue = new LinkedBlockingQueue<Message>(); 
 		
@@ -248,6 +289,8 @@ public class ServerClientDemo
 		ImageHandle dudeImage = resourceContext.storeImageHandle(new File("tile-images/dude.png"));
 		ImageHandle ballImage = resourceContext.storeImageHandle(new File("tile-images/stupid-ball.png"));
 		
+		final JetManIcons jetManImages = JetManIcons.load(resourceContext);
+		
 		Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance);
 		
 		final Simulator sim;
@@ -281,35 +324,25 @@ public class ServerClientDemo
 			class PlayerNTBehavior implements NonTileBehavior {
 				final long messageBitAddress;
 				final long clientBitAddress;
+				final JetManState playerState;
 				
-				public PlayerNTBehavior(long id, long clientId) {
+				public PlayerNTBehavior(long id, long clientId, JetManState playerState) {
 					this.messageBitAddress = id;
 					this.clientBitAddress = clientId;
+					this.playerState = playerState;
+				}
+				
+				public PlayerNTBehavior(long id, long clientId) {
+					this(id, clientId, JetManState.DEFAULT);
+				}
+				
+				protected PlayerNTBehavior withState(JetManState ps) {
+					return new PlayerNTBehavior(messageBitAddress, clientBitAddress, ps);
 				}
 				
 				@Override public NonTile update(final NonTile nt, long time, final World world,
 					MessageSet messages, NonTileUpdateContext updateContext
 				) {
-					double newVx = nt.vx, newVy = nt.vy;
-					for( Message m : messages ) {
-						if( m.isApplicableTo(nt) && BitAddressUtil.rangeContains(m, messageBitAddress)) {
-							Object p = m.payload;
-							if( p instanceof Number ) {
-								// Change our direction!
-								switch( ((Number) p).intValue() ) {
-								case -1: newVx =  0; newVy =  0; break;
-								case  0: newVx = +1; newVy =  0; break;
-								case  1: newVx = +1; newVy = +1; break;
-								case  2: newVx =  0; newVy = +1; break;
-								case  3: newVx = -1; newVy = +1; break;
-								case  4: newVx = -1; newVy =  0; break;
-								case  5: newVx = -1; newVy = -1; break;
-								case  6: newVx =  0; newVy = -1; break;
-								case  7: newVx = +1; newVy = -1; break;
-								}
-							}
-						}
-					}
 					updateContext.startAsyncTask( new AsyncTask() {
 						@Override public void run( UpdateContext ctx ) {
 							int worldRadius = 1<<(world.rstSizePower-1);
@@ -354,15 +387,76 @@ public class ServerClientDemo
 							ctx.sendMessage(new Message(clientBitAddress, clientBitAddress, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, scene));
 						}
 					});
-					return nt.withVelocity(time, newVx, newVy);
+					
+					int newThrustDir = playerState.thrustDir;
+					for( Message m : messages ) {
+						if( m.isApplicableTo(nt) && BitAddressUtil.rangeContains(m, messageBitAddress)) {
+							Object p = m.payload;
+							if( p instanceof Number ) {
+								int _wd = ((Number)p).intValue();
+								if( _wd >= -1 && _wd <= 7 ) {
+									newThrustDir = _wd;
+								}
+							}
+						}
+					}
+					boolean facingLeft = playerState.facingLeft;
+					boolean goUp = false, goDown = false;
+					boolean goLeft = false, goRight = false; 
+					// Change our direction!
+					switch( newThrustDir ) {
+					case -1: break;
+					case  0:
+						goRight = true;
+						break;
+					 case 1:
+						goRight = true;
+						goDown = true;
+						break;
+					case  2:
+						goDown = true;
+						break;
+					case  3:
+						goLeft = true;
+						goDown = true;
+						break;
+					case  4:
+						goLeft = true;
+						break;
+					case  5:
+						goLeft = true;
+						goUp = true;
+						break;
+					case  6:
+						goUp = true;
+						break;
+					case  7:
+						goRight = true;
+						goUp = true;
+						break;
+					}
+					if( goRight ) facingLeft = false;
+					
+					// TODO: Collision detection!
+					double newVx = nt.vx, newVy = nt.vy;
+					newVy = nt.vy + (goUp ? -0.001 : +0.001);
+					newVx = nt.vx + (goLeft ? -0.002 : goRight ? +0.002 : 0); 
+					
+					JetManState newState = new JetManState(0, newThrustDir, facingLeft);
+					
+					Icon newImage = goUp ?
+						(goRight ? jetManImages.jetUpAndForward : jetManImages.jetUp) :
+						(goRight ? jetManImages.jetForward : jetManImages.fall0);
+					
+					return nt.withIcon(newImage).withVelocity(time, newVx, newVy).withBehavior(withState(newState));
 				}
 			}
 			
-			NonTile playerNonTile = NonTile.create(0, 0, 0, dudeImage, 3f, new PlayerNTBehavior(playerNonTileBa, clientBa)).withId(playerId);
+			NonTile playerNonTile = NonTile.create(0, 0, 0, jetManImages.walk0, 1f, new PlayerNTBehavior(playerNonTileBa, clientBa)).withId(playerId);
 			nonTiles = nonTiles.with(playerNonTile);
 			
 			world = new World(n, worldSizePower, nonTiles);
-			sim = new Simulator( world );
+			sim = new Simulator( world, 50 );
 		}
 		
 		// Maybe the simulator should do this

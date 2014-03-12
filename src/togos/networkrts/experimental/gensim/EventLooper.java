@@ -40,10 +40,12 @@ public class EventLooper<EventClass> extends Thread
 			final long currentTick = stepper.getCurrentTime();
 			final long currentTime = eventSource.getCurrentTime();
 			final long nextAutoTick = stepper.getNextAutoUpdateTime();
+			assert nextAutoTick > currentTick;
 			
 			long nextAutoTickTime = nextAutoTick == Long.MAX_VALUE ? Long.MAX_VALUE : previousTickStartTime + (nextAutoTick - currentTick) * minStepInterval;
 			if( nextAutoTickTime < currentTime+1 ) {
-				System.err.println("Simulation running slow!  Tick took "+(currentTime-previousTickStartTime)+" milliseconds");
+				// TODO: figure out why this always shows
+				//System.err.println("Simulation running slow!  Tick took "+(currentTime-previousTickStartTime)+" milliseconds");
 				nextAutoTickTime = currentTime + 1;
 			}
 			

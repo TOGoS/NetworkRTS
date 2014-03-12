@@ -42,9 +42,13 @@ public class NonTile implements EntityRange
 		return new AABB( x-diameter, y-diameter, -diameter, x+diameter, y+diameter, +diameter );
 	}
 	
+	public static NonTile create( long referenceTime, double x, double y, Icon icon, float diameter, NonTileBehavior behavior ) {
+		return new NonTile( referenceTime, x, y, 0, 0, ccbb(x,y,diameter), BitAddressUtil.MAX_ADDRESS, BitAddressUtil.MIN_ADDRESS, Long.MAX_VALUE, icon, behavior );
+	}
+
 	public static NonTile create( long referenceTime, double x, double y, ImageHandle image, float diameter, NonTileBehavior behavior ) {
 		Icon icon = new Icon( image, -diameter/2, -diameter/2, diameter, diameter );
-		return new NonTile( referenceTime, x, y, 0, 0, ccbb(x,y,diameter), BitAddressUtil.MAX_ADDRESS, BitAddressUtil.MIN_ADDRESS, Long.MAX_VALUE, icon, behavior );
+		return create( referenceTime, x, y, icon, diameter, behavior );
 	}
 	
 	public static NonTile create( long referenceTime, double x, double y, ImageHandle image, float diameter ) {
@@ -74,6 +78,14 @@ public class NonTile implements EntityRange
 	
 	public NonTile withId(int id) {
 		return withIdRange(BitAddresses.withMinFlags(id), BitAddresses.withMaxFlags(id));
+	}
+	
+	public NonTile withIcon(Icon icon) {
+		return new NonTile(
+			referenceTime, x, y, vx, vy, physicalAabb,
+			minBitAddress, maxBitAddress, nextAutoUpdateTime,
+			icon, behavior
+		);
 	}
 	
 	public NonTile withPositionAndVelocity(long referenceTime, double x, double y, double vx, double vy) {
