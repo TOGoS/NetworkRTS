@@ -74,8 +74,11 @@ public class ImageHandle
 		if( height < 0 ) { dy0 = -height; dy1 = 0; } else { dy0 = 0; dy1 = height; }
 		BufferedImageWithFlipBits b = new BufferedImageWithFlipBits(width, height, isCompletelyOpaque ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g = (Graphics2D)b.getGraphics();
-		//g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); // That's for primitive geometry
-		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+		// Interpolate only when scaling down
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+			(b.getWidth() < original.getWidth() && b.getHeight() < original.getHeight()) ?
+				RenderingHints.VALUE_INTERPOLATION_BICUBIC :
+				RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 		g.drawImage( original, dx0, dy0, dx1, dy1, 0, 0, original.getWidth(), original.getHeight(), null);
 		return b;
 	}
