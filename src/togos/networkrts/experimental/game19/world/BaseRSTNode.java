@@ -1,9 +1,6 @@
 package togos.networkrts.experimental.game19.world;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
+import togos.networkrts.experimental.game19.sim.UpdateContext;
 import togos.networkrts.experimental.shape.RectIntersector;
 import togos.networkrts.util.BitAddressUtil;
 
@@ -21,9 +18,9 @@ public abstract class BaseRSTNode implements RSTNode
 	@Override public long getMaxBitAddress() { return maxBitAddress; }
 	@Override public long getNextAutoUpdateTime() { return this.nextAutoUpdateTime; }
 	
-	protected abstract RSTNode _update( int x, int y, int sizePower, long time, Collection<Message> messages, List<Action> results );
+	protected abstract RSTNode _update( int x, int y, int sizePower, long time, MessageSet messages, UpdateContext updateContext );
 	
-	@Override public RSTNode update( int x, int y, int sizePower, long time, Collection<Message> messages, List<Action> results ) {
+	@Override public RSTNode update( int x, int y, int sizePower, long time, MessageSet messages, UpdateContext updateContext ) {
 		int relevantMessageCount = 0;
 		int size = 1<<sizePower;
 		for( Message m : messages ) {
@@ -36,10 +33,10 @@ public abstract class BaseRSTNode implements RSTNode
 			if( time < nextAutoUpdateTime ) {
 				return this;
 			}
-			messages = Collections.<Message>emptyList();
+			messages = MessageSet.EMPTY;
 		}
 		// TODO: if relevantMessageCount < messages.length, could filter, here.
 		
-		return _update( x, y, sizePower, time, messages, results );
+		return _update( x, y, sizePower, time, messages, updateContext );
 	}
 }

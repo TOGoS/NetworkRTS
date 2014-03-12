@@ -1,7 +1,6 @@
 package togos.networkrts.experimental.game19.world;
 
-import java.util.Collection;
-import java.util.List;
+import togos.networkrts.experimental.game19.sim.UpdateContext;
 
 public class QuadRSTNode extends BaseRSTNode
 {
@@ -57,13 +56,13 @@ public class QuadRSTNode extends BaseRSTNode
 	
 	@Override protected RSTNode _update(
 		int x, int y, int sizePower, long time,
-		Collection<Message> messages, List<Action> results
+		MessageSet messages, UpdateContext updateContext
 	) {
 		RSTNode[] newSubNodes = new RSTNode[4];
 		int subSizePower = sizePower-1;
 		int subSize = 1<<subSizePower;
 		for( int sy=0, si=0; sy<2; ++sy) for( int sx=0; sx<2; ++sx, ++si ) {
-			newSubNodes[si] = subNodes[si].update( x+(sx*subSize), y+(sy*subSize), subSizePower, time, messages, results );
+			newSubNodes[si] = subNodes[si].update( x+(sx*subSize), y+(sy*subSize), subSizePower, time, messages, updateContext );
 		}
 		return QuadRSTNode.create( newSubNodes ); 
 	}

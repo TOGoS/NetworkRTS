@@ -1,14 +1,14 @@
 package togos.networkrts.experimental.game19.world;
 
-import java.util.Collection;
+import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 
 public interface NonTileBehavior
 {
 	public static final NonTileBehavior NONE = new NonTileBehavior() {
-		public NonTile update( NonTile nt, long time, World w, Collection<Message> messages, Collection<Message> outgoingMessages ) {
+		public NonTile update( NonTile nt, long time, World w, MessageSet messages, NonTileUpdateContext updateContext ) {
 			return nt;
 		}
 	};
 	
-	public NonTile update( NonTile nt, long time, World w, Collection<Message> messages, Collection<Message> outgoingMessages );
+	public NonTile update( NonTile nt, long time, World w, MessageSet messages, NonTileUpdateContext updateContext );
 }

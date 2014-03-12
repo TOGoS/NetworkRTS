@@ -1,8 +1,6 @@
 package togos.networkrts.experimental.game19.world;
 
-import java.util.Collection;
-import java.util.List;
-
+import togos.networkrts.experimental.game19.sim.UpdateContext;
 import togos.networkrts.util.BitAddressRange;
 
 /**
@@ -16,5 +14,5 @@ public interface BlockBehavior extends BitAddressRange, HasAutoUpdateTime
 	// TODO: May want to update parameter types to be more specific:
 	// - take a (read-only) MessageCollection of incoming messages
 	// - take a callback that accepts outgoing messages
-	public Block update( Block b, int x, int y, int sizePower, long time, Collection<Message> messages, List<Action> results );
+	public Block update( Block b, int x, int y, int sizePower, long time, MessageSet messages, UpdateContext updateContext );
 }

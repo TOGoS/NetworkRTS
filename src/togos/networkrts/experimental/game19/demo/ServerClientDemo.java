@@ -10,7 +10,6 @@ import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.Random;
@@ -24,25 +23,24 @@ import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
 import togos.networkrts.experimental.game19.scene.QuadTreeLayerData;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.scene.VisibilityChecker;
+import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
+import togos.networkrts.experimental.game19.sim.Simulator;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
 import togos.networkrts.experimental.game19.world.IDGenerator;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
+import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.NonTileBehavior;
 import togos.networkrts.experimental.game19.world.QuadRSTNode;
 import togos.networkrts.experimental.game19.world.RSTNode;
-import togos.networkrts.experimental.game19.world.RSTNodePosition;
 import togos.networkrts.experimental.game19.world.RSTUtil;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.beh.NoBehavior;
-import togos.networkrts.experimental.game19.world.beh.RandomWalkBehavior;
-import togos.networkrts.experimental.game19.world.beh.WalkingBehavior;
 import togos.networkrts.experimental.game19.world.encoding.WorldConverter;
 import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
-import togos.networkrts.experimental.game19.world.sim.Simulator;
 import togos.networkrts.experimental.gameengine1.index.EntityRanges;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
 import togos.networkrts.experimental.gameengine1.index.Visitor;
@@ -171,10 +169,7 @@ public class ServerClientDemo
 		
 		final ResourceContext resourceContext = new ResourceContext(new File(".ccouch"));
 		final Client c = new Client(resourceContext);
-		final int playerBlockId = idGenerator.newId();
 		final int playerNonTileId = idGenerator.newId();
-		final int ballBlockId = idGenerator.newId();
-		final int dudeBlockId = idGenerator.newId();
 		c.startUi();
 		c.sceneCanvas.addKeyListener(new KeyListener() {
 			boolean[] keysDown = new boolean[8];
@@ -227,7 +222,6 @@ public class ServerClientDemo
 				
 				int dir = dir(dirX, dirY);
 				if( dir != oldDir ) {
-					messageQueue.add(new Message(playerBlockId, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(dir)));
 					messageQueue.add(new Message(playerNonTileId, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(dir)));
 					oldDir = dir;
 				}
@@ -261,9 +255,6 @@ public class ServerClientDemo
 				ImageHandle ballImage = resourceContext.storeImageHandle(new File("tile-images/stupid-ball.png"));
 				
 				Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance);
-				Block dude = new Block(dudeBlockId|BitAddresses.BLOCK_SOLID, dudeImage, new RandomWalkBehavior(3, 1));
-				Block player = new Block(playerBlockId|BitAddresses.BLOCK_SOLID, dudeImage, new WalkingBehavior(2, 0, -1));
-				Block stupidBall = new Block(ballBlockId|BitAddresses.BLOCK_PHYS|BitAddresses.BLOCK_SOLID, ballImage, NoBehavior.instance);
 				
 				final Simulator sim;
 				{
@@ -280,15 +271,9 @@ public class ServerClientDemo
 						n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
 					}
 					
-					n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -2, -2, dude, null);
-					n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -3, -2, dude, null);
-					n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -2, dude, null);
-					n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -4, -0, player, null);
-					n = RSTUtil.updateBlockStackAt( n, worldDataOrigin, worldDataOrigin, worldSizePower, -5, -0, stupidBall, null);
-					
 					NonTileBehavior ballerBehavior = new NonTileBehavior() {
 						Random r = new Random();
-						@Override public NonTile update(NonTile nt, long time, World w, Collection<Message> messages, Collection<Message> outgoingMessages) {
+						@Override public NonTile update(NonTile nt, long time, World w, MessageSet messages, NonTileUpdateContext updateContext) {
 							return nt.withPosition(time, nt.x+r.nextGaussian(), nt.y+r.nextGaussian());
 						}
 					};
@@ -308,7 +293,7 @@ public class ServerClientDemo
 						
 						@Override
 						public NonTile update(NonTile nt, long time, World w,
-							Collection<Message> messages, Collection<Message> outgoingMessages
+							MessageSet messages, NonTileUpdateContext updateContext
 						) {
 							double newVx = nt.vx, newVy = nt.vy;
 							for( Message m : messages ) {
@@ -338,8 +323,7 @@ public class ServerClientDemo
 					nonTiles = nonTiles.with(playerNonTile);
 					
 					world = new World(n, worldSizePower, nonTiles);
-					sim = new Simulator();
-					sim.setWorld( world );
+					sim = new Simulator( world );
 				}
 				
 				long simTime = 0;
@@ -353,7 +337,8 @@ public class ServerClientDemo
 					World world = sim.getWorld();
 					int worldRadius = 1<<(world.rstSizePower-1);
 					
-					RSTNodePosition playerPosition = RSTUtil.findBlock(world.rst, -worldRadius, -worldRadius, world.rstSizePower, playerBlockId);
+					/*
+					RSTNodePosition playerPosition = RSTUtil.findBlock(world.rst, -worldRadius, -worldRadius, world.rstSizePower);
 					double centerX, centerY;
 					if( playerPosition != null ) {
 						centerX = playerPosition.getCenterX();
@@ -362,6 +347,8 @@ public class ServerClientDemo
 						centerX = 0;
 						centerY = 0;
 					}
+					*/
+					double centerX = 0, centerY = 0;
 					
 					int intCenterX = (int)Math.floor(centerX);
 					int intCenterY = (int)Math.floor(centerY);
