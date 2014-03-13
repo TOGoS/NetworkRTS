@@ -3,6 +3,7 @@ package togos.networkrts.experimental.game19.demo;
 import java.awt.Color;
 import java.awt.Frame;
 import java.awt.Graphics;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
@@ -54,7 +55,7 @@ public class ServerClientDemo
 		public final Layer layer;
 		public final Iterable<NonTile> nonTiles;
 		// Point within the scene that should be centered on (usually the player)
-		public final double poiX, poiY; 
+		public final double poiX, poiY;
 		/**
 		 * Section of the scene that is visible
 		 * (offsets are relative to the layer's origin)
@@ -94,18 +95,38 @@ public class ServerClientDemo
 		
 		public synchronized void setScene( Scene s ) {
 			this.scene = s;
-			notifyAll();
+			redrawBuffer();
+		}
+		
+		public synchronized void zoomMore() {
+			if( pixelsPerMeter < 128 ) {
+				pixelsPerMeter <<= 1;
+				redrawBuffer();
+			}
+		}
+		
+		public synchronized void zoomLess() {
+			if( pixelsPerMeter > 1 ) {
+				pixelsPerMeter >>= 1;
+				redrawBuffer();
+			}
 		}
 		
 		protected int roundEven(double v) {
 			return 2*(int)Math.round(v/2);
 		}
 		
+		protected boolean needRedraw = true;
+		protected synchronized void redrawBuffer() {
+			needRedraw = true;
+			notifyAll();
+		}
+		
 		public void redrawLoop() throws InterruptedException {
 			Scene s = null;
 			while( true ) {
 				synchronized(this) {
-					while( scene == s || scene == null ) wait();
+					while( !needRedraw || scene == null ) wait();
 					s = scene;
 				}
 				VisibilityClip vc = s.visibilityClip;
@@ -176,6 +197,14 @@ public class ServerClientDemo
 		final int clientId = idGenerator.newId();
 		final long clientBa = BitAddresses.forceType(BitAddresses.TYPE_EXTERNAL, clientId);
 		c.startUi();
+		c.sceneCanvas.addKeyListener(new KeyAdapter() {
+			@Override public void keyPressed(KeyEvent kevt) {
+				switch( kevt.getKeyCode() ) {
+				case KeyEvent.VK_EQUALS: c.sceneCanvas.zoomMore(); break;
+				case KeyEvent.VK_MINUS: c.sceneCanvas.zoomLess(); break;
+				}
+			}
+		});
 		c.sceneCanvas.addKeyListener(new KeyListener() {
 			boolean[] keysDown = new boolean[8];
 			int oldDir = -2;
