@@ -146,7 +146,7 @@ public class JetManBehavior implements NonTileBehavior {
 					l = new Layer( new QuadTreeLayerData(world.rst, size), -size/2.0, -size/2.0, false, null, 0, 0, 0 );
 				}
 				Scene scene = new Scene( l, visibleNonTiles, centerX, centerY, visibilityClip );
-				ctx.sendMessage(new Message(clientBitAddress, clientBitAddress, MessageType.INCOMING_PACKET, scene));
+				ctx.sendMessage(Message.create(clientBitAddress, clientBitAddress, MessageType.INCOMING_PACKET, scene));
 			}
 		});
 		

@@ -20,4 +20,14 @@ public class EthernetFrame extends BaseDataPacket
 		this.etherType = etherType;
 		this.payload = payload;
 	}
+	
+	public long getSourceAddress() {
+		ensureObjectPopulated();
+		return src;
+	}
+	
+	public long getDestinationAddress() {
+		ensureObjectPopulated();
+		return src;
+	}
 }

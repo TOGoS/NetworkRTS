@@ -2,20 +2,18 @@ package togos.networkrts.experimental.game19.demo;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.BlockingQueue;
 
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
-import togos.networkrts.experimental.game19.sim.MessageSender;
 import togos.networkrts.experimental.game19.sim.Simulator;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
 import togos.networkrts.experimental.game19.world.IDGenerator;
-import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.QuadRSTNode;
 import togos.networkrts.experimental.game19.world.RSTNode;
@@ -27,7 +25,6 @@ import togos.networkrts.experimental.game19.world.thing.jetman.JetManBehavior;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManIcons;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
-import togos.networkrts.experimental.packet19.EthernetFrame;
 import togos.networkrts.experimental.shape.TCircle;
 import togos.networkrts.util.BitAddressUtil;
 
@@ -74,48 +71,6 @@ public class Server
 			
 		EntitySpatialTreeIndex<NonTile> nonTiles = new EntitySpatialTreeIndex<NonTile>();
 		return new World(n, worldSizePower, nonTiles);
-	}
-	
-	class Switch implements MessageSender {
-		@Override public void sendMessage(Message m) {
-			Object p = m.payload;
-			if( p instanceof EthernetFrame ) {
-				// All is well!  Let's switch it!
-				// Will need to:
-				//   Map the destination MAC address to either
-				//   - a bit address (indicating the message goes into the simulation), or
-				//   - something indicating to actually send the packet out across the real internet
-			} else {
-				System.err.println("External switch received something other than an ethernet frame :X");
-			}
-		}
-	}
-	
-	class OutgoingMessageSender extends Thread {
-		protected BlockingQueue<Message> outgoingMessages;
-		
-		final Map<Long,MessageSender> externalMessageHandlers = new HashMap<Long,MessageSender>();
-		
-		public OutgoingMessageSender( BlockingQueue<Message> outgoingMessages ) {
-			super("Outgoing message sender");
-			this.outgoingMessages = outgoingMessages;
-		}
-		
-		protected void handle( Message m ) {
-		}
-		
-		public void run() {
-			while(true) {
-				Message m;
-				try {
-					m = outgoingMessages.take();
-				} catch( InterruptedException e ) {
-					System.err.println(getName()+" interrupted; quitting");
-					e.printStackTrace();
-					return;
-				}
-			}
-		}
 	}
 	
 	Simulator sim;

@@ -22,23 +22,37 @@ public class Message implements BitAddressRange, MessageSet
 	public final long minBitAddress, maxBitAddress;
 	public final RectIntersector targetShape;
 	public final MessageType type;
+	public final long sourceAddress;
 	public final Object payload;
 	
-	public Message( long minBa, long maxBa, RectIntersector targetShape, MessageType type, Object payload ) {
+	public Message( long minBa, long maxBa, RectIntersector targetShape, MessageType type, long sourceAddress, Object payload ) {
 		this.minBitAddress = minBa; this.maxBitAddress = maxBa;
 		this.targetShape = targetShape;
 		this.type = type;
+		this.sourceAddress = sourceAddress;
 		this.payload = payload;
 	}
 	
-	public Message( long minBa, long maxBa, MessageType type, Object payload ) {
-		this( minBa, maxBa, TBoundless.INSTANCE, type, payload );
+	public static Message create( long minBa, long maxBa, MessageType type, long sourceAddress, Object payload ) {
+		return new Message( minBa, maxBa, TBoundless.INSTANCE, type, sourceAddress, payload );
 	}
 	
-	public Message( int targetId, RectIntersector targetShape, MessageType type, Object payload ) {
-		this( BitAddresses.withMinFlags(targetId), BitAddresses.withMaxFlags(targetId), targetShape, type, payload );
+	public static Message create( long minBa, long maxBa, MessageType type, Object payload ) {
+		return create( minBa, maxBa, type, BitAddressUtil.NO_ADDRESS, payload );
 	}
-
+	
+	public static Message create( int targetId, RectIntersector targetShape, MessageType type, long sourceAddress, Object payload ) {
+		return new Message( BitAddresses.withMinFlags(targetId), BitAddresses.withMaxFlags(targetId), targetShape, type, sourceAddress, payload );
+	}
+	
+	public static Message create( int targetId, RectIntersector targetShape, MessageType type, Object payload ) {
+		return create( targetId, targetShape, type, BitAddressUtil.NO_ADDRESS, payload );
+	}
+	
+	public static Message create( int targetId, MessageType type, Object payload ) {
+		return create( targetId, TBoundless.INSTANCE, type, BitAddressUtil.NO_ADDRESS, payload );
+	}
+	
 	@Override public long getMinBitAddress() { return minBitAddress; }
 	@Override public long getMaxBitAddress() { return maxBitAddress; }
 	
@@ -55,6 +69,10 @@ public class Message implements BitAddressRange, MessageSet
 		return isApplicableTo(
 			erbb.minX, erbb.minY, erbb.maxX, erbb.maxY,
 			er.getMinBitAddress(), er.getMaxBitAddress());
+	}
+	
+	public Message withSourceAddress(long sourceAddress) {
+		return new Message(minBitAddress, maxBitAddress, targetShape, type, sourceAddress, payload);
 	}
 	
 	//// MessageSet implementation

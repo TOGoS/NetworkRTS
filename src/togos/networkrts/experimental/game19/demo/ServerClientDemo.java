@@ -256,7 +256,7 @@ public class ServerClientDemo
 				
 				int dir = dir(dirX, dirY);
 				if( dir != oldDir ) {
-					messageQueue.add(new Message(playerId, TBoundless.INSTANCE, MessageType.INCOMING_PACKET, Integer.valueOf(dir)));
+					messageQueue.add(Message.create(playerId, MessageType.INCOMING_PACKET, Integer.valueOf(dir)));
 					oldDir = dir;
 				}
 			}
