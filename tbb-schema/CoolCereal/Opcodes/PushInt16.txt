@@ -1,0 +1,4 @@
+Push a 16-bit integer onto the stack. 
+
+The 2 bytes following this opcode are to be interpreted, big-endian-wise,
+as a signed 16-bit integer to be pushed onto the stack.

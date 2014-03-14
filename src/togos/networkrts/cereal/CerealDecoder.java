@@ -1,9 +1,8 @@
 package togos.networkrts.cereal;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,16 +14,18 @@ import togos.networkrts.util.ResourceNotFound;
 public class CerealDecoder implements Getter<Object>
 {
 	public static class DecodeState {
-		private final ArrayList<OperationType> opTypes;
+		private final OpcodeBehavior[] opcodeBehaviors;
 		private final ArrayList<Object> stack;
 		private boolean frozen = false;
 		
-		public DecodeState( List<OperationType> opcodes, List<Object> stack ) {
-			this.opTypes = new ArrayList<OperationType>(opcodes);
+		public DecodeState( OpcodeBehavior[] opcodes, List<Object> stack ) {
+			assert opcodes.length == 255;
+			
+			this.opcodeBehaviors = Arrays.copyOf(opcodes, opcodes.length);
 			this.stack = new ArrayList<Object>(stack);
 		}
 
-		public DecodeState( List<OperationType> opcodes ) {
+		public DecodeState( OpcodeBehavior[] opcodes ) {
 			this(opcodes, Collections.<Object>emptyList());
 		}
 		
@@ -35,9 +36,9 @@ public class CerealDecoder implements Getter<Object>
 		
 		// Opcode registration
 		
-		public synchronized void addOperationTypes( Collection<OperationType> opcodes ) {
-			if( frozen ) throw new RuntimeException("DecodeState is frozen; you cannot get it's stack mutable!");
-			this.opTypes.addAll(0, opcodes);
+		public synchronized void setOpcodeBehavior( byte opcode, OpcodeBehavior behavior ) {
+			if( frozen ) throw new RuntimeException("DecodeState is frozen; you cannot change its opcodes!");
+			this.opcodeBehaviors[opcode&0xFF] = behavior;
 		}
 		
 		// Stack mutation
@@ -71,28 +72,21 @@ public class CerealDecoder implements Getter<Object>
 			return this;
 		}
 		public synchronized DecodeState thaw() {
-			return frozen ? new DecodeState( opTypes, stack ) : this;
+			return frozen ? new DecodeState( opcodeBehaviors, stack ) : this;
 		}
 
-		public DecodeState process( byte[] data, int i, CerealDecoder coolCodec ) throws InvalidEncoding, ResourceNotFound {
+		public DecodeState process( byte[] data, int i, CerealDecoder ctx ) throws InvalidEncoding, ResourceNotFound {
 			if( i == data.length ) return this;
 			
 			DecodeState ds = thaw();
-			opstream: while( i < data.length ) {
-				for( OperationType opType : ds.opTypes ) {
-					int i2 = opType.apply( data, i, ds, coolCodec );
-					if( i2 != i ) {
-						i = i2;
-						continue opstream;
-					}
-				}
-				throw new InvalidEncoding(String.format("Opcode 0x%02x is not defined", data[i]));
+			while( i < data.length ) {
+				i = ds.opcodeBehaviors[data[i]&0xFF].apply(data, i, ds, ctx);
 			}
 			return ds;
 		}
 	}
 	
-	protected static final Map<String, OperationLibrary> OP_LIBS = new HashMap<String,OperationLibrary>();
+	public final Map<String, ? extends OpcodeBehavior> opLib = Opcodes.BY_URN;;
 	
 	/*
 	protected static final IMPORT_LIBRARY_OP = new  

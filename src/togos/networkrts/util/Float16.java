@@ -1,14 +1,23 @@
 package togos.networkrts.util;
 
-// Thanks to x4u for this code, found at
-// https://stackoverflow.com/questions/6162651/half-precision-floating-point-in-java/6162687#6162687
-// I have commented out his 'smooth transition' extension because it
-// resulted in unexpected behavior, e.g. 0.125 becoming 0.1250something
+/*
+ * Thanks to x4u for this code, found at
+ * https://stackoverflow.com/questions/6162651/half-precision-floating-point-in-java/6162687#6162687
+ * 
+ * I have commented out his 'smooth transition' extension because it
+ * resulted in unexpected behavior, e.g. 0.125 becoming 0.1250something.
+ *
+ * I have also renamed the methods to follow the convention set
+ * by Float and Double, .xBitsToY and .yToXBits
+ */
 
+/**
+ * Methods to convert floats to and from their binary16 representation.
+ */
 public class Float16
 {
 	// ignores the higher 16 bits
-	public static float toFloat( int hbits )
+	public static float shortBitsToFloat( int hbits )
 	{
 		int mant = hbits & 0x03ff;            // 10 bits mantissa
 		int exp =  hbits & 0x7c00;            // 5 bits exponent
@@ -36,7 +45,7 @@ public class Float16
 	}
 	
 	// returns all higher 16 bits as 0 for all results
-	public static int fromFloat( float fval )
+	public static int floatToShortBits( float fval )
 	{
 		int fbits = Float.floatToIntBits( fval );
 		int sign = fbits >>> 16 & 0x8000;          // sign only

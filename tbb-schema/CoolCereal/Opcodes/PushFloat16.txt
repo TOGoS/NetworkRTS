@@ -1,0 +1,6 @@
+Push a 16-bit float onto the stack. 
+
+The 2 bytes following this opcode are the IEEE-754-2008 binary16 representation
+of a floating point number to be pushed onto the stack.
+
+The 2 bytes are stored in big-endian order.

@@ -6,8 +6,8 @@ import junit.framework.TestCase;
 public class Float16Test extends TestCase
 {
 	protected void assertIsRepresentableAsFloat16( double num ) {
-		int encoded = Float16.fromFloat((float)num);
-		float decoded = Float16.toFloat(encoded);
+		int encoded = Float16.floatToShortBits((float)num);
+		float decoded = Float16.shortBitsToFloat(encoded);
 		assertTrue( num == decoded );
 	}
 	
@@ -35,6 +35,6 @@ public class Float16Test extends TestCase
 	}
 	
 	public void testNaNRepresentable() {
-		assertTrue(Float.isNaN(Float16.toFloat(Float16.fromFloat(Float.NaN))));
+		assertTrue(Float.isNaN(Float16.shortBitsToFloat(Float16.floatToShortBits(Float.NaN))));
 	}
 }

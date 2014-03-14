@@ -14,15 +14,20 @@
 		
 		The payload (after the TBB header) format is a bytecode stream.
 		
-		The only predefined opcode, 0x01, reads the following 20 bytes
-		from the bytecode stream, interprets it as the name of an opcode
-		library, and registers the opcodes.  Interpretation of the name
-		is not specified.  It may reference a text file describing the
-		opcodes, or some machine-readable format.
+		The only predefined opcode, 0x41, loads additional opcodes.
+		It is followed by 21 bytes, making the entire instruction 22 bytes:
 		
-		Opcodes defined later take precedence over earlier-defined ones.
+		  0x41, destination opcode (1 byte), opcode identifier (20 bytes)
 		
-		The value left on top of the stack after the entire instruction
-		stream has been interpreted is the serialized value.
+		The 'destination opcode' is the opcode to be replaced.
+		The source name identifies the behavior of the opcode.
+		The opcode identifier should be the SHA-1 hash of a text or
+		machine-readable file describing the opcode, but implementations
+		may hard-code the name to a specific meaning so that they don't
+		need to actually load the referenced resource.
+		
+		Every other opcode pushes its signed value onto the stack as an integer.
+		e.g. 0 pushes a zero onto the stack, 0xFF pushes a -1.  Normally
+		opcode ranges 0..0x40 and 0xA0..0xFF will be reserved for this purpose. 
 	</format>
 </Schema>

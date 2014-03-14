@@ -1,0 +1,6 @@
+Push a 64-bit float onto the stack.
+
+The 8 bytes following this opcode are the IEEE-754-2008 binary64 representation
+of a floating point number to be pushed onto the stack.
+
+The 8 bytes are stored in big-endian order.

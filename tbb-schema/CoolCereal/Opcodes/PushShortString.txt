@@ -1,0 +1,4 @@
+Push a short bytestring onto the stack.
+
+The byte following this opcode is interpreted, unsigned, as the length
+of the byte string following it, which is to be pushed onto the stack.

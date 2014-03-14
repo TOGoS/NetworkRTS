@@ -1,0 +1,11 @@
+Load opcode named by 20-byte string.
+
+This opcode loads a single opcode, named by a 20-byte string, into the opcode table.
+
+It is followed by 21 bytes:
+The first byte is indicates the destination slot in the opcode table.
+The 20 bytes following that name the opcode to be loaded.
+
+Normally those 20 bytes should be the SHA-1 sum of a file (such as this one)
+that describes the intended behavior of the opcode.
+ 

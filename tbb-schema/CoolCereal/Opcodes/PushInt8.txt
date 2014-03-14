@@ -1,0 +1,4 @@
+Push an 8-bit integer onto the stack. 
+
+The byte following this opcode is to be interpreted as a signed integer
+and pushed onto the stack.

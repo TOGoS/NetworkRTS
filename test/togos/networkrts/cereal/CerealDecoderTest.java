@@ -2,6 +2,7 @@ package togos.networkrts.cereal;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 import junit.framework.TestCase;
 import togos.networkrts.cereal.CerealDecoder.DecodeState;
@@ -13,38 +14,48 @@ public class CerealDecoderTest extends TestCase
 	MemoryRepo repo;
 	CerealDecoder decoder;
 	
-	protected static OperationMetaLibrary defaultMetaLibrary = new OperationMetaLibrary();
-	static {
-		defaultMetaLibrary.addLibrary( ScalarLiteralOps.INSTANCE );
-	}
-	
 	public void setUp() {
 		repo = new MemoryRepo();
-		decoder = new CerealDecoder(repo, defaultMetaLibrary.getInitialDecodeState());
+		decoder = new CerealDecoder(repo, new DecodeState(Opcodes.createDefaultOpTable()));
+		//decoder = new CerealDecoder(repo, new DecodeState(ScalarLiterals.DEFAULT_OP_TABLE));
+	}
+	
+	protected void writeOpDefs( OpcodeDefinition[] opDefs, OutputStream os ) throws InvalidEncoding, IOException {
+		for( int i=0; i<256 && i<opDefs.length; ++i ) {
+			if( opDefs[i] != null ) {
+				CerealUtil.writeOpImport((byte)i, opDefs[i].getUrn(), os);
+			}
+		}
 	}
 	
 	protected byte[] encodeStuff( Object...stuff ) {
 		try {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			CerealUtil.writeTbbHeader( CerealUtil.CEREAL_SCHEMA_REF, baos );
-			CerealUtil.writeLibImport( ScalarLiteralOps.INSTANCE.sha1, baos );
+			writeOpDefs( ScalarLiterals.SCALAR_LITERAL_OPS, baos );
 			for( Object thing : stuff ) {
-				ScalarLiteralOps.writeValue( thing, baos );
+				ScalarLiterals.writeValue( thing, baos );
 			}
 			return baos.toByteArray();
+		} catch( InvalidEncoding e ) {
+			// Won't happen!
+			throw new RuntimeException(e);
 		} catch( IOException e ) {
 			// Won't happen!
 			throw new RuntimeException(e);
 		}
 	}
 	
-	public void testEmptyIsParseError() throws ResourceNotFound {
+	public void testEmptyStackIsParseError() throws ResourceNotFound {
 		byte[] data;
 		try {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			CerealUtil.writeTbbHeader( CerealUtil.CEREAL_SCHEMA_REF, baos );
-			CerealUtil.writeLibImport( ScalarLiteralOps.INSTANCE.sha1, baos );
+			writeOpDefs( ScalarLiterals.SCALAR_LITERAL_OPS, baos );
 			data = baos.toByteArray();
+		} catch( InvalidEncoding e ) {
+			// Won't happen!
+			throw new RuntimeException(e);
 		} catch( IOException e ) {
 			// Won't happen!
 			throw new RuntimeException(e);
