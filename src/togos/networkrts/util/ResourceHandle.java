@@ -1,7 +1,6 @@
 package togos.networkrts.util;
 
-public interface ResourceHandle<T>
+public interface ResourceHandle<T> extends HasURI
 {
-	public String getUri();
-	public T getValue( Getter<T> populator ) throws ResourceNotFound;
+	public <X extends T> T getValue( Getter<X> populator ) throws ResourceNotFound;
 }

@@ -3,6 +3,8 @@ package togos.networkrts.cereal;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import togos.networkrts.cereal.op.PushDefault;
+import togos.networkrts.cereal.op.PushFalse;
 import togos.networkrts.cereal.op.PushFloat16;
 import togos.networkrts.cereal.op.PushFloat32;
 import togos.networkrts.cereal.op.PushFloat64;
@@ -11,10 +13,13 @@ import togos.networkrts.cereal.op.PushInt32;
 import togos.networkrts.cereal.op.PushInt64;
 import togos.networkrts.cereal.op.PushInt8;
 import togos.networkrts.cereal.op.PushMediumString;
+import togos.networkrts.cereal.op.PushSHA1BlobReference;
+import togos.networkrts.cereal.op.PushSHA1ObjectReference;
 import togos.networkrts.cereal.op.PushShortString;
+import togos.networkrts.cereal.op.PushTrue;
 import togos.networkrts.util.Float16;
 
-public class ScalarLiterals
+public class StandardValueOps
 {
 	/*
 	 * Default opcode numbers for pushing literal values
@@ -33,7 +38,11 @@ public class ScalarLiterals
 	
 	public static final byte SE_SHORTSTRING  = 0x42;
 	public static final byte SE_MEDIUMSTRING = 0x43;
-	
+	public static final byte RE_BLOBSHA1     = 0x44;
+	public static final byte RE_OBJECTSHA1   = 0x45;
+	public static final byte BE_TRUE    = 0x46;
+	public static final byte BE_FALSE   = 0x47;
+	public static final byte SE_DEFAULT = 0x48;
 	public static final byte NE_FLOAT16 = 0x49;
 	public static final byte NE_FLOAT32 = 0x4A;
 	public static final byte NE_FLOAT64 = 0x4B;
@@ -57,87 +66,30 @@ public class ScalarLiterals
 		}
 	}
 	
-	/*
-	public static final OpcodeBehavior STRING = new OpcodeBehavior() {
-		@Override public int apply( byte[] data, int offset, DecodeState ds, CerealDecoder context ) throws InvalidEncoding {
-			int length; byte[] string;
-			switch( data[offset] ) {
-			case 0x02:
-				length = data[offset+1] & 0xFF;
-				string = CerealUtil.extract(data, offset+2, length);
-				ds.pushStackItem(string);
-				return offset+2+length;
-			case 0x03:
-				length = CerealUtil.readInt16(data, offset+1) & 0xFFFF;
-				string = CerealUtil.extract(data, offset+3, length);
-				ds.pushStackItem(string);
-				return offset+3+length;
-			default: return offset;
-			}
-		}
-	};
-	public static final OpcodeBehavior NUMBER = new OpcodeBehavior() {
-		@Override public int apply( byte[] data, int offset, DecodeState ds, CerealDecoder context ) {
-			final byte dat = data[offset];
-			short dat16; int dat32; long dat64;
-			switch( dat ) {
-			case NE_FLOAT16:
-				dat16 = CerealUtil.readInt16(data, offset+1);
-				ds.pushStackItem( new Float(Float16.shortBitsToFloat(dat16)) );
-				return offset+3;
-			case NE_FLOAT32:
-				dat32 = CerealUtil.readInt32(data, offset+1);
-				ds.pushStackItem( new Float(Float.intBitsToFloat(dat32)) );
-				return offset+5;
-			case NE_FLOAT64:
-				dat64 = CerealUtil.readInt64(data, offset+1);
-				ds.pushStackItem( new Double(Double.longBitsToDouble(dat64)) );
-				return offset+9;
-			case NE_INT8:
-				ds.pushStackItem( new Byte(data[offset+1]) );
-				return offset+2;
-			case NE_INT16:
-				dat16 = CerealUtil.readInt16(data, offset+1);
-				ds.pushStackItem( new Short(dat16) );
-				return offset+3;
-			case NE_INT32:
-				dat32 = CerealUtil.readInt32(data, offset+1);
-				ds.pushStackItem( new Integer(dat32) );
-				return offset+5;
-			case NE_INT64:
-				dat64 = CerealUtil.readInt64(data, offset+1);
-				ds.pushStackItem( new Long(dat64) );
-				return offset+9;
-			default: return offset;
-			}
-		}
-	};
-	public static final OpcodeBehavior SMALLINT = new OpcodeBehavior() {
-		@Override public int apply( byte[] data, int offset, DecodeState ds, CerealDecoder context ) {
-			ds.pushStackItem( new Byte(data[offset]) );
-			return offset+1;
-		}
-	};
-	*/
-	
-	public static final OpcodeDefinition[] SCALAR_LITERAL_OPS = new OpcodeDefinition[0x50];
+	public static final OpcodeDefinition[] STANDARD_OPS = new OpcodeDefinition[0x50];
 	static {
-		SCALAR_LITERAL_OPS[SE_SHORTSTRING ] = PushShortString.INSTANCE;
-		SCALAR_LITERAL_OPS[SE_MEDIUMSTRING] = PushMediumString.INSTANCE;
-		SCALAR_LITERAL_OPS[NE_FLOAT16     ] = PushFloat16.INSTANCE;
-		SCALAR_LITERAL_OPS[NE_FLOAT32     ] = PushFloat32.INSTANCE;
-		SCALAR_LITERAL_OPS[NE_FLOAT64     ] = PushFloat64.INSTANCE;
-		SCALAR_LITERAL_OPS[NE_INT8        ] = PushInt8.INSTANCE;
-		SCALAR_LITERAL_OPS[NE_INT16       ] = PushInt16.INSTANCE;
-		SCALAR_LITERAL_OPS[NE_INT32       ] = PushInt32.INSTANCE;
-		SCALAR_LITERAL_OPS[NE_INT64       ] = PushInt64.INSTANCE;
+		STANDARD_OPS[SE_SHORTSTRING ] = PushShortString.INSTANCE;
+		STANDARD_OPS[SE_MEDIUMSTRING] = PushMediumString.INSTANCE;
+		STANDARD_OPS[RE_BLOBSHA1    ] = PushSHA1BlobReference.INSTANCE;
+		STANDARD_OPS[RE_OBJECTSHA1  ] = PushSHA1ObjectReference.INSTANCE;
+		STANDARD_OPS[BE_TRUE        ] = PushTrue.INSTANCE;
+		STANDARD_OPS[BE_FALSE       ] = PushFalse.INSTANCE;
+		STANDARD_OPS[SE_DEFAULT     ] = PushDefault.INSTANCE;
+		STANDARD_OPS[RE_OBJECTSHA1  ] = PushSHA1ObjectReference.INSTANCE;
+		STANDARD_OPS[NE_FLOAT16     ] = PushFloat16.INSTANCE;
+		STANDARD_OPS[NE_FLOAT32     ] = PushFloat32.INSTANCE;
+		STANDARD_OPS[NE_FLOAT64     ] = PushFloat64.INSTANCE;
+		STANDARD_OPS[NE_INT8        ] = PushInt8.INSTANCE;
+		STANDARD_OPS[NE_INT16       ] = PushInt16.INSTANCE;
+		STANDARD_OPS[NE_INT32       ] = PushInt32.INSTANCE;
+		STANDARD_OPS[NE_INT64       ] = PushInt64.INSTANCE;
 	}
 	
 	public static final OpcodeBehavior[] DEFAULT_OP_TABLE = Opcodes.createDefaultOpTable();
 	static {
-		for( int i=0; i<SCALAR_LITERAL_OPS.length; ++i ) {
-			if( SCALAR_LITERAL_OPS[i] != null ) {
-				DEFAULT_OP_TABLE[i] = SCALAR_LITERAL_OPS[i];
+		for( int i=0; i<STANDARD_OPS.length; ++i ) {
+			if( STANDARD_OPS[i] != null ) {
+				DEFAULT_OP_TABLE[i] = STANDARD_OPS[i];
 			}
 		}
 	}
@@ -325,11 +277,24 @@ public class ScalarLiterals
 		}
 	}
 	
+	public static void writeSha1ObjectReference( SHA1ObjectReference sr, OutputStream os ) throws IOException {
+		os.write( sr.sha1IdentifiesSerialization() ? RE_OBJECTSHA1 : RE_BLOBSHA1 );
+		os.write( sr.getSha1() );
+	}
+	
 	public static void writeValue( Object thing, OutputStream os ) throws IOException {
 		if( thing instanceof byte[] ) {
 			writeByteString( (byte[])thing, os );
 		} else if( thing instanceof Number ) {
 			writeNumberCompact( (Number)thing, os );
+		} else if( Boolean.TRUE.equals(thing) ) {
+			os.write(BE_TRUE);
+		} else if( Boolean.FALSE.equals(thing) ) {
+			os.write(BE_FALSE);
+		} else if( Default.INSTANCE.equals(thing) ) {
+			os.write(SE_DEFAULT);
+		} else if( thing instanceof SHA1ObjectReference ) {
+			writeSha1ObjectReference( (SHA1ObjectReference)thing, os );
 		} else {
 			throw new UnsupportedOperationException("Don't know how to encode "+thing.getClass());
 		}

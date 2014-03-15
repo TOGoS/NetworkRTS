@@ -1,0 +1,8 @@
+Push a value representing 'default' onto the stack.
+
+The interpretation of this value is left to operations that take it as input.
+It is intended as a compact way to indicate that the default value should
+be used.
+
+It's expected that in most cases, said default value will represent
+an empty collection or indicate a lack of knowledge or applicability.

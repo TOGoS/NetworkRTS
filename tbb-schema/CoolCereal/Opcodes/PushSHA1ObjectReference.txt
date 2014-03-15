@@ -1,0 +1,12 @@
+Push SHA1 object reference onto the stack.
+
+This opcode is followed by the 20-byte SHA-1 sum of a byte string
+which describes an object to be pushed onto the stack.
+
+The method by which the object is described/serialized is not specified. 
+
+This does not require that the object or its serialized form actually
+be loaded into memory.
+Implementations are free to push only a reference to the object and
+dereference it lazily, so long as their appearance in the stack is
+functionally equivalent to that of the referenced object. 

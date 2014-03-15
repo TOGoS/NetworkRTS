@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import togos.networkrts.util.Getter;
+import togos.networkrts.util.HashUtil;
 import togos.networkrts.util.SoftResourceHandle;
 import togos.networkrts.util.ResourceHandlePool;
 import togos.networkrts.util.ResourceNotFound;
@@ -143,7 +144,7 @@ public class CerealDecoder implements Getter<Object>
 	}
 	
 	protected DecodeState getDecodeState( byte[] sha1 ) throws InvalidEncoding, ResourceNotFound {
-		return getDecodeState(CerealUtil.sha1Urn(sha1));
+		return getDecodeState(HashUtil.sha1Urn(sha1));
 	}
 	
 	////
@@ -153,7 +154,7 @@ public class CerealDecoder implements Getter<Object>
 	}
 	
 	public Object get( byte[] sha1 ) throws ResourceNotFound {
-		return get( CerealUtil.sha1Urn(sha1) );
+		return get( HashUtil.sha1Urn(sha1) );
 	}
 	
 	@Override public Object get( String urn ) throws ResourceNotFound {

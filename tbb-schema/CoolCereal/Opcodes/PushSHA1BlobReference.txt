@@ -1,0 +1,9 @@
+Push SHA1 blob reference onto the stack.
+
+This opcode is followed by the 20-byte SHA-1 sum of a byte string
+which is to be pushed onto the stack.
+
+This does not require that the blob actually be loaded into memory.
+Implementations are free to push only a reference to the data and
+dereference it lazily, so long as their appearance in the stack is
+functionally equivalent to that of the referenced data. 

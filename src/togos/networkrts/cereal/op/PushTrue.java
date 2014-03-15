@@ -4,16 +4,16 @@ import togos.networkrts.cereal.CerealDecoder;
 import togos.networkrts.cereal.CerealDecoder.DecodeState;
 import togos.networkrts.cereal.OpcodeDefinition;
 
-public class PushInt8 implements OpcodeDefinition
+public class PushTrue implements OpcodeDefinition
 {
-	public static final PushInt8 INSTANCE = new PushInt8();
+	public static final PushTrue INSTANCE = new PushTrue();
 	
-	private PushInt8() { }
+	private PushTrue() { }
 
-	@Override public String getUrn() { return "urn:sha1:4L2WSIW5VU4GJIMI6VPMVMVYZTJAVBUJ"; }
+	@Override public String getUrn() { return "urn:sha1:7MCH6UFK4BOESVRPTLVBE6DI2K3DMZWE"; }
 	
 	@Override public int apply(byte[] data, int offset, DecodeState ds, CerealDecoder context) {
-		ds.pushStackItem(data[offset+1]);
-		return offset+2;
+		ds.pushStackItem(Boolean.TRUE);
+		return offset+1;
 	}
 }

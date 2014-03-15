@@ -46,7 +46,7 @@ public class SoftResourceHandle<T> implements ResourceHandle<T>, Serializable
 		}
 	}
 	
-	public T getValue( Getter<T> populator )
+	public <X extends T> T getValue( Getter<X> populator )
 		throws ResourceNotFound
 	{
 		T value = getValue();
