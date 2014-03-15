@@ -7,6 +7,8 @@ import java.util.regex.Pattern;
 
 import org.bitpedia.util.Base32;
 
+import togos.networkrts.cereal.op.LoadOpcode;
+
 public class CerealUtil
 {
 	static final Pattern BITPRINT_PATTERN = Pattern.compile("urn:bitprint:([A-Z0-9]{32})\\.([A-Z0-9]{39})");
@@ -83,5 +85,16 @@ public class CerealUtil
 	public static void writeOpImport( byte dest, String opUrn, OutputStream os ) throws InvalidEncoding, IOException {
 		byte[] opRef = extractSha1FromUrn(opUrn);
 		writeOpImport( dest, opRef, os );
+	}
+	
+	public static void writeHeaderWithImports( OpcodeDefinition[] imports, OutputStream os ) throws InvalidEncoding, IOException {
+		writeTbbHeader(CEREAL_SCHEMA_REF, os);
+		for( int i=0; i<imports.length && i<256; ++i  ) {
+			if( imports[i] == null ) continue;
+			if( i == 0x41 && !LoadOpcode.INSTANCE.getUrn().equals(imports[i].getUrn()) ) {
+				throw new UnsupportedOperationException("Overwriting op 0x41");
+			}
+			writeOpImport((byte)i, imports[i].getUrn(), os);
+		}
 	}
 }
