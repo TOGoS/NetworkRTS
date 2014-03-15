@@ -28,4 +28,10 @@ public class World implements HasNextAutoUpdateTime
 	public long getNextAutoUpdateTime() {
 		return Math.min( rst.getNextAutoUpdateTime(), nonTiles.getNextAutoUpdateTime() );
 	}
+	
+	//// Some convenience method
+	
+	public World withNonTile(NonTile nt) {
+		return new World( rst, rstSizePower, nonTiles.with(nt) );
+	}
 }
