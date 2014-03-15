@@ -2,7 +2,7 @@ package togos.networkrts.experimental.qt2drender;
 
 import java.io.Serializable;
 
-import togos.networkrts.util.ResourceHandle;
+import togos.networkrts.util.SoftResourceHandle;
 
 public class VizState implements Serializable
 {
@@ -11,7 +11,7 @@ public class VizState implements Serializable
 	public static class BackgroundLink implements Serializable {
 		private static final long serialVersionUID = 1L;
 		
-		public final ResourceHandle<QTRenderNode> background;
+		public final SoftResourceHandle<QTRenderNode> background;
 		public final float size;
 		/**
 		 * Position of the center of the background node
@@ -19,7 +19,7 @@ public class VizState implements Serializable
 		 */
 		public final float x, y, distance;
 		
-		public BackgroundLink( ResourceHandle<QTRenderNode> background, float size, float x, float y, float dist ) {
+		public BackgroundLink( SoftResourceHandle<QTRenderNode> background, float size, float x, float y, float dist ) {
 			this.background = background; this.size = size;
 			this.x = x; this.y = y; this.distance = dist;
 		}
@@ -36,7 +36,7 @@ public class VizState implements Serializable
 	public final float focusX, focusY;
 	public final VizState.BackgroundLink[] backgroundPalette;
 	public final byte[] cellBackgrounds;
-	public final ResourceHandle<ImageHandle[]> tilePalette;
+	public final SoftResourceHandle<ImageHandle[]> tilePalette;
 	public final byte[][] tileLayers;
 	public final boolean[] cornerVisibility;
 	/**
@@ -78,7 +78,7 @@ public class VizState implements Serializable
 	public VizState(
 		int size, float originX, float originY, float focusX, float focusY,
 		VizState.BackgroundLink[] backgroundPalette, byte[] cellBackgrounds,
-		ResourceHandle<ImageHandle[]> tilePalette, byte[][] tileLayers,
+		SoftResourceHandle<ImageHandle[]> tilePalette, byte[][] tileLayers,
 		boolean[] cornerVisibility, Sprite[] sprites
 	) {
 		this.size = size;

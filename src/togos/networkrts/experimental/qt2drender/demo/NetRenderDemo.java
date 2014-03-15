@@ -26,7 +26,7 @@ import togos.networkrts.experimental.qt2drender.Sprite;
 import togos.networkrts.experimental.qt2drender.VizState;
 import togos.networkrts.repo.BlobRepository;
 import togos.networkrts.util.Getter;
-import togos.networkrts.util.ResourceHandle;
+import togos.networkrts.util.SoftResourceHandle;
 import togos.networkrts.util.ResourceNotFound;
 import togos.networkrts.util.StorageUtil;
 
@@ -89,11 +89,11 @@ public class NetRenderDemo
 			}
 		};
 		
-		public ImageHandle[] getImagePalette( ResourceHandle<ImageHandle[]> handle ) throws ResourceNotFound {
+		public ImageHandle[] getImagePalette( SoftResourceHandle<ImageHandle[]> handle ) throws ResourceNotFound {
 			return handle.getValue(imagePaletteResolver);
 		}
 		
-		public QTRenderNode getRenderNode( ResourceHandle<QTRenderNode> handle ) throws ResourceNotFound {
+		public QTRenderNode getRenderNode( SoftResourceHandle<QTRenderNode> handle ) throws ResourceNotFound {
 			return handle.getValue(renderNodeResolver);
 		}
 		
@@ -194,7 +194,7 @@ public class NetRenderDemo
 		
 		VizState.BackgroundLink[] bgLinks = new VizState.BackgroundLink[] {
 			null,
-			new VizState.BackgroundLink(new ResourceHandle<QTRenderNode>(bgNodeUrn), 5, 0, 0, 1)
+			new VizState.BackgroundLink(new SoftResourceHandle<QTRenderNode>(bgNodeUrn), 5, 0, 0, 1)
 		};
 		byte[] cellBackgrounds = new byte[] {
 			1, 1, 0, 0, 0,
@@ -208,7 +208,7 @@ public class NetRenderDemo
 		ImageHandle ih1 = new ImageHandle(StorageUtil.storeImage(br, ImageIO.read(new File("tile-images/2.png"))));
 		
 		//String thang = stor.storeObject(new ImageHandle[]{ih});
-		ResourceHandle<ImageHandle[]> tilePalette = new ResourceHandle<ImageHandle[]>(StorageUtil.storeSerialized(br, new ImageHandle[]{ih0, ih1}));
+		SoftResourceHandle<ImageHandle[]> tilePalette = new SoftResourceHandle<ImageHandle[]>(StorageUtil.storeSerialized(br, new ImageHandle[]{ih0, ih1}));
 		
 		byte[][] tileLayers = new byte[1][size*size];
 		tileLayers[0] = new byte[] {

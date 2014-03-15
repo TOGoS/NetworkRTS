@@ -5,21 +5,21 @@ import java.util.WeakHashMap;
 
 public class ResourceHandlePool
 {
-	protected final WeakHashMap<ResourceHandle<?>,WeakReference<ResourceHandle<?>>> refs = new WeakHashMap<ResourceHandle<?>,WeakReference<ResourceHandle<?>>>();
+	protected final WeakHashMap<SoftResourceHandle<?>,WeakReference<SoftResourceHandle<?>>> refs = new WeakHashMap<SoftResourceHandle<?>,WeakReference<SoftResourceHandle<?>>>();
 	
-	public synchronized <T> ResourceHandle<T> intern( ResourceHandle<T> link ) {
+	public synchronized <T> SoftResourceHandle<T> intern( SoftResourceHandle<T> link ) {
 		@SuppressWarnings({ "rawtypes", "unchecked" })
-		WeakReference<ResourceHandle<T>> internedRef = (WeakReference<ResourceHandle<T>>)(WeakReference)refs.get(link);
+		WeakReference<SoftResourceHandle<T>> internedRef = (WeakReference<SoftResourceHandle<T>>)(WeakReference)refs.get(link);
 		if( internedRef != null ) {
 			// Might disappear if collection occurs ~right here~
-			ResourceHandle<T> interned = internedRef.get();
+			SoftResourceHandle<T> interned = internedRef.get();
 			if( interned != null ) return interned;
 		}
-		refs.put(link, new WeakReference<ResourceHandle<?>>(link));
+		refs.put(link, new WeakReference<SoftResourceHandle<?>>(link));
 		return link;
 	}
 	
-	public <T> ResourceHandle<T> get( String urn ) {
-		return intern(new ResourceHandle<T>(urn));
+	public <T> SoftResourceHandle<T> get( String urn ) {
+		return intern(new SoftResourceHandle<T>(urn));
 	}
 }

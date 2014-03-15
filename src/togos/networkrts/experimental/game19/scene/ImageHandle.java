@@ -6,7 +6,7 @@ import java.awt.image.BufferedImage;
 import java.lang.ref.SoftReference;
 
 import togos.networkrts.util.Getter;
-import togos.networkrts.util.ResourceHandle;
+import togos.networkrts.util.SoftResourceHandle;
 import togos.networkrts.util.ResourceNotFound;
 
 public class ImageHandle
@@ -20,13 +20,13 @@ public class ImageHandle
 		}
 	}
 
-	public final ResourceHandle<BufferedImage> original;
+	public final SoftResourceHandle<BufferedImage> original;
 	protected volatile boolean metadataInitialized;
 	public volatile boolean isCompletelyOpaque;
 	public volatile boolean isCompletelyTransparent;
 	protected transient SoftReference<BufferedImageWithFlipBits>[] scaled;
 	
-	public ImageHandle( ResourceHandle<BufferedImage> unscaled ) {
+	public ImageHandle( SoftResourceHandle<BufferedImage> unscaled ) {
 		this.original = unscaled;
 	}
 	

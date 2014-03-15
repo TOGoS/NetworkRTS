@@ -11,7 +11,7 @@ import togos.networkrts.experimental.qt2drender.Sprite;
 import togos.networkrts.experimental.qt2drender.VizState;
 import togos.networkrts.experimental.qt2drender.VizState.BackgroundLink;
 import togos.networkrts.util.BitAddressUtil;
-import togos.networkrts.util.ResourceHandle;
+import togos.networkrts.util.SoftResourceHandle;
 import togos.networkrts.util.StorageUtil;
 
 public class Room implements SimNode
@@ -272,7 +272,7 @@ public class Room implements SimNode
 			this.storageContext = ctx;
 		}		
 		
-		public ResourceHandle<ImageHandle[]> getImagePaletteHandle() {
+		public SoftResourceHandle<ImageHandle[]> getImagePaletteHandle() {
 			ImageHandle[] ih = imagePalette.toArray(new ImageHandle[imagePalette.size()]);
 			try {
 				return storageContext.resourceHandlePool.get(StorageUtil.storeSerialized(storageContext.blobRepository, ih));
