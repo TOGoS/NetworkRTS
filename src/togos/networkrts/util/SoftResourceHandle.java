@@ -3,7 +3,6 @@ package togos.networkrts.util;
 import java.io.Serializable;
 import java.lang.ref.SoftReference;
 
-// TODO: Rename to SoftResourceHandle.  Add alternate class that has data but no URI.
 public class SoftResourceHandle<T> implements ResourceHandle<T>, Serializable
 {
 	private static final long serialVersionUID = 1L;
@@ -102,6 +101,6 @@ public class SoftResourceHandle<T> implements ResourceHandle<T>, Serializable
 		return uri.hashCode();
 	}
 	@Override public boolean equals(Object o) {
-		return o instanceof SoftResourceHandle && uri.equals(((SoftResourceHandle<?>)o).getUri());
+		return o instanceof ResourceHandle && uri.equals(((ResourceHandle<?>)o).getUri());
 	}
 }

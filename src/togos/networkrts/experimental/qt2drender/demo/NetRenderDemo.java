@@ -26,6 +26,7 @@ import togos.networkrts.experimental.qt2drender.Sprite;
 import togos.networkrts.experimental.qt2drender.VizState;
 import togos.networkrts.repo.BlobRepository;
 import togos.networkrts.util.Getter;
+import togos.networkrts.util.ResourceHandle;
 import togos.networkrts.util.SoftResourceHandle;
 import togos.networkrts.util.ResourceNotFound;
 import togos.networkrts.util.StorageUtil;
@@ -89,11 +90,11 @@ public class NetRenderDemo
 			}
 		};
 		
-		public ImageHandle[] getImagePalette( SoftResourceHandle<ImageHandle[]> handle ) throws ResourceNotFound {
+		public ImageHandle[] getImagePalette( ResourceHandle<ImageHandle[]> handle ) throws ResourceNotFound {
 			return handle.getValue(imagePaletteResolver);
 		}
 		
-		public QTRenderNode getRenderNode( SoftResourceHandle<QTRenderNode> handle ) throws ResourceNotFound {
+		public QTRenderNode getRenderNode( ResourceHandle<QTRenderNode> handle ) throws ResourceNotFound {
 			return handle.getValue(renderNodeResolver);
 		}
 		

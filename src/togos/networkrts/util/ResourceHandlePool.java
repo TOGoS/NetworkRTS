@@ -3,6 +3,9 @@ package togos.networkrts.util;
 import java.lang.ref.WeakReference;
 import java.util.WeakHashMap;
 
+// Note: this was written before the ResourceHandle interface existed
+// (when SoftResourceHandle was all there was).  Maybe this could handle
+// ResourceHandles in some places where it currently requires a SoftResourceHandle, but idk.
 public class ResourceHandlePool
 {
 	protected final WeakHashMap<SoftResourceHandle<?>,WeakReference<SoftResourceHandle<?>>> refs = new WeakHashMap<SoftResourceHandle<?>,WeakReference<SoftResourceHandle<?>>>();
