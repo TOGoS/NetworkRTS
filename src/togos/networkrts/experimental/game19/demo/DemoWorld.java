@@ -37,15 +37,17 @@ public class DemoWorld
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
 		
 		Random r = new Random();
-		for( int i=0; i<100; ++i ) {
-			n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
-		}
-		{
-			double sx = 0, sy = 0;
-			for( int i=0; i<1000; ++i ) {
-				n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( sx, sy, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
-				sx += 2*(r.nextDouble()*2 - 0.75);
-				sy += 2*(r.nextDouble()*2 - 0.75);
+		//for( int i=0; i<100; ++i ) {
+		//	n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+		//}
+		for( int i=0; i<10; ++i ) {
+			double sx = 0, sy = 0, dir = 0, rad = 4;
+			while( rad > 1 ) {
+				n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( sx, sy, rad ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+				sx += Math.cos(dir);
+				sy += Math.sin(dir);
+				dir += r.nextGaussian() * 0.1;
+				rad *= (0.99 + r.nextGaussian()*0.02);
 			}
 		}
 

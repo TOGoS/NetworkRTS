@@ -54,8 +54,8 @@ public class JetManHeadBehavior implements NonTileBehavior {
 				newY += c.correctionY;
 				newVy *= -0.5;
 			}
-			if( Math.abs(newVy) < 0.1 ) newVx = 0;
-			if( c.correctionY < 0 && Math.abs(newVy) < 0.1 ) {
+			if( Math.abs(newVy) < 0.03 ) newVx = 0;
+			if( c.correctionY < 0 && Math.abs(newVy) < 0.03 ) {
 				newVy = 0;
 			}
 			newSuitHealth -= collisionDamage;

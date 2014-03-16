@@ -168,8 +168,8 @@ public class Renderer
 				nt.icon.image,
 				(int)(scx+sscale*(x+nt.x+nt.icon.imageX)),
 				(int)(scy+sscale*(y+nt.y+nt.icon.imageY)),
-				(int)(sscale*nt.icon.imageWidth),
-				(int)(sscale*nt.icon.imageHeight),
+				(int)Math.ceil(sscale*nt.icon.imageWidth),
+				(int)Math.ceil(sscale*nt.icon.imageHeight),
 				g
 			);
 		}

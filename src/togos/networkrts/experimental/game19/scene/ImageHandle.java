@@ -67,6 +67,8 @@ public class ImageHandle
 	}
 	
 	protected BufferedImageWithFlipBits scale( Getter<BufferedImage> populator, int width, int height ) throws ResourceNotFound {
+		assert width != 0;
+		assert height != 0;
 		BufferedImage original = getOriginal(populator);
 		ensureMetadataInitialized(original);
 		final int dx0, dy0, dx1, dy1;
