@@ -1,6 +1,8 @@
 package togos.networkrts.experimental.game19.demo;
 
 import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.event.KeyAdapter;
@@ -59,6 +61,16 @@ public class ServerClientDemo
 		}
 	}
 	
+	public static class UIState {
+		public final Scene scene;
+		public final boolean connected;
+		
+		public UIState( Scene scene, boolean connected ) {
+			this.scene = scene;
+			this.connected = connected;
+		}
+	}
+	
 	static class SceneCanvas extends ImageCanvas {
 		private static final long serialVersionUID = 1L;
 
@@ -79,10 +91,10 @@ public class ServerClientDemo
 		}
 		
 		Color sceneBackgroundColor = new Color(0.2f, 0, 0);
-		Scene scene;
+		UIState uiState = new UIState(null, false);
 		
-		public synchronized void setScene( Scene s ) {
-			this.scene = s;
+		public synchronized void setUiState( UIState s ) {
+			this.uiState = s;
 			redrawBuffer();
 		}
 		
@@ -111,24 +123,53 @@ public class ServerClientDemo
 		}
 		
 		public void redrawLoop() throws InterruptedException {
-			Scene s = null;
+			UIState u = null;
 			while( true ) {
 				synchronized(this) {
-					while( !needRedraw || scene == null ) wait();
-					s = scene;
+					while( !needRedraw || uiState == null ) wait();
+					u = uiState;
 				}
-				VisibilityClip vc = s.visibilityClip;
-				int vcWidth  = roundEven(pixelsPerMeter*(vc.maxX-vc.minX));
-				int vcHeight = roundEven(pixelsPerMeter*(vc.maxY-vc.minY));
-				int wid = Math.min(vcWidth, getWidth());
-				int hei = Math.min(vcHeight,getHeight());
+				Scene scene = u.scene;
+				int wid, hei;
+				if( scene != null ) {
+					VisibilityClip vc = scene.visibilityClip;
+					int vcWidth  = roundEven(pixelsPerMeter*(vc.maxX-vc.minX));
+					int vcHeight = roundEven(pixelsPerMeter*(vc.maxY-vc.minY));
+					wid = Math.min(vcWidth, getWidth());
+					hei = Math.min(vcHeight,getHeight());
+				} else {
+					wid = getWidth();
+					hei = getHeight();
+				}
 				BufferedImage sb = getSceneBuffer(wid, hei);
 				synchronized( sb ) {
 					Graphics g = sb.getGraphics();
 					g.setClip(0, 0, sb.getWidth(), sceneBuffer.getHeight());
 					g.setColor( sceneBackgroundColor );
 					g.fillRect( 0, 0, sb.getWidth(), sb.getHeight() );
-					renderer.draw( s, -s.poiX, -s.poiY, 1, g, pixelsPerMeter, sb.getWidth()/2, sb.getHeight()/2 );
+					if( scene != null ) {
+						renderer.draw( scene, -scene.poiX, -scene.poiY, 1, g, pixelsPerMeter, sb.getWidth()/2, sb.getHeight()/2 );
+					}
+					if( !u.connected ) {
+						Font f = new Font("Verdana", Font.PLAIN, 24);
+						g.setFont(f);
+						FontMetrics fm = g.getFontMetrics();
+						String ns = "NO SIGNAL";
+						
+						int w = fm.stringWidth(ns);
+						int asc = fm.getAscent();
+						int desc = fm.getDescent();
+						
+						int rectHeight = asc+desc+8;
+						int rectWidth = w+16;
+						
+						g.setColor(Color.RED);
+						g.fillRect( (wid-rectWidth)/2, (hei-rectHeight)/2, rectWidth, rectHeight );
+						g.setColor(Color.BLACK);
+						g.drawRect( (wid-rectWidth)/2, (hei-rectHeight)/2, rectWidth, rectHeight );
+						g.setColor(Color.WHITE);
+						g.drawString( ns, (wid-w)/2, (hei-rectHeight)/2+4+asc );
+					}
 				}
 				setImage(sb);
 			}
@@ -138,24 +179,48 @@ public class ServerClientDemo
 	static class Client {
 		SceneCanvas sceneCanvas;
 		public Queue<Message> messageQueue;
+		protected Scene lastScene;
+		public long lastUpdateFromAvatar;
 		
 		public Client( ResourceContext resourceContext ) {
 			sceneCanvas = new SceneCanvas(resourceContext);
 			sceneCanvas.setBackground(Color.BLACK);
 		}
 		
-		public void setScene( Scene s ) {
-			sceneCanvas.setScene(s);
+		public synchronized void setScene( Scene s ) {
+			lastScene = s;
+			sceneCanvas.setUiState(new UIState(s, true));
+			lastUpdateFromAvatar = System.currentTimeMillis();
+		}
+		
+		public synchronized void pokeWatchdog() {
+			long currentTime = System.currentTimeMillis();
+			if( lastUpdateFromAvatar < currentTime - 1000 ) {
+				sceneCanvas.setUiState(new UIState(lastScene, false));
+			}
 		}
 		
 		public void startUi() {
 			final Frame f = new Frame("Game19 Render Demo");
 			f.add(sceneCanvas);
+			final Thread watchdogThread = new Thread() {
+				@Override public void run() {
+					while( !Thread.interrupted() ) {
+						pokeWatchdog();
+						try {
+							sleep(500);
+						} catch( InterruptedException e ) {
+							interrupt();
+						}
+					}
+				}
+			};
 			final Thread redrawThread = new Thread() {
 				@Override public void run() {
 					try {
 						sceneCanvas.redrawLoop();
 					} catch( InterruptedException e ) {
+						interrupt();
 					}
 				}
 			};
@@ -170,6 +235,7 @@ public class ServerClientDemo
 			f.pack();
 			f.setVisible(true);
 			redrawThread.start();
+			watchdogThread.start();
 		}
 	}
 	

@@ -153,15 +153,18 @@ public class JetManBehavior implements NonTileBehavior {
 		double newX = nt.x, newY = nt.y;
 		double newVx = nt.vx, newVy = nt.vy;
 		boolean feetOnGround = false;
-		double newFuel = state.fuel;
+		double newSuitHealth = state.suitHealth, newFuel = state.fuel;
 		
 		// TODO: Collision detection!
 		Collision c = findCollisionWithRst(nt, world, BitAddresses.BLOCK_SOLID);
 		if( c != null ) {
+			double collisionDamage;
 			if( c.correctionX != 0 && Math.abs(c.correctionX) < Math.abs(c.correctionY) ) {
+				collisionDamage = newVx*newVx;
 				newX += c.correctionX;
 				newVx *= -0.5;
 			} else {
+				collisionDamage = newVy*newVy;
 				newY += c.correctionY;
 				newVy *= -0.5;
 				if( c.correctionY < 0 && Math.abs(newVy) < 0.1 ) {
@@ -169,7 +172,12 @@ public class JetManBehavior implements NonTileBehavior {
 					feetOnGround = true;
 				}
 			}
+			newSuitHealth -= collisionDamage;
 		}
+		
+		// TODO: make arms and legs go flying!
+		
+		if( newSuitHealth < 0 ) return null; // Immediate death!
 		
 		int newThrustDir = state.thrustDir;
 		for( Message m : messages ) {
@@ -251,9 +259,10 @@ public class JetManBehavior implements NonTileBehavior {
 			newWalkState = 0;
 		}
 		
-		JetManState newState = new JetManState(newWalkState, newThrustDir, facingLeft, newFuel);
-		if( newFuel != state.fuel ) {
-			System.err.println("Jetman fuel: "+newFuel);
+		JetManState newState = new JetManState(newWalkState, newThrustDir, facingLeft, newSuitHealth, newFuel);
+		if( newFuel != state.fuel || newSuitHealth != state.suitHealth ) {
+			// TODO: Some way to send status info to the client
+			//System.err.println(String.format("Jetman s:%4.3f f:%8.3f",newSuitHealth,newFuel));
 		}
 		
 		Icon newIcon =
