@@ -23,16 +23,13 @@ public class Server
 	public Server() throws IOException {
 	}
 	
+	/*
 	protected NonTile makePlayerJetMan( ) {
 		int playerId = idGenerator.newId();
 		long playerBa = BitAddresses.forceType(BitAddresses.TYPE_NONTILE, playerId);
-		return new NonTile(0, 0, 0, 0, 0,
-			new AABB(-0.25, -0.5, -0.5, +0.25, +0.5, +0.5),
-			playerBa, playerBa, 1,
-			jetManIcons.walking[0], 
-			new JetManBehavior(playerBa, BitAddressUtil.NO_ADDRESS, jetManIcons)
-		);
+		return JetManBehavior.createJetMan(playerBa, clientBa, jetManIcons);
 	}
+	*/
 	
 	Simulator sim;
 	public void init() throws IOException {

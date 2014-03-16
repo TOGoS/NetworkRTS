@@ -19,7 +19,8 @@ public class NonTile implements EntityRange
 	
 	public final long referenceTime;
 	public final double x, y, vx, vy; // For simplicity, velocity is meters per clock tick
-	public final AABB physicalAabb;
+	public final AABB relativePhysicalAabb;
+	public final AABB absolutePhysicalAabb;
 	public final long minBitAddress, maxBitAddress;
 	public final long nextAutoUpdateTime;
 	public final Icon icon;
@@ -33,7 +34,8 @@ public class NonTile implements EntityRange
 		this.referenceTime = referenceTime;
 		this.x = x; this.vx = vx;
 		this.y = y; this.vy = vy;
-		this.physicalAabb = physicalAabb;
+		this.relativePhysicalAabb = physicalAabb;
+		this.absolutePhysicalAabb = physicalAabb.shiftedBy(x,y,0);
 		this.minBitAddress = minBa;
 		this.maxBitAddress = maxBa;
 		this.nextAutoUpdateTime = nextAut;
@@ -60,14 +62,14 @@ public class NonTile implements EntityRange
 		return create( referenceTime, x, y, image, diameter, NonTileBehavior.NONE );
 	}
 	
-	@Override public AABB getAabb() { return physicalAabb; }
+	@Override public AABB getAabb() { return absolutePhysicalAabb; }
 	@Override public long getMinBitAddress() { return minBitAddress; }
 	@Override public long getMaxBitAddress() { return maxBitAddress; }
 	@Override public long getNextAutoUpdateTime() { return nextAutoUpdateTime; }
 	
 	public NonTile withBehavior(NonTileBehavior behavior) {
 		return new NonTile(
-			referenceTime, x, y, vx, vy, physicalAabb,
+			referenceTime, x, y, vx, vy, relativePhysicalAabb,
 			minBitAddress, maxBitAddress, nextAutoUpdateTime,
 			icon, behavior
 		);
@@ -75,7 +77,7 @@ public class NonTile implements EntityRange
 	
 	public NonTile withIdRange(long minBa, long maxBa) {
 		return new NonTile(
-			referenceTime, x, y, vx, vy, physicalAabb,
+			referenceTime, x, y, vx, vy, relativePhysicalAabb,
 			minBa, maxBa, nextAutoUpdateTime,
 			icon, behavior
 		);
@@ -87,16 +89,15 @@ public class NonTile implements EntityRange
 	
 	public NonTile withIcon(Icon icon) {
 		return new NonTile(
-			referenceTime, x, y, vx, vy, physicalAabb,
+			referenceTime, x, y, vx, vy, relativePhysicalAabb,
 			minBitAddress, maxBitAddress, nextAutoUpdateTime,
 			icon, behavior
 		);
 	}
 	
 	public NonTile withPositionAndVelocity(long referenceTime, double x, double y, double vx, double vy) {
-		double dx = x-this.x, dy = y-this.y;
 		return new NonTile(
-			referenceTime, x, y, vx, vy, this.physicalAabb.shiftedBy(dx, dy, 0),
+			referenceTime, x, y, vx, vy, relativePhysicalAabb,
 			minBitAddress, maxBitAddress, nextAutoUpdateTime,
 			icon, behavior
 		);

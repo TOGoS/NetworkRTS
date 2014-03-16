@@ -1,98 +1,57 @@
 package togos.networkrts.experimental.game19.world.thing.jetman;
 
 
+import java.util.Random;
+
 import togos.networkrts.experimental.game19.world.Message;
+import togos.networkrts.experimental.game19.physics.BlockStackCollision;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.game19.world.BitAddresses;
-import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.NonTile.Icon;
 import togos.networkrts.experimental.game19.world.msg.UploadSceneTask;
 import togos.networkrts.experimental.game19.world.NonTileBehavior;
-import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.util.BitAddressUtil;
 
 public class JetManBehavior implements NonTileBehavior {
-	final long messageBitAddress;
-	final long clientBitAddress;
-	final JetManState state;
-	final JetManIcons jetManIcons;
+	public static final double GRAVITY = 0.002;
 	
-	public JetManBehavior(long id, long clientId, JetManState playerState, JetManIcons jetManIcons) {
+	final long messageBitAddress;
+	final long uplinkBitAddress;
+	final JetManState state;
+	final JetManIcons icons;
+	
+	public JetManBehavior(long id, long uplinkBitAddress, JetManState state, JetManIcons icons) {
 		this.messageBitAddress = id;
-		this.clientBitAddress = clientId;
-		this.state = playerState;
-		this.jetManIcons = jetManIcons;
+		this.uplinkBitAddress = uplinkBitAddress;
+		this.state = state;
+		this.icons = icons;
 	}
 	
-	public JetManBehavior(long id, long clientId, JetManIcons jetManIcons) {
-		this(id, clientId, JetManState.DEFAULT, jetManIcons);
+	public JetManBehavior(long id, long clientId, JetManIcons icons) {
+		this(id, clientId, JetManState.DEFAULT, icons);
 	}
 	
 	protected JetManBehavior withState(JetManState ps) {
-		return new JetManBehavior(messageBitAddress, clientBitAddress, ps, jetManIcons);
+		return new JetManBehavior(messageBitAddress, uplinkBitAddress, ps, icons);
 	}
 	
-	static class Collision {
-		final BlockStack blockStack;
-		final double correctionX, correctionY;
-		
-		public Collision( BlockStack bs, double correctionX, double correctionY ) {
-			this.blockStack = bs;
-			this.correctionX = correctionX;
-			this.correctionY = correctionY;
-		}
-		
-		protected static double jaque( double leftOverlap, double rightOverlap ) {
-			if( leftOverlap < 0 && rightOverlap < 0 ) return 0;
-			return leftOverlap < rightOverlap ? -leftOverlap : rightOverlap;
-		}
-		
-		public static Collision forOverlap( BlockStack bs, AABB a, int blockX, int blockY, int blockSize ) {
-			//return new Collision( bs, 0, blockY-a.maxY);
-			return new Collision( bs,
-				jaque( a.maxX - blockX, (blockX+blockSize) - a.minX ),
-				jaque( a.maxY - blockY, (blockY+blockSize) - a.minY )
-			);
-		}
-	}
-	
-	protected static Collision findCollisionWithRst(AABB a, RSTNode rst, int rstX, int rstY, int rstSizePower, long tileFlags) {
-		if( a.maxX <= rstX || a.maxY <= rstY ) return null;
-		int rstSize = 1<<rstSizePower;
-		if( a.minX >= rstX+rstSize || a.minY >= rstY+rstSize ) return null;
-		if( (rst.getMaxBitAddress() & tileFlags) == 0 ) return null; 
-		
-		switch( rst.getNodeType() ) {
-		case QUADTREE:
-			RSTNode[] subNodes = rst.getSubNodes();
-			int subSizePower = rstSizePower-1;
-			int subSize = 1<<subSizePower;
-			Collision c;
-			if( (c = findCollisionWithRst(a, subNodes[0], rstX        , rstY        , subSizePower, tileFlags)) != null ) return c;
-			if( (c = findCollisionWithRst(a, subNodes[1], rstX+subSize, rstY        , subSizePower, tileFlags)) != null ) return c;
-			if( (c = findCollisionWithRst(a, subNodes[2], rstX        , rstY+subSize, subSizePower, tileFlags)) != null ) return c;
-			if( (c = findCollisionWithRst(a, subNodes[3], rstX+subSize, rstY+subSize, subSizePower, tileFlags)) != null ) return c;
-			return null;
-		case BLOCKSTACK:
-			return Collision.forOverlap(rst, a, rstX, rstY, rstSize);
-		default:
-			throw new UnsupportedOperationException("Unrecognized RST node type "+rst.getNodeType());
-		}
-	}
-	
-	protected static Collision findCollisionWithRst(NonTile nt, World w, long tileFlag) {
-		int rad = 1<<(w.rstSizePower-1);
-		return findCollisionWithRst(nt.physicalAabb, w.rst, -rad, -rad, w.rstSizePower, tileFlag);
+	public static NonTile createJetMan( long bitAddress, long uplinkBitAddress, JetManIcons icons ) {
+		return new NonTile(0, 0, 0, 0, 0,
+			new AABB(-3/16f, -7/16f, -3/16f, 3/16f, 8/16f, 3/16f),
+			bitAddress, bitAddress, 1,
+			icons.walking[0], 
+			new JetManBehavior(bitAddress, uplinkBitAddress, icons)
+		);
 	}
 	
 	@Override public NonTile update(final NonTile nt, long time, final World world,
 		MessageSet messages, NonTileUpdateContext updateContext
 	) {
-		updateContext.startAsyncTask(new UploadSceneTask(nt, world, clientBitAddress));
+		updateContext.startAsyncTask(new UploadSceneTask(nt, world, uplinkBitAddress));
 		
 		double newX = nt.x, newY = nt.y;
 		double newVx = nt.vx, newVy = nt.vy;
@@ -100,28 +59,46 @@ public class JetManBehavior implements NonTileBehavior {
 		double newSuitHealth = state.suitHealth, newFuel = state.fuel;
 		
 		// TODO: Collision detection!
-		Collision c = findCollisionWithRst(nt, world, BitAddresses.BLOCK_SOLID);
+		BlockStackCollision c = BlockStackCollision.findCollisionWithRst(nt, world, BitAddresses.BLOCK_SOLID);
 		if( c != null ) {
-			double collisionDamage;
+			final double collisionDamage;
 			if( c.correctionX != 0 && Math.abs(c.correctionX) < Math.abs(c.correctionY) ) {
 				collisionDamage = newVx*newVx;
 				newX += c.correctionX;
 				newVx *= -0.5;
 			} else {
-				collisionDamage = newVy*newVy;
 				newY += c.correctionY;
 				newVy *= -0.5;
 				if( c.correctionY < 0 && Math.abs(newVy) < 0.1 ) {
 					newVy = 0;
 					feetOnGround = true;
+					collisionDamage = 0;
+				} else {
+					collisionDamage = newVy*newVy;
 				}
 			}
 			newSuitHealth -= collisionDamage;
 		}
 		
-		// TODO: make arms and legs go flying!
-		
-		if( newSuitHealth < 0 ) return null; // Immediate death!
+		if( newSuitHealth < 0 ) {
+			Random rand = new Random();
+			Icon[] pieceIcons = new Icon[] { icons.leg1, icons.leg2, icons.torso, icons.jetpack };
+			for( int j=0; j<4; ++j ) {
+				Icon ic = pieceIcons[j];
+				updateContext.addNonTile(new NonTile(time, newX, newY,
+					newVx+newVx*rand.nextGaussian()+newVy*rand.nextGaussian(), newVy+newVy*rand.nextGaussian()+newVx*rand.nextGaussian(),
+					new AABB(-ic.imageWidth/2f, -ic.imageHeight/2f, -ic.imageWidth/2f, +ic.imageWidth/2f, +ic.imageHeight/2f, +ic.imageWidth/2f),
+					0, 0, time+1, ic,
+					new JetManPieceBehavior()
+				));
+			}
+			
+			return new NonTile(time, newX, newY, newVx, newVy,
+				new AABB(-3f/16, -2.5f/16, -3f/16, 3f/16, 2.5f/16, 3f/16),
+				messageBitAddress, messageBitAddress, time+1, icons.head,
+				new JetManHeadBehavior(messageBitAddress, uplinkBitAddress, new JetManHeadState(state.facingLeft, newSuitHealth+0.25, 1), icons)
+			);
+		}
 		
 		int newThrustDir = state.thrustDir;
 		for( Message m : messages ) {
@@ -179,7 +156,7 @@ public class JetManBehavior implements NonTileBehavior {
 			newVy -= 0.002;
 			jetUp = true;
 		} else {
-			newVy += 0.002;
+			newVy += GRAVITY;
 		}
 		if( feetOnGround ) {
 			double walkSpeed = 0.05;
@@ -199,7 +176,7 @@ public class JetManBehavior implements NonTileBehavior {
 		}
 		
 		int newWalkState = state.walkState + ((feetOnGround && newVx != 0) ? 1 : 0);
-		if( (newWalkState>>2) >= jetManIcons.walking.length ) {
+		if( (newWalkState>>2) >= icons.walking.length ) {
 			newWalkState = 0;
 		}
 		
@@ -210,11 +187,11 @@ public class JetManBehavior implements NonTileBehavior {
 		}
 		
 		Icon newIcon =
-			jetUp && jetForward ? jetManIcons.jetUpAndForward :
-			jetUp               ? jetManIcons.jetUp :
-			feetOnGround        ? jetManIcons.walking[newWalkState>>2] :
-			jetForward          ? jetManIcons.jetForward :
-			jetManIcons.fall0;
+			jetUp && jetForward ? icons.jetUpAndForward :
+			jetUp               ? icons.jetUp :
+			feetOnGround        ? icons.walking[newWalkState>>2] :
+			jetForward          ? icons.jetForward :
+			icons.fall0;
 		if( facingLeft ) newIcon = JetManIcons.flipped(newIcon);
 		
 		return nt.withIcon(newIcon).withPositionAndVelocity(time, newX, newY, newVx, newVy).withBehavior(withState(newState));
