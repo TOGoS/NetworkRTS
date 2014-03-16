@@ -73,7 +73,7 @@ public class JetManBehavior implements NonTileBehavior {
 		}
 	}
 	
-	protected Collision findCollisionWithRst(AABB a, RSTNode rst, int rstX, int rstY, int rstSizePower, long tileFlags) {
+	protected static Collision findCollisionWithRst(AABB a, RSTNode rst, int rstX, int rstY, int rstSizePower, long tileFlags) {
 		if( a.maxX <= rstX || a.maxY <= rstY ) return null;
 		int rstSize = 1<<rstSizePower;
 		if( a.minX >= rstX+rstSize || a.minY >= rstY+rstSize ) return null;
@@ -97,7 +97,7 @@ public class JetManBehavior implements NonTileBehavior {
 		}
 	}
 	
-	protected Collision findCollisionWithRst(NonTile nt, World w, long tileFlag) {
+	protected static Collision findCollisionWithRst(NonTile nt, World w, long tileFlag) {
 		int rad = 1<<(w.rstSizePower-1);
 		return findCollisionWithRst(nt.physicalAabb, w.rst, -rad, -rad, w.rstSizePower, tileFlag);
 	}
@@ -153,6 +153,7 @@ public class JetManBehavior implements NonTileBehavior {
 		double newX = nt.x, newY = nt.y;
 		double newVx = nt.vx, newVy = nt.vy;
 		boolean feetOnGround = false;
+		double newFuel = state.fuel;
 		
 		// TODO: Collision detection!
 		Collision c = findCollisionWithRst(nt, world, BitAddresses.BLOCK_SOLID);
@@ -220,7 +221,14 @@ public class JetManBehavior implements NonTileBehavior {
 		default:
 		}
 		
-		newVy = newVy + (goUp ? -0.002 : +0.002);
+		boolean jetForward = false, jetUp = false;
+		if( goUp && newFuel >= 0.01 ) {
+			newFuel -= 0.01;
+			newVy -= 0.002;
+			jetUp = true;
+		} else {
+			newVy += 0.002;
+		}
 		if( feetOnGround ) {
 			double walkSpeed = 0.05;
 			if( goForward && Math.abs(newVx) <= walkSpeed ) {
@@ -231,7 +239,11 @@ public class JetManBehavior implements NonTileBehavior {
 				newVx *= 0.6;
 			}
 		} else {
-			newVx = newVx + (goForward ? 0.003 : 0) * (facingLeft ? -1 : 1);
+			if( goForward && newFuel >= 0.01 ) {
+				newFuel -= 0.01;
+				newVx += 0.003 * (facingLeft ? -1 : 1);
+				jetForward = true;
+			}
 		}
 		
 		int newWalkState = state.walkState + ((feetOnGround && newVx != 0) ? 1 : 0);
@@ -239,13 +251,16 @@ public class JetManBehavior implements NonTileBehavior {
 			newWalkState = 0;
 		}
 		
-		JetManState newState = new JetManState(newWalkState, newThrustDir, facingLeft);
+		JetManState newState = new JetManState(newWalkState, newThrustDir, facingLeft, newFuel);
+		if( newFuel != state.fuel ) {
+			System.err.println("Jetman fuel: "+newFuel);
+		}
 		
 		Icon newIcon =
-			goUp && goForward ? jetManIcons.jetUpAndForward :
-			goUp              ? jetManIcons.jetUp :
-			feetOnGround      ? jetManIcons.walking[newWalkState>>2] :
-			goForward         ? jetManIcons.jetForward :
+			jetUp && jetForward ? jetManIcons.jetUpAndForward :
+			jetUp               ? jetManIcons.jetUp :
+			feetOnGround        ? jetManIcons.walking[newWalkState>>2] :
+			jetForward          ? jetManIcons.jetForward :
 			jetManIcons.fall0;
 		if( facingLeft ) newIcon = JetManIcons.flipped(newIcon);
 		
