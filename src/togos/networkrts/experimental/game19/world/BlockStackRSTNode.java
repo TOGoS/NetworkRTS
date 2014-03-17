@@ -13,7 +13,7 @@ public class BlockStackRSTNode extends BaseRSTNode
 		this.blocks = blocks;
 	}
 	
-	static BlockStackRSTNode create( Block[] blocks ) {
+	public static BlockStackRSTNode create( Block[] blocks ) {
 		if( blocks.length == 0 && EMPTY != null ) return EMPTY;
 		
 		long aut = Long.MAX_VALUE;

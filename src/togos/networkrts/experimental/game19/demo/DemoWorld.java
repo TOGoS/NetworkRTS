@@ -12,22 +12,27 @@ import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.QuadRSTNode;
 import togos.networkrts.experimental.game19.world.RSTNode;
+import togos.networkrts.experimental.game19.world.RSTNodeUpdater;
 import togos.networkrts.experimental.game19.world.RSTUtil;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.beh.NoBehavior;
 import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
 import togos.networkrts.experimental.shape.TCircle;
+import togos.networkrts.experimental.shape.TRectangle;
 
 public class DemoWorld
 {
-
 	public static World initWorld( ResourceContext rc ) throws IOException {
 		ImageHandle brickImage = rc.storeImageHandle(new File("tile-images/dumbrick1.png"));
-		//ImageHandle dudeImage = resourceContext.storeImageHandle(new File("tile-images/dude.png"));
-		//ImageHandle ballImage = resourceContext.storeImageHandle(new File("tile-images/stupid-ball.png"));
+		ImageHandle dirtImage = rc.storeImageHandle(new File("tile-images/dirt0.png"));
+		ImageHandle grassImage = rc.storeImageHandle(new File("tile-images/grass0.png"));
+		ImageHandle treeImage = rc.storeImageHandle(new File("tile-images/tree0.png"));
 		
-		Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance);
+		final Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance);
+		final Block dirt = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, dirtImage, NoBehavior.instance);
+		final Block grass = new Block(0, grassImage, NoBehavior.instance);
+		final Block tree = new Block(0, treeImage, NoBehavior.instance);
 		
 		int worldSizePower = 24;
 		int worldDataOrigin = -(1<<(worldSizePower-1));
@@ -35,6 +40,16 @@ public class DemoWorld
 		RSTNode n = QuadRSTNode.createHomogeneous(bricks.stack, worldSizePower);
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( -2, -2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 0, 20, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 4, 20, 1 ), new SolidNodeFiller( dirt.stack ));
+		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 3, 20, 1 ), new RSTNodeUpdater() {
+			final RSTNode treeAndGrass = BlockStackRSTNode.create(new Block[] { tree, grass } );
+			final Random r = new Random();
+			@Override public RSTNode update(RSTNode oldNode, int x, int y, int sizePower) {
+				double v = r.nextDouble();
+				return v < 0.1 ? bricks.stack : v < 0.25 ? treeAndGrass : grass.stack;
+			}
+		});
 		
 		Random r = new Random();
 		//for( int i=0; i<100; ++i ) {
