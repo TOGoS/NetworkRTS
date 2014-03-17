@@ -126,11 +126,13 @@ public class Simulation implements AutoEventUpdatable2<Message>
 			world = new World(
 				world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, incomingMessages, updateContext ),
 				world.rstSizePower,
-				updateNonTiles(world, time, incomingMessages, updateContext, 1)
+				updateNonTiles(world, time, incomingMessages, updateContext, 1),
+				world.background
 			);
 			world = new World(
 				world.rst, world.rstSizePower,
-				updateNonTiles(world, time, incomingMessages, updateContext, 2)
+				updateNonTiles(world, time, incomingMessages, updateContext, 2),
+				world.background
 			);
 			incomingMessages = updateContext.newMessages;
 			this.time = time;

@@ -6,6 +6,8 @@ import java.util.Random;
 
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
+import togos.networkrts.experimental.game19.scene.Layer;
+import togos.networkrts.experimental.game19.scene.Layer.LayerLink;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
@@ -20,6 +22,7 @@ import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
 import togos.networkrts.experimental.shape.TCircle;
 import togos.networkrts.experimental.shape.TRectangle;
+import togos.networkrts.util.SoftResourceHandle;
 
 public class DemoWorld
 {
@@ -68,7 +71,9 @@ public class DemoWorld
 
 			
 		EntitySpatialTreeIndex<NonTile> nonTiles = new EntitySpatialTreeIndex<NonTile>();
-		return new World(n, worldSizePower, nonTiles);
+		return new World(n, worldSizePower, nonTiles,
+			new LayerLink(true, new SoftResourceHandle<Layer>("urn:sha1:blah"), 0, 0, 0, 0xFF001122)
+		);
 	}
 
 }

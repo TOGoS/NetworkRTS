@@ -49,7 +49,7 @@ public class SoftResourceHandle<T> implements ResourceHandle<T>, Serializable
 	public <X extends T> T getValue( Getter<X> populator )
 		throws ResourceNotFound
 	{
-		T value = getValue();
+		T value = getValueIfImmediatelyAvailable();
 		if( value != null ) return value;
 		
 		while( !lockForPopulation() ) {
@@ -78,7 +78,7 @@ public class SoftResourceHandle<T> implements ResourceHandle<T>, Serializable
 	 * Get the value if it's already populated.
 	 * Return null if it hasn't been populated, including if an error occurred while trying to populate.
 	 */
-	public T getValue() {
+	public T getValueIfImmediatelyAvailable() {
 		SoftReference<T> ref = this.ref;
 		return ref == null ? null : ref.get();
 	}

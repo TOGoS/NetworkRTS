@@ -9,6 +9,7 @@ import java.awt.image.BufferedImage;
 import togos.networkrts.experimental.game19.demo.ServerClientDemo.Scene;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
+import togos.networkrts.experimental.game19.scene.Layer.LayerLink;
 import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
 import togos.networkrts.experimental.game19.scene.QuadTreeLayerData;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
@@ -142,14 +143,35 @@ public class Renderer
 		}
 	}
 	
+	protected Color awtColor(int color) {
+		// TODO: cache or something?
+		return new Color(color);
+	}
+	
 	public void draw( Layer layer, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy ) {
 		if( ldist <= 0 ) {
 			throw new RuntimeException("Distance must be positive, but "+ldist+" was given");
 		}
-
-		if( (drawBackgrounds || !layer.nextIsBackground) && layer.next != null ) {
-			draw( layer.next, lx + layer.nextOffsetX, ly + layer.nextOffsetY, ldist + layer.nextParallaxDistance, g, scale, scx, scy );
-		} else {
+		
+		LayerLink next = layer.next;
+		drawBackground: {
+			if( next != null ) {
+				if( drawBackgrounds || !next.isBackground ) {
+					// TODO: Will want to call something on ResourceContext
+					// to indicate that we want it
+					Layer nextLayer = next.layer.getValueIfImmediatelyAvailable();
+					if( nextLayer != null ) {
+						draw( nextLayer, lx + next.offsetX, ly + next.offsetY, ldist + next.distance, g, scale, scx, scy );
+						break drawBackground;
+					}
+				}
+				
+				Rectangle r = g.getClipBounds();
+				g.setColor(awtColor(next.altColor));
+				g.fillRect(r.x, r.y, r.width, r.height);
+				break drawBackground;
+			}
+			
 			// Draw the background a solid color:
 			Rectangle r = g.getClipBounds();
 			g.setColor(Color.BLUE);

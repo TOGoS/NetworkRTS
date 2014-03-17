@@ -10,6 +10,7 @@ import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.qt2drender.Blackifier;
 import togos.networkrts.repo.BlobRepository;
+import togos.networkrts.util.Getter;
 import togos.networkrts.util.ImageGetter;
 import togos.networkrts.util.ResourceHandlePool;
 

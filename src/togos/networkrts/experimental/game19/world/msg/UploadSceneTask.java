@@ -69,10 +69,10 @@ public class UploadSceneTask implements AsyncTask {
 			TileLayerData layerData = new TileLayerData( ldWidth, ldHeight, 1 );
 			WorldConverter.nodeToLayerData( world.rst, -worldRadius, -worldRadius, 0, 1<<world.rstSizePower, layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, ldWidth, ldHeight );
 			VisibilityChecker.calculateAndApplyVisibility(layerData, ldCenterX, ldCenterY, 0, 32);
-			l = new Layer( layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, false, null, 0, 0, 0 );
+			l = new Layer( layerData, intCenterX-ldCenterX, intCenterY-ldCenterY, world.background );
 		} else {
 			int size = 1<<world.rstSizePower;
-			l = new Layer( new QuadTreeLayerData(world.rst, size), -size/2.0, -size/2.0, false, null, 0, 0, 0 );
+			l = new Layer( new QuadTreeLayerData(world.rst, size), -size/2.0, -size/2.0, world.background );
 		}
 		Scene scene = new Scene( l, visibleNonTiles, centerX, centerY, visibilityClip );
 		ctx.sendMessage(Message.create(uplinkBitAddress, uplinkBitAddress, MessageType.INCOMING_PACKET, scene));

@@ -1,5 +1,6 @@
 package togos.networkrts.experimental.game19.world;
 
+import togos.networkrts.experimental.game19.scene.Layer.LayerLink;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
 import togos.networkrts.util.HasNextAutoUpdateTime;
 
@@ -9,11 +10,17 @@ public class World implements HasNextAutoUpdateTime
 	public final int rstSizePower;
 	public final EntitySpatialTreeIndex<NonTile> nonTiles;
 	// May need a separate index for 'watchers'
+	public final LayerLink background;
 	
-	public World(RSTNode rst, int rstSizePower, EntitySpatialTreeIndex<NonTile> nonTiles ) {
+	public World(RSTNode rst, int rstSizePower, EntitySpatialTreeIndex<NonTile> nonTiles, LayerLink background ) {
 		this.rst = rst;
 		this.rstSizePower = rstSizePower;
 		this.nonTiles = nonTiles.freeze();
+		this.background = background;
+	}
+	
+	public World(RSTNode rst, int rstSizePower, EntitySpatialTreeIndex<NonTile> nonTiles ) {
+		this( rst, rstSizePower, nonTiles, null );
 	}
 	
 	public RSTNodeInstance getRstNodeInstance() {
@@ -32,6 +39,6 @@ public class World implements HasNextAutoUpdateTime
 	//// Some convenience method
 	
 	public World withNonTile(NonTile nt) {
-		return new World( rst, rstSizePower, nonTiles.with(nt) );
+		return new World( rst, rstSizePower, nonTiles.with(nt), background );
 	}
 }
