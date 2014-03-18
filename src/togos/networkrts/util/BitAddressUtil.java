@@ -1,7 +1,5 @@
 package togos.networkrts.util;
 
-import togos.networkrts.util.BitAddressRange;
-
 /**
  * A bit address is a 64-bit integer.
  * It does not need to be unique.
@@ -9,7 +7,19 @@ import togos.networkrts.util.BitAddressRange;
  * 
  * Address ranges are 64-dimensional; each bit is compared separately.
  * 
- * This class contains utilities for handling addresses.
+ * The specific address NO_ADDRESS=0
+ * indicates 'no address', so is treated specially by functions
+ * that work with specific addresses (as opposed to ranges, in
+ * which that value has no special meaning).
+ * 
+ * Ranges where the min and max are of size 1.
+ * To make an address range that contains nothing, max must be < min.
+ * This is usually accomplished using MAX_ADDRESS..MIN_ADDRESS,
+ * the inverse of MIN_ADDRESS..MAX_ADDRESS, which includes everything.
+ * 
+ * This class contains utilities for handling generic addresses
+ * without making any assumptions about their internal structure
+ * other than the special case for NO_ADDRESS.
  */
 public class BitAddressUtil
 {

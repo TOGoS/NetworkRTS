@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import junit.framework.TestCase;
-
 import togos.networkrts.cereal.CerealDecoder.DecodeState;
 import togos.networkrts.util.MemoryRepo;
 

@@ -5,13 +5,8 @@ import java.io.IOException;
 
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.sim.Simulator;
-import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.IDGenerator;
-import togos.networkrts.experimental.game19.world.NonTile;
-import togos.networkrts.experimental.game19.world.thing.jetman.JetManBehavior;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManIcons;
-import togos.networkrts.experimental.gameengine1.index.AABB;
-import togos.networkrts.util.BitAddressUtil;
 
 public class Server
 {

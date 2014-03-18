@@ -12,6 +12,8 @@ import java.util.Random;
 
 import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
+import togos.networkrts.experimental.game19.scene.Icon;
+import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.world.Block;
@@ -23,9 +25,14 @@ public class RenderDemo
 {
 	ResourceContext rc = new ResourceContext(new File(".ccouch"));
 	
+	protected Icon loadBlockIcon(String filename) throws IOException {
+		ImageHandle ih = rc.storeImageHandle(new File(filename));
+		return new Icon(ih, -0.5f, -0.5f, 0.5f, 1f, 1f);
+	}
+	
 	protected Layer makeLayer() throws IOException {
-		Block bricks = new Block(rc.storeImageHandle(new File("tile-images/dumbrick1.png")));
-		Block cheese = new Block(rc.storeImageHandle(new File("tile-images/2cheese.png")));
+		Block bricks = new Block(loadBlockIcon("tile-images/dumbrick1.png"));
+		Block cheese = new Block(loadBlockIcon("tile-images/2cheese.png"));
 		
 		BlockStack[] blockStacks = new BlockStack[50]; 
 		Random r = new Random();

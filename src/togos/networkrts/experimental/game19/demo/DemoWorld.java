@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Random;
 
 import togos.networkrts.experimental.game19.ResourceContext;
+import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
 import togos.networkrts.experimental.game19.scene.Layer.LayerLink;
@@ -26,12 +27,17 @@ import togos.networkrts.util.SoftResourceHandle;
 
 public class DemoWorld
 {
+	protected static Icon loadBlockIcon(ResourceContext rc, String filename, float frontZ) throws IOException {
+		ImageHandle ih = rc.storeImageHandle(new File(filename));
+		return new Icon(ih, -0.5f, -0.5f, frontZ, 1f, 1f);
+	}
+	
 	public static World initWorld( ResourceContext rc ) throws IOException {
-		ImageHandle brickImage = rc.storeImageHandle(new File("tile-images/dumbrick1.png"));
-		ImageHandle dirtImage = rc.storeImageHandle(new File("tile-images/dirt0.png"));
-		ImageHandle grassImage = rc.storeImageHandle(new File("tile-images/grass0.png"));
-		ImageHandle treeImage = rc.storeImageHandle(new File("tile-images/tree0.png"));
-		ImageHandle spikeImage = rc.storeImageHandle(new File("tile-images/spikes0.png"));
+		Icon brickImage = loadBlockIcon(rc, "tile-images/dumbrick1.png", 0.5f);
+		Icon dirtImage = loadBlockIcon(rc, "tile-images/dirt0.png", 0.5f);
+		Icon grassImage = loadBlockIcon(rc, "tile-images/grass0.png", 0.5f);
+		Icon treeImage = loadBlockIcon(rc, "tile-images/tree0.png", -0.4f);
+		Icon spikeImage = loadBlockIcon(rc, "tile-images/spikes0.png", 0.5f);
 		
 		final Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance);
 		final Block dirt = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, dirtImage, NoBehavior.instance);

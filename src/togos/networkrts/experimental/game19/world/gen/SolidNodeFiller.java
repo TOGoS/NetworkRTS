@@ -1,8 +1,8 @@
 package togos.networkrts.experimental.game19.world.gen;
 
-import togos.networkrts.experimental.game19.world.RSTNodeUpdater;
 import togos.networkrts.experimental.game19.world.QuadRSTNode;
 import togos.networkrts.experimental.game19.world.RSTNode;
+import togos.networkrts.experimental.game19.world.RSTNodeUpdater;
 
 public class SolidNodeFiller implements RSTNodeUpdater
 {

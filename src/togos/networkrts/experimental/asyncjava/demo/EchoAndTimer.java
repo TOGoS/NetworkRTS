@@ -2,9 +2,9 @@ package togos.networkrts.experimental.asyncjava.demo;
 
 import java.io.IOException;
 
+import togos.networkrts.experimental.asyncjava.Callback;
 import togos.networkrts.experimental.asyncjava.ProgramSegment;
 import togos.networkrts.experimental.asyncjava.ProgramShell;
-import togos.networkrts.experimental.asyncjava.Callback;
 import togos.networkrts.experimental.asyncjava.interp.ProgramRunner;
 import togos.networkrts.experimental.asyncjava.io.InputStreamPuller;
 

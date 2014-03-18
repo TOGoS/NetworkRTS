@@ -1,7 +1,7 @@
 package togos.networkrts.experimental.gensim;
 
-import togos.networkrts.util.Timer;
 import junit.framework.TestCase;
+import togos.networkrts.util.Timer;
 
 public class TimedEventQueueTest extends TestCase
 {

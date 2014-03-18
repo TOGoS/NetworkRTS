@@ -7,8 +7,8 @@ import java.util.Random;
 
 import togos.networkrts.awt.Apallit;
 import togos.networkrts.awt.TimestampedPaintable;
-import togos.networkrts.experimental.shape.TCircle;
 import togos.networkrts.experimental.shape.RectIntersector;
+import togos.networkrts.experimental.shape.TCircle;
 import togos.networkrts.experimental.shape.TUnion;
 
 public class GridWorld64Viewer extends Apallit implements TimestampedPaintable

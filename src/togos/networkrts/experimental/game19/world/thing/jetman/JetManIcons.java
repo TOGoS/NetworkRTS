@@ -7,8 +7,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import togos.networkrts.experimental.game19.ResourceContext;
+import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
-import togos.networkrts.experimental.game19.world.NonTile.Icon;
 
 public class JetManIcons
 {
@@ -25,7 +25,7 @@ public class JetManIcons
 			int w = Integer.parseInt(m.group(1));
 			int h = Integer.parseInt(m.group(2));
 			ImageHandle ih = rc.storeImageHandle(new File("tile-images/JetMan/"+name));
-			return new Icon(ih, -w/32f, -h/32f, w/16f, h/16f ); 
+			return new Icon(ih, -w/32f, -h/32f, Icon.DEFAULT_NONTILE_FRONT_Z, w/16f, h/16f ); 
 		} else {
 			throw new RuntimeException("Couldn't figure dimensions from filename '"+name+"'");
 		}
@@ -33,13 +33,13 @@ public class JetManIcons
 
 	static Icon loadIcon(ResourceContext rc, String name) throws IOException {
 		ImageHandle ih = rc.storeImageHandle(new File("tile-images/JetMan/"+name));
-		return new Icon(ih, -0.5f, -0.5f, 1, 1 ); 
+		return new Icon(ih, -0.5f, -0.5f, Icon.DEFAULT_NONTILE_FRONT_Z, 1, 1 ); 
 	}
 	
 	static final WeakHashMap<Icon,Icon> flipped = new WeakHashMap<Icon,Icon>();
 	
 	protected static final Icon flipIcon( Icon i ) {
-		return new Icon(i.image, i.imageX, i.imageY, -i.imageWidth, i.imageHeight);
+		return new Icon(i.image, i.imageX, i.imageY, i.imageZ, -i.imageWidth, i.imageHeight);
 	}
 	
 	public static final Icon flipped( Icon i ) {

@@ -12,6 +12,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -27,6 +30,7 @@ import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManBehavior;
+import togos.networkrts.experimental.game19.world.thing.jetman.JetManCoreStats;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManIcons;
 import togos.networkrts.ui.ImageCanvas;
 
@@ -42,7 +46,7 @@ public class ServerClientDemo
 	 */
 	public static class Scene {
 		public final Layer layer;
-		public final Iterable<NonTile> nonTiles;
+		public final List<NonTile> nonTiles;
 		// Point within the scene that should be centered on (usually the player)
 		public final double poiX, poiY;
 		/**
@@ -51,8 +55,16 @@ public class ServerClientDemo
 		 **/
 		public final VisibilityClip visibilityClip;
 		
-		public Scene( Layer layer,  Iterable<NonTile> nonTiles, double poiX, double poiY, VisibilityClip visibilityClip ) {
+		protected static final Comparator<NonTile> NONTILE_COMPARATOR = new Comparator<NonTile>() {
+			public int compare(NonTile arg0, NonTile arg1) {
+				float z0 = arg0.icon.imageZ, z1 = arg1.icon.imageZ;  
+				return z0 < z1 ? -1 : z0 > z1 ? 1 : 0;
+			}
+		};
+		
+		public Scene( Layer layer,  List<NonTile> nonTiles, double poiX, double poiY, VisibilityClip visibilityClip ) {
 			this.layer = layer;
+			Collections.sort(nonTiles, NONTILE_COMPARATOR);
 			this.nonTiles = nonTiles;
 			this.poiX = poiX;
 			this.poiY = poiY;
@@ -62,10 +74,12 @@ public class ServerClientDemo
 	
 	public static class UIState {
 		public final Scene scene;
+		public final JetManCoreStats stats;
 		public final boolean connected;
 		
-		public UIState( Scene scene, boolean connected ) {
+		public UIState( Scene scene, JetManCoreStats stats, boolean connected ) {
 			this.scene = scene;
+			this.stats = stats;
 			this.connected = connected;
 		}
 	}
@@ -90,7 +104,7 @@ public class ServerClientDemo
 		}
 		
 		Color sceneBackgroundColor = new Color(0.2f, 0, 0);
-		UIState uiState = new UIState(null, false);
+		UIState uiState = new UIState(null, null, false);
 		
 		public synchronized void setUiState( UIState s ) {
 			this.uiState = s;
@@ -149,6 +163,14 @@ public class ServerClientDemo
 					if( scene != null ) {
 						renderer.draw( scene, -scene.poiX, -scene.poiY, 1, g, pixelsPerMeter, sb.getWidth()/2, sb.getHeight()/2 );
 					}
+					JetManCoreStats stats = u.stats;
+					if( stats != null ) {
+						g.setColor(Color.WHITE);
+						g.drawString( String.format("Fuel: % 5.2f / % 5.2f", stats.fuel, stats.maxFuel), 4, 12);
+						g.drawString( String.format("Suit: % 5.4f / % 5.4f", stats.suitHealth, stats.maxSuitHealth), 4, 12*2);
+						g.drawString( String.format("Head: % 5.4f / % 5.4f", stats.helmetHealth, stats.maxHelmetHealth), 4, 12*3);
+						g.drawString( String.format("Batt: % 5.4f / % 5.4f", stats.batteryCharge, stats.maxBatteryCharge), 4, 12*4);
+					}
 					if( !u.connected ) {
 						Font f = new Font("Verdana", Font.PLAIN, 24);
 						g.setFont(f);
@@ -178,7 +200,8 @@ public class ServerClientDemo
 	static class Client {
 		SceneCanvas sceneCanvas;
 		public Queue<Message> messageQueue;
-		protected Scene lastScene;
+		protected Scene scene;
+		protected JetManCoreStats stats;
 		public long lastUpdateFromAvatar;
 		
 		public Client( ResourceContext resourceContext ) {
@@ -186,16 +209,26 @@ public class ServerClientDemo
 			sceneCanvas.setBackground(Color.BLACK);
 		}
 		
-		public synchronized void setScene( Scene s ) {
-			lastScene = s;
-			sceneCanvas.setUiState(new UIState(s, true));
+		protected void updateUiState() {
+			sceneCanvas.setUiState(new UIState(scene, stats, lastUpdateFromAvatar >= System.currentTimeMillis() - 1000));
+		}
+		
+		public synchronized void updateReceived() {
 			lastUpdateFromAvatar = System.currentTimeMillis();
+		}
+		public synchronized void setScene( Scene s ) {
+			scene = s;
+			updateUiState();
+		}
+		public synchronized void setStats( JetManCoreStats s ) {
+			stats = s;
+			updateUiState();
 		}
 		
 		public synchronized void pokeWatchdog() {
 			long currentTime = System.currentTimeMillis();
 			if( lastUpdateFromAvatar < currentTime - 1000 ) {
-				sceneCanvas.setUiState(new UIState(lastScene, false));
+				updateUiState();
 			}
 		}
 		
@@ -369,8 +402,14 @@ public class ServerClientDemo
 						return;
 					}
 					
-					Scene scene = (Scene)m.payload;
-					c.setScene(scene);
+					c.updateReceived();
+					if( m.payload instanceof Scene ) {
+						c.setScene((Scene)m.payload);
+					} else if( m.payload instanceof JetManCoreStats ) {
+						c.setStats((JetManCoreStats)m.payload);
+					} else {
+						System.err.println("Unrecognized message payload: "+m.payload.getClass());
+					}
 				}
 			}
 		};

@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import togos.networkrts.cereal.CerealDecoder.DecodeState;
-import togos.networkrts.util.HashUtil;
 import togos.networkrts.util.ResourceNotFound;
 
 public class StandardValueEncodingTest extends BaseCerealDecoderTest

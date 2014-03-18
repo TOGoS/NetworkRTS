@@ -1,18 +1,20 @@
 package togos.networkrts.experimental.game19.world.thing.jetman;
 
 import togos.networkrts.experimental.game19.physics.BlockStackCollision;
+import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
-import togos.networkrts.experimental.game19.world.NonTile.Icon;
 import togos.networkrts.experimental.game19.world.NonTileBehavior;
 import togos.networkrts.experimental.game19.world.World;
+import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.msg.UploadSceneTask;
 import togos.networkrts.util.BitAddressUtil;
 
-public class JetManHeadBehavior implements NonTileBehavior {
+public class JetManHeadBehavior implements NonTileBehavior
+{
 	final long messageBitAddress;
 	final long uplinkBitAddress;
 	final JetManHeadState state;
@@ -34,10 +36,11 @@ public class JetManHeadBehavior implements NonTileBehavior {
 	) {
 		double newX = nt.x, newY = nt.y;
 		double newVx = nt.vx, newVy = nt.vy + JetManBehavior.GRAVITY;
-		double newSuitHealth = state.health, newBattery = state.battery;
+		float newSuitHealth = state.health, newBattery = state.battery;
 		
 		if( newBattery >= 0.0001 ) {
 			updateContext.startAsyncTask(new UploadSceneTask(nt, world, uplinkBitAddress));
+			updateContext.sendMessage(Message.create(uplinkBitAddress, uplinkBitAddress, MessageType.INCOMING_PACKET, state.getStats()));
 			newBattery -= 0.0001; // These transmissions cost something!
 		}
 		

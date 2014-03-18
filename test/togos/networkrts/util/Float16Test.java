@@ -1,6 +1,5 @@
 package togos.networkrts.util;
 
-import togos.networkrts.util.Float16;
 import junit.framework.TestCase;
 
 public class Float16Test extends TestCase
