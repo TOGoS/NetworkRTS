@@ -15,6 +15,7 @@ import togos.networkrts.experimental.game19.scene.QuadTreeLayerData;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
+import togos.networkrts.experimental.game19.world.Icon;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.util.Getter;
@@ -73,9 +74,12 @@ public class Renderer
 				for( int z=0; z<tileData.depth; ++z ) {
 					BlockStack cc = tileData.blockStacks[x + (tileData.width)*y + (tileData.width*tileData.height)*z];
 					if( cc != null ) for( Block b : cc.getBlocks() ) {
-						ImageHandle ih = b.imageHandle;
+						Icon ic = b.icon;
+						ImageHandle ih = ic.image;
 						if( ih.isCompletelyTransparent ) continue;
 						try {
+							// TODO: Scale and place according to icon x, y, w, h, where
+							// -0.5 = top/left edge of cell, +0.5 = bottom/right edge of cell
 							g.drawImage( ih.getScaled(imageGetter,tileSize,tileSize), sx, sy, null );
 						} catch( ResourceNotFound e ) {
 							System.err.println("Couldn't load image "+ih.original.getUri());
@@ -111,9 +115,12 @@ public class Renderer
 			
 			final Getter<BufferedImage> imageGetter = resourceContext.imageGetter;
 			for( Block b : node.getBlocks() ) {
-				ImageHandle ih = b.imageHandle;
+				Icon ic = b.icon;
+				ImageHandle ih = ic.image;
 				if( ih.isCompletelyTransparent ) continue;
 				try {
+					// TODO: Scale and place according to icon x, y, w, h, where
+					// -0.5 = top/left edge of cell, +0.5 = bottom/right edge of cell
 					g.drawImage( ih.getScaled(imageGetter,isize,isize), ix, iy, null );
 				} catch( ResourceNotFound e ) {
 					System.err.println("Couldn't load image "+ih.original.getUri());
