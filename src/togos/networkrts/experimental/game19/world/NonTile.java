@@ -7,16 +7,6 @@ import togos.networkrts.util.BitAddressUtil;
 
 public class NonTile implements EntityRange
 {
-	public static class Icon {
-		public final ImageHandle image;
-		public final float imageX, imageY, imageWidth, imageHeight;
-		public Icon( ImageHandle image, float x, float y, float w, float h ) {
-			this.image = image;
-			this.imageX = x; this.imageWidth  = w;
-			this.imageY = y; this.imageHeight = h;
-		}
-	}
-	
 	public final long referenceTime;
 	public final double x, y, vx, vy; // For simplicity, velocity is meters per clock tick
 	public final AABB relativePhysicalAabb;
@@ -54,7 +44,7 @@ public class NonTile implements EntityRange
 	}
 
 	public static NonTile create( long referenceTime, double x, double y, ImageHandle image, float diameter, NonTileBehavior behavior ) {
-		Icon icon = new Icon( image, -diameter/2, -diameter/2, diameter, diameter );
+		Icon icon = new Icon( image, -diameter/2, -diameter/2, diameter/2, diameter, diameter );
 		return create( referenceTime, x, y, icon, diameter, behavior );
 	}
 	
