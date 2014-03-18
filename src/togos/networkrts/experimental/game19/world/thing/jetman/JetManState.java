@@ -1,6 +1,7 @@
 package togos.networkrts.experimental.game19.world.thing.jetman;
 
-class JetManState {
+class JetManState
+{
 	public static final JetManState DEFAULT = new JetManState(0,-1,false,1,100); 
 	
 	final int walkState, thrustDir;

@@ -1,6 +1,5 @@
 package togos.networkrts.experimental.game19.world.thing.jetman;
 
-
 import java.util.Random;
 
 import togos.networkrts.experimental.game19.physics.BlockStackCollision;
@@ -16,7 +15,8 @@ import togos.networkrts.experimental.game19.world.msg.UploadSceneTask;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.util.BitAddressUtil;
 
-public class JetManBehavior implements NonTileBehavior {
+public class JetManBehavior implements NonTileBehavior
+{
 	public static final double GRAVITY = 0.002;
 	
 	final long messageBitAddress;

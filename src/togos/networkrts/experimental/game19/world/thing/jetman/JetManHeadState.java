@@ -1,6 +1,7 @@
 package togos.networkrts.experimental.game19.world.thing.jetman;
 
-class JetManHeadState {
+class JetManHeadState
+{
 	public static final JetManHeadState DEFAULT = new JetManHeadState(false,0.25,1); 
 	
 	final boolean facingLeft;

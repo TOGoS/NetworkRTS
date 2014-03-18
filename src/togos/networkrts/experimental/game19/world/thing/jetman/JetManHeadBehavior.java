@@ -12,7 +12,8 @@ import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.msg.UploadSceneTask;
 import togos.networkrts.util.BitAddressUtil;
 
-public class JetManHeadBehavior implements NonTileBehavior {
+public class JetManHeadBehavior implements NonTileBehavior
+{
 	final long messageBitAddress;
 	final long uplinkBitAddress;
 	final JetManHeadState state;

@@ -8,7 +8,8 @@ import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.NonTileBehavior;
 import togos.networkrts.experimental.game19.world.World;
 
-public class JetManPieceBehavior implements NonTileBehavior {
+public class JetManPieceBehavior implements NonTileBehavior
+{
 	public JetManPieceBehavior() { }
 	
 	@Override public NonTile update(final NonTile nt, long time, final World world,
