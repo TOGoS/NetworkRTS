@@ -11,6 +11,7 @@ import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.NonTileBehavior;
 import togos.networkrts.experimental.game19.world.World;
+import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.msg.UploadSceneTask;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.util.BitAddressUtil;
@@ -52,11 +53,12 @@ public class JetManBehavior implements NonTileBehavior
 		MessageSet messages, NonTileUpdateContext updateContext
 	) {
 		updateContext.startAsyncTask(new UploadSceneTask(nt, world, uplinkBitAddress));
+		updateContext.sendMessage(Message.create(uplinkBitAddress, uplinkBitAddress, MessageType.INCOMING_PACKET, state.getStats()));
 		
 		double newX = nt.x, newY = nt.y;
 		double newVx = nt.vx, newVy = nt.vy;
 		boolean feetOnGround = false;
-		double newSuitHealth = state.suitHealth, newFuel = state.fuel;
+		float newSuitHealth = state.suitHealth, newFuel = state.fuel;
 		
 		// TODO: Collision detection!
 		BlockStackCollision c = BlockStackCollision.findCollisionWithRst(nt, world, BitAddresses.BLOCK_SOLID);
@@ -80,6 +82,8 @@ public class JetManBehavior implements NonTileBehavior
 			newSuitHealth -= collisionDamage;
 		}
 		
+		JetManHeadState newHeadState = state.headState;
+		
 		if( newSuitHealth < 0 ) {
 			Random rand = new Random();
 			Icon[] pieceIcons = new Icon[] { icons.leg1, icons.leg2, icons.torso, icons.jetpack };
@@ -93,10 +97,12 @@ public class JetManBehavior implements NonTileBehavior
 				));
 			}
 			
+			// TODO: Some amount of remaining damage goes to head
+			
 			return new NonTile(time, newX, newY, newVx, newVy,
 				new AABB(-3f/16, -2.5f/16, -3f/16, 3f/16, 2.5f/16, 3f/16),
 				messageBitAddress, messageBitAddress, time+1, icons.head,
-				new JetManHeadBehavior(messageBitAddress, uplinkBitAddress, new JetManHeadState(state.facingLeft, newSuitHealth+0.25, 1), icons)
+				new JetManHeadBehavior(messageBitAddress, uplinkBitAddress, newHeadState, icons)
 			);
 		}
 		
@@ -180,7 +186,7 @@ public class JetManBehavior implements NonTileBehavior
 			newWalkState = 0;
 		}
 		
-		JetManState newState = new JetManState(newWalkState, newThrustDir, facingLeft, newSuitHealth, newFuel);
+		JetManState newState = new JetManState(newWalkState, newThrustDir, facingLeft, newSuitHealth, newFuel, newHeadState);
 		if( newFuel != state.fuel || newSuitHealth != state.suitHealth ) {
 			// TODO: Some way to send status info to the client
 			//System.err.println(String.format("Jetman s:%4.3f f:%8.3f",newSuitHealth,newFuel));
