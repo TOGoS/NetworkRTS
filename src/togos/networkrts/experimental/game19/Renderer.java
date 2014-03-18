@@ -40,7 +40,7 @@ public class Renderer
 		}
 	}
 	
-	protected void _drawLayerData( TileLayerData tileData, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy ) {
+	protected void _drawLayerData( TileLayerData tileData, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy, float minZ, float maxZ ) {
 		double dTileSize = scale / ldist;
 		int osx = (int)Math.round(scx + lx * dTileSize);
 		int osy = (int)Math.round(scy + ly * dTileSize);
@@ -75,6 +75,7 @@ public class Renderer
 					BlockStack cc = tileData.blockStacks[x + (tileData.width)*y + (tileData.width*tileData.height)*z];
 					if( cc != null ) for( Block b : cc.getBlocks() ) {
 						Icon ic = b.icon;
+						if( ic.imageZ <= minZ || ic.imageZ > maxZ ) continue;
 						ImageHandle ih = ic.image;
 						if( ih.isCompletelyTransparent ) continue;
 						try {
@@ -134,10 +135,10 @@ public class Renderer
 		}
 	}
 	
-	protected void _drawLayerData( Layer layer, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy ) {
+	protected void _drawLayerData( Layer layer, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy, float minZ, float maxZ ) {
 		Object ld = layer.data;
 		if( ld instanceof TileLayerData ) {
-			_drawLayerData( (TileLayerData)ld, lx+layer.dataOffsetX, ly+layer.dataOffsetY, ldist, g, scale, scx, scy );
+			_drawLayerData( (TileLayerData)ld, lx+layer.dataOffsetX, ly+layer.dataOffsetY, ldist, g, scale, scx, scy, minZ, maxZ );
 		} else if( ld instanceof QuadTreeLayerData ) {
 			double dscale = scale / ldist;
 			int x = (int)Math.round(scx + (lx + layer.dataOffsetX) * dscale);
@@ -155,13 +156,16 @@ public class Renderer
 		return new Color(color);
 	}
 	
-	public void draw( Layer layer, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy ) {
+	public void draw( Layer layer, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy, float minZ, float maxZ ) {
+		// Draw everything at z such that minZ <= z < maxZ
+		if( minZ == maxZ ) return;
+		
 		if( ldist <= 0 ) {
 			throw new RuntimeException("Distance must be positive, but "+ldist+" was given");
 		}
 		
 		LayerLink next = layer.next;
-		drawBackground: {
+		drawBackground: if( minZ == Float.NEGATIVE_INFINITY ) {
 			if( next != null ) {
 				if( drawBackgrounds || !next.isBackground ) {
 					// TODO: Will want to call something on ResourceContext
@@ -185,14 +189,21 @@ public class Renderer
 			g.fillRect(r.x, r.y, r.width, r.height);
 		}
 		
-		_drawLayerData( layer, lx, ly, ldist, g, scale, scx, scy );
+		_drawLayerData( layer, lx, ly, ldist, g, scale, scx, scy, minZ, maxZ );
+	}
+	
+	public void draw( Layer layer, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy ) {
+		draw( layer, lx, ly, ldist, g, scale, scx, scy, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY );
 	}
 	
 	protected void _draw( Scene s, double x, double y, double dist, Graphics g, double scale, double scx, double scy ) {
-		draw( s.layer, x, y, dist, g, scale, scx, scy );
-		
 		double sscale = scale/dist;
+		float prevZ = Float.NEGATIVE_INFINITY;
 		for( NonTile nt : s.nonTiles ) {
+			if( nt.icon.imageZ > prevZ ) {
+				draw( s.layer, x, y, dist, g, scale, scx, scy, prevZ, nt.icon.imageZ );
+			}
+			
 			draw(
 				nt.icon.image,
 				(int)(scx+sscale*(x+nt.x+nt.icon.imageX)),
@@ -201,7 +212,10 @@ public class Renderer
 				(int)Math.ceil(sscale*nt.icon.imageHeight),
 				g
 			);
+			
+			prevZ = nt.icon.imageZ;
 		}
+		draw( s.layer, x, y, dist, g, scale, scx, scy, prevZ, Float.POSITIVE_INFINITY );
 	}
 	
 	public void draw( Scene s, double x, double y, double dist, Graphics g, double scale, double scx, double scy ) {

@@ -1,9 +1,19 @@
 package togos.networkrts.experimental.game19.world;
 
+import java.util.Arrays;
+import java.util.Comparator;
+
 import togos.networkrts.experimental.game19.sim.UpdateContext;
 
 public class BlockStackRSTNode extends BaseRSTNode
 {
+	protected static final Comparator<Block> BLOCK_ICON_Z_COMPARATOR = new Comparator<Block>() {
+		@Override public int compare(Block a, Block b) {
+			float za = a.icon.imageZ, zb = b.icon.imageZ;
+			return za < zb ? -1 : za > zb ? 1 : 0;
+		}
+	};
+	
 	public static final BlockStackRSTNode EMPTY = BlockStackRSTNode.create( new Block[0] );
 	
 	protected final Block[] blocks;
@@ -15,6 +25,7 @@ public class BlockStackRSTNode extends BaseRSTNode
 	
 	public static BlockStackRSTNode create( Block[] blocks ) {
 		if( blocks.length == 0 && EMPTY != null ) return EMPTY;
+		if( blocks.length == 1 && blocks[0].stack != null ) return blocks[0].stack;
 		
 		long aut = Long.MAX_VALUE;
 		long minAddress = BitAddresses.TYPE_NODE;
@@ -25,6 +36,9 @@ public class BlockStackRSTNode extends BaseRSTNode
 			maxAddress |= b.getMaxBitAddress();
 			minAddress &= b.getMinBitAddress();
 		}
+		
+		Arrays.sort(blocks, BLOCK_ICON_Z_COMPARATOR);
+		
 		return new BlockStackRSTNode( blocks, minAddress, maxAddress, aut );
 	}
 	

@@ -12,6 +12,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -42,7 +45,7 @@ public class ServerClientDemo
 	 */
 	public static class Scene {
 		public final Layer layer;
-		public final Iterable<NonTile> nonTiles;
+		public final List<NonTile> nonTiles;
 		// Point within the scene that should be centered on (usually the player)
 		public final double poiX, poiY;
 		/**
@@ -51,8 +54,16 @@ public class ServerClientDemo
 		 **/
 		public final VisibilityClip visibilityClip;
 		
-		public Scene( Layer layer,  Iterable<NonTile> nonTiles, double poiX, double poiY, VisibilityClip visibilityClip ) {
+		protected static final Comparator<NonTile> NONTILE_COMPARATOR = new Comparator<NonTile>() {
+			public int compare(NonTile arg0, NonTile arg1) {
+				float z0 = arg0.icon.imageZ, z1 = arg1.icon.imageZ;  
+				return z0 < z1 ? -1 : z0 > z1 ? 1 : 0;
+			}
+		};
+		
+		public Scene( Layer layer,  List<NonTile> nonTiles, double poiX, double poiY, VisibilityClip visibilityClip ) {
 			this.layer = layer;
+			Collections.sort(nonTiles, NONTILE_COMPARATOR);
 			this.nonTiles = nonTiles;
 			this.poiX = poiX;
 			this.poiY = poiY;

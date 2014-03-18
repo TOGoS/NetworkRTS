@@ -45,7 +45,7 @@ public class NonTile implements EntityRange
 	}
 
 	public static NonTile create( long referenceTime, double x, double y, ImageHandle image, float diameter, NonTileBehavior behavior ) {
-		Icon icon = new Icon( image, -diameter/2, -diameter/2, diameter/2, diameter, diameter );
+		Icon icon = new Icon( image, -diameter/2, -diameter/2, Icon.DEFAULT_NONTILE_FRONT_Z, diameter, diameter );
 		return create( referenceTime, x, y, icon, diameter, behavior );
 	}
 	

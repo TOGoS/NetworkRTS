@@ -36,7 +36,7 @@ public class DemoWorld
 		Icon brickImage = loadBlockIcon(rc, "tile-images/dumbrick1.png", 0.5f);
 		Icon dirtImage = loadBlockIcon(rc, "tile-images/dirt0.png", 0.5f);
 		Icon grassImage = loadBlockIcon(rc, "tile-images/grass0.png", 0.5f);
-		Icon treeImage = loadBlockIcon(rc, "tile-images/tree0.png", 0.1f);
+		Icon treeImage = loadBlockIcon(rc, "tile-images/tree0.png", -0.4f);
 		
 		final Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance);
 		final Block dirt = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, dirtImage, NoBehavior.instance);
