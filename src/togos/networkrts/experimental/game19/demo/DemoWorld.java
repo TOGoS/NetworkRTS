@@ -31,11 +31,13 @@ public class DemoWorld
 		ImageHandle dirtImage = rc.storeImageHandle(new File("tile-images/dirt0.png"));
 		ImageHandle grassImage = rc.storeImageHandle(new File("tile-images/grass0.png"));
 		ImageHandle treeImage = rc.storeImageHandle(new File("tile-images/tree0.png"));
+		ImageHandle spikeImage = rc.storeImageHandle(new File("tile-images/spikes0.png"));
 		
 		final Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance);
 		final Block dirt = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, dirtImage, NoBehavior.instance);
 		final Block grass = new Block(0, grassImage, NoBehavior.instance);
 		final Block tree = new Block(0, treeImage, NoBehavior.instance);
+		final Block spikes = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_SHARP, spikeImage, NoBehavior.instance);
 		
 		int worldSizePower = 24;
 		int worldDataOrigin = -(1<<(worldSizePower-1));
@@ -43,6 +45,10 @@ public class DemoWorld
 		RSTNode n = QuadRSTNode.createHomogeneous(bricks.stack, worldSizePower);
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( -2, -2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+		
+		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -8, 0, 32, 32 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -8, 31, 32, 1 ), new SolidNodeFiller( spikes.stack ));
+		
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 0, 20, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 4, 20, 1 ), new SolidNodeFiller( dirt.stack ));
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 3, 20, 1 ), new RSTNodeUpdater() {
@@ -59,17 +65,16 @@ public class DemoWorld
 		//	n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
 		//}
 		for( int i=0; i<10; ++i ) {
-			double sx = 0, sy = 0, dir = 0, rad = 4;
+			double sx = 0, sy = 0, dir = 0, rad = 8;
 			while( rad > 1 ) {
 				n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( sx, sy, rad ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
 				sx += Math.cos(dir);
 				sy += Math.sin(dir);
 				dir += r.nextGaussian() * 0.1;
-				rad *= (0.99 + r.nextGaussian()*0.02);
+				rad *= (0.996 + r.nextGaussian()*0.02);
 			}
 		}
-
-			
+		
 		EntitySpatialTreeIndex<NonTile> nonTiles = new EntitySpatialTreeIndex<NonTile>();
 		return new World(n, worldSizePower, nonTiles,
 			new LayerLink(true, new SoftResourceHandle<Layer>("urn:sha1:blah"), 0, 0, 0, 0xFF001122)
