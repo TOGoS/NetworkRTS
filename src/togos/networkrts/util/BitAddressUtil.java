@@ -1,7 +1,5 @@
 package togos.networkrts.util;
 
-import togos.networkrts.util.BitAddressRange;
-
 /**
  * A bit address is a 64-bit integer.
  * It does not need to be unique.

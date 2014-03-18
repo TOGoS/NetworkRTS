@@ -8,9 +8,9 @@ import java.util.Map;
 
 import togos.networkrts.util.Getter;
 import togos.networkrts.util.HashUtil;
-import togos.networkrts.util.SoftResourceHandle;
 import togos.networkrts.util.ResourceHandlePool;
 import togos.networkrts.util.ResourceNotFound;
+import togos.networkrts.util.SoftResourceHandle;
 
 public class CerealDecoder implements Getter<Object>
 {

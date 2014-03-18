@@ -1,8 +1,6 @@
 package togos.networkrts.experimental.qt2drender;
 
-import togos.networkrts.experimental.qt2drender.VizState.BackgroundLink;
 import togos.networkrts.experimental.qt2drender.demo.NetRenderDemo;
-import togos.networkrts.experimental.qt2drender.demo.NetRenderDemo.RenderContext;
 import togos.networkrts.util.ResourceNotFound;
 
 /**

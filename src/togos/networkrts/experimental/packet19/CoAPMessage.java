@@ -1,7 +1,5 @@
 package togos.networkrts.experimental.packet19;
 
-import togos.networkrts.experimental.packet19.BaseDataPacket;
-
 public class CoAPMessage extends BaseDataPacket
 {
 	// TODO: Implement serialization/deserialization

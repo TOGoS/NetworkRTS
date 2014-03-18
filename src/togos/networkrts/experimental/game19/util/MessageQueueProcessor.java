@@ -1,6 +1,5 @@
 package togos.networkrts.experimental.game19.util;
 
-import java.util.HashSet;
 import java.util.concurrent.BlockingQueue;
 
 import togos.networkrts.experimental.game19.sim.MessageSender;
