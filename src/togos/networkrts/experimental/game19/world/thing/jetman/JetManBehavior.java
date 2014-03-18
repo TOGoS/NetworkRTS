@@ -5,9 +5,9 @@ import java.util.Random;
 
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.physics.BlockStackCollision;
+import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.game19.world.BitAddresses;
-import togos.networkrts.experimental.game19.world.Icon;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.msg.UploadSceneTask;

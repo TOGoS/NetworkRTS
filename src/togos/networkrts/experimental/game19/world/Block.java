@@ -1,5 +1,6 @@
 package togos.networkrts.experimental.game19.world;
 
+import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.world.beh.NoBehavior;
 import togos.networkrts.util.BitAddressRange;
 import togos.networkrts.util.BitAddressUtil;

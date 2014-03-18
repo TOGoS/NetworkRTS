@@ -1,6 +1,5 @@
-package togos.networkrts.experimental.game19.world;
+package togos.networkrts.experimental.game19.scene;
 
-import togos.networkrts.experimental.game19.scene.ImageHandle;
 
 public class Icon
 {

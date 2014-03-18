@@ -7,6 +7,7 @@ import java.awt.Shape;
 import java.awt.image.BufferedImage;
 
 import togos.networkrts.experimental.game19.demo.ServerClientDemo.Scene;
+import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
 import togos.networkrts.experimental.game19.scene.Layer.LayerLink;
@@ -15,7 +16,6 @@ import togos.networkrts.experimental.game19.scene.QuadTreeLayerData;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
-import togos.networkrts.experimental.game19.world.Icon;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.util.Getter;

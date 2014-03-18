@@ -1,9 +1,9 @@
 package togos.networkrts.experimental.game19.world.thing.jetman;
 
 import togos.networkrts.experimental.game19.physics.BlockStackCollision;
+import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.game19.world.BitAddresses;
-import togos.networkrts.experimental.game19.world.Icon;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
