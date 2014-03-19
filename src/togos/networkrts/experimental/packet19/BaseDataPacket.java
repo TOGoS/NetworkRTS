@@ -25,7 +25,7 @@ public abstract class BaseDataPacket implements DataPacket
 		throw new UnsupportedOperationException();
 	}
 	
-	protected void ensureDataPopulated() {
+	protected synchronized void ensureDataPopulated() {
 		if( !dataPopulated ) populateData();
 		dataPopulated = true;
 	}
@@ -49,7 +49,7 @@ public abstract class BaseDataPacket implements DataPacket
 		throw new UnsupportedOperationException();
 	}
 	
-	protected void ensureObjectPopulated() {
+	protected synchronized void ensureObjectPopulated() {
 		if( !objectPopulated ) populateObject();
 		objectPopulated = true;
 	}
