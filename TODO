@@ -5,8 +5,7 @@ Make content creation possible/fun
 - quadtree editor
 - simple (probably JSON-based) tile format
 
-Move solid and spikey block flags out of bit address,
-replace with more generic 'affects nontile physics' bit address flag. 
+Ladders!
 
 Fuel, suit repair kit pickups
 
@@ -29,7 +28,8 @@ Image compositor
 These may be compiled to simple images assuming standard conditions.
 
 Remember to allow for animations
-- Discrete
+- Discrete (bunch of frames)
+  - flag to indicate interpolation desired or not
 - Continuous (vector-based, like flash cartoons; would be useful for e.g. waving trees, spinning fans)
 - Would need to combine many animations into one in a scalable way
   for drawing large composite nodes (e.g. distant background planes)
