@@ -18,7 +18,9 @@ Fuel, suit repair kit pickups
 Client-server networking
 
 Android client
-- Should probably
+- Should probably flesh out client-server protocol
+  and refactor image classes to give room for animations
+  before taking this on
 
 Continuous movement entities
 - Separate
