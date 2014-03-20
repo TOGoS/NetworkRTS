@@ -1,8 +1,19 @@
-Game19
+Game19 to-do list.
+i.e. things to work on when you get sick of working on some other component
 
 Make content creation possible/fun
 - quadtree editor
 - simple (probably JSON-based) tile format
+
+Move solid and spikey block flags out of bit address,
+replace with more generic 'affects nontile physics' bit address flag. 
+
+Fuel, suit repair kit pickups
+
+Client-server networking
+
+Android client
+- Should probably
 
 Continuous movement entities
 - Separate
@@ -16,7 +27,6 @@ Image compositor
 - Radiant (office lights, stars, lit displays)
 - left-right and top-bottom normal maps
 These may be compiled to simple images assuming standard conditions.
-
 
 Remember to allow for animations
 - Discrete
