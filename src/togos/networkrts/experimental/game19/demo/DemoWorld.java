@@ -39,11 +39,11 @@ public class DemoWorld
 		Icon treeImage = loadBlockIcon(rc, "tile-images/tree0.png", -0.4f);
 		Icon spikeImage = loadBlockIcon(rc, "tile-images/spikes0.png", 0.5f);
 		
-		final Block bricks = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, brickImage, NoBehavior.instance);
-		final Block dirt = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_OPAQUE, dirtImage, NoBehavior.instance);
-		final Block grass = new Block(0, grassImage, NoBehavior.instance);
-		final Block tree = new Block(0, treeImage, NoBehavior.instance);
-		final Block spikes = new Block(BitAddresses.BLOCK_SOLID|BitAddresses.BLOCK_SHARP, spikeImage, NoBehavior.instance);
+		final Block bricks = new Block(BitAddresses.BLOCK_IWNT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, brickImage, NoBehavior.instance);
+		final Block dirt = new Block(BitAddresses.BLOCK_IWNT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, dirtImage, NoBehavior.instance);
+		final Block grass = new Block(0, 0, grassImage, NoBehavior.instance);
+		final Block tree = new Block(0, 0, treeImage, NoBehavior.instance);
+		final Block spikes = new Block(BitAddresses.BLOCK_IWNT, Block.FLAG_SOLID|Block.FLAG_SPIKEY, spikeImage, NoBehavior.instance);
 		
 		int worldSizePower = 24;
 		int worldDataOrigin = -(1<<(worldSizePower-1));

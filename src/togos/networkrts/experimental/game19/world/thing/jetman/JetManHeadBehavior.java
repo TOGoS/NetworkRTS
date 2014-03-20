@@ -1,9 +1,10 @@
 package togos.networkrts.experimental.game19.world.thing.jetman;
 
-import togos.networkrts.experimental.game19.physics.BlockStackCollision;
+import togos.networkrts.experimental.game19.physics.BlockCollision;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.game19.world.BitAddresses;
+import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
@@ -45,7 +46,7 @@ public class JetManHeadBehavior implements NonTileBehavior
 		}
 		
 		// TODO: Collision detection!
-		BlockStackCollision c = BlockStackCollision.findCollisionWithRst(nt, world, BitAddresses.BLOCK_SOLID);
+		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.BLOCK_IWNT, Block.FLAG_SOLID);
 		if( c != null ) {
 			double collisionDamage;
 			if( c.correctionX != 0 && Math.abs(c.correctionX) < Math.abs(c.correctionY) ) {

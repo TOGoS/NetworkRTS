@@ -11,11 +11,7 @@ public class BitAddresses
 	public static final long TYPE_EXTERNAL= 0x8000000000000000l;
 	
 	// Block flags
-	public static final long BLOCK_SOLID  = 0x0000000100000000l; // Maybe this doesn't need to be in the address?
-	public static final long BLOCK_OPAQUE = 0x0000000200000000l;
-	public static final long BLOCK_PHYS   = 0x0000000400000000l; // May need physics update
-	// TODO: Don't use up a flag for this
-	public static final long BLOCK_SHARP  = 0x0000000800000000l;
+	public static final long BLOCK_IWNT   = 0x0000000100000000l; // Interacts with non-tiles
 	
 	public static final long TYPE_MASK    = 0xF000000000000000l;
 	public static final long FLAG_MASK    = 0xFFFFFFFF00000000l;

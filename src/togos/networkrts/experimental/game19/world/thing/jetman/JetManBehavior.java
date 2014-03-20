@@ -2,7 +2,7 @@ package togos.networkrts.experimental.game19.world.thing.jetman;
 
 import java.util.Random;
 
-import togos.networkrts.experimental.game19.physics.BlockStackCollision;
+import togos.networkrts.experimental.game19.physics.BlockCollision;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.game19.world.BitAddresses;
@@ -62,7 +62,7 @@ public class JetManBehavior implements NonTileBehavior
 		float newSuitHealth = state.suitHealth, newFuel = state.fuel;
 		
 		// TODO: Collision detection!
-		BlockStackCollision c = BlockStackCollision.findCollisionWithRst(nt, world, BitAddresses.BLOCK_SOLID);
+		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.BLOCK_IWNT, Block.FLAG_SOLID);
 		if( c != null ) {
 			double collisionDamage;
 			if( c.correctionX != 0 && Math.abs(c.correctionX) < Math.abs(c.correctionY) ) {
@@ -80,11 +80,11 @@ public class JetManBehavior implements NonTileBehavior
 					collisionDamage = newVy*newVy;
 				}
 			}
-			for( Block b : c.blockStack.getBlocks() ) {
-				if( (b.bitAddress & BitAddresses.BLOCK_SHARP) == BitAddresses.BLOCK_SHARP ) {
-					// TODO: Unless he has steel boots!
-					collisionDamage += 50;
-				}
+
+			Block b = c.block;
+			if( (b.flags & Block.FLAG_SPIKEY) == Block.FLAG_SPIKEY ) {
+				// TODO: Unless he has steel boots!
+				collisionDamage += 50;
 			}
 			newSuitHealth -= collisionDamage;
 		}

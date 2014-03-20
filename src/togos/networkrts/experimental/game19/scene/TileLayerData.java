@@ -2,7 +2,6 @@ package togos.networkrts.experimental.game19.scene;
 
 import java.util.Arrays;
 
-import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
 
@@ -38,7 +37,7 @@ public class TileLayerData {
 		if( bs == null ) return true;
 		Block[] blocks = bs.getBlocks();
 		for( int i=blocks.length-1; i>=0; --i ) {
-			if( (blocks[i].bitAddress & BitAddresses.BLOCK_OPAQUE) != 0 ) return true;
+			if( (blocks[i].flags & Block.FLAG_OPAQUE) != 0 ) return true;
 		}
 		return false;
 	}
