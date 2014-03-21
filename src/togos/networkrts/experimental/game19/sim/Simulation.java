@@ -95,7 +95,7 @@ public class Simulation implements AutoEventUpdatable2<Message>
 	protected NonTile updateNonTile( NonTile nt, long time, World w, MessageSet incomingMessages, NonTileUpdateContext updateContext, int phase ) {
 		switch(phase) {
 		case 1: return nt.withUpdatedPosition(time);
-		case 2: return nt.behavior.update( nt, time, w, incomingMessages, updateContext );
+		case 2: return nt.update( time, w, incomingMessages, updateContext );
 		}
 		throw new RuntimeException("Invalid phase "+phase);
 	}

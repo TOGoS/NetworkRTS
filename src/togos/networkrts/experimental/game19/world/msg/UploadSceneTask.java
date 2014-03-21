@@ -11,6 +11,7 @@ import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.scene.VisibilityChecker;
 import togos.networkrts.experimental.game19.sim.AsyncTask;
 import togos.networkrts.experimental.game19.sim.UpdateContext;
+import togos.networkrts.experimental.game19.world.HasPositionAndVelocity;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.NonTile;
@@ -24,11 +25,11 @@ public class UploadSceneTask implements AsyncTask {
 	// make view distance to be a parameter,
 	// include various stats,
 	// wrap message in a few layers of framing
-	final NonTile viewer;
+	final HasPositionAndVelocity viewer;
 	final World world;
 	final long uplinkBitAddress;
 	
-	public UploadSceneTask( NonTile viewer, World w, long uplinkBitAddress ) {
+	public UploadSceneTask( HasPositionAndVelocity viewer, World w, long uplinkBitAddress ) {
 		this.viewer = viewer;
 		this.world = w;
 		this.uplinkBitAddress = uplinkBitAddress;
@@ -37,7 +38,7 @@ public class UploadSceneTask implements AsyncTask {
 	@Override
 	public void run( UpdateContext ctx ) {
 		int worldRadius = 1<<(world.rstSizePower-1);
-		double centerX = viewer.x, centerY = viewer.y;
+		double centerX = viewer.getX(), centerY = viewer.getY();
 		
 		int intCenterX = (int)Math.floor(centerX);
 		int intCenterY = (int)Math.floor(centerY);

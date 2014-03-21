@@ -200,20 +200,22 @@ public class Renderer
 		double sscale = scale/dist;
 		float prevZ = Float.NEGATIVE_INFINITY;
 		for( NonTile nt : s.nonTiles ) {
-			if( nt.icon.imageZ > prevZ ) {
-				draw( s.layer, x, y, dist, g, scale, scx, scy, prevZ, nt.icon.imageZ );
+			Icon icon = nt.getIcon();
+			
+			if( icon.imageZ > prevZ ) {
+				draw( s.layer, x, y, dist, g, scale, scx, scy, prevZ, icon.imageZ );
 			}
 			
 			draw(
-				nt.icon.image,
-				(int)(scx+sscale*(x+nt.x+nt.icon.imageX)),
-				(int)(scy+sscale*(y+nt.y+nt.icon.imageY)),
-				(int)Math.ceil(sscale*nt.icon.imageWidth),
-				(int)Math.ceil(sscale*nt.icon.imageHeight),
+				icon.image,
+				(int)(scx+sscale*(x+nt.getX()+icon.imageX)),
+				(int)(scy+sscale*(y+nt.getY()+icon.imageY)),
+				(int)Math.ceil(sscale*icon.imageWidth),
+				(int)Math.ceil(sscale*icon.imageHeight),
 				g
 			);
 			
-			prevZ = nt.icon.imageZ;
+			prevZ = icon.imageZ;
 		}
 		draw( s.layer, x, y, dist, g, scale, scx, scy, prevZ, Float.POSITIVE_INFINITY );
 	}

@@ -59,6 +59,6 @@ public class BlockCollision
 
 	public static BlockCollision findCollisionWithRst(NonTile nt, World w, long addyBits, long flagBits) {
 		int rad = 1<<(w.rstSizePower-1);
-		return findCollisionWithRst(nt.absolutePhysicalAabb, w.rst, -rad, -rad, w.rstSizePower, addyBits, flagBits);
+		return findCollisionWithRst(nt.getAbsolutePhysicalAabb(), w.rst, -rad, -rad, w.rstSizePower, addyBits, flagBits);
 	}
 }

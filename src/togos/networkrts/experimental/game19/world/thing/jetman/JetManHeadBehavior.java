@@ -4,6 +4,7 @@ import togos.networkrts.experimental.game19.physics.BlockCollision;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.game19.world.BitAddresses;
+import togos.networkrts.experimental.game19.world.BlargNonTile;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.MessageSet;
@@ -14,7 +15,7 @@ import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.msg.UploadSceneTask;
 import togos.networkrts.util.BitAddressUtil;
 
-public class JetManHeadBehavior implements NonTileBehavior
+public class JetManHeadBehavior implements NonTileBehavior<BlargNonTile>
 {
 	final long messageBitAddress;
 	final long uplinkBitAddress;
@@ -32,7 +33,7 @@ public class JetManHeadBehavior implements NonTileBehavior
 		return new JetManHeadBehavior(messageBitAddress, uplinkBitAddress, ps, icons);
 	}
 	
-	@Override public NonTile update(final NonTile nt, long time, final World world,
+	@Override public NonTile update(final BlargNonTile nt, long time, final World world,
 		MessageSet messages, NonTileUpdateContext updateContext
 	) {
 		double newX = nt.x, newY = nt.y;

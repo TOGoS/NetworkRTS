@@ -57,7 +57,7 @@ public class ServerClientDemo
 		
 		protected static final Comparator<NonTile> NONTILE_COMPARATOR = new Comparator<NonTile>() {
 			public int compare(NonTile arg0, NonTile arg1) {
-				float z0 = arg0.icon.imageZ, z1 = arg1.icon.imageZ;  
+				float z0 = arg0.getIcon().imageZ, z1 = arg1.getIcon().imageZ;  
 				return z0 < z1 ? -1 : z0 > z1 ? 1 : 0;
 			}
 		};

@@ -6,6 +6,7 @@ import togos.networkrts.experimental.game19.physics.BlockCollision;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.game19.world.BitAddresses;
+import togos.networkrts.experimental.game19.world.BlargNonTile;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
@@ -17,7 +18,7 @@ import togos.networkrts.experimental.game19.world.msg.UploadSceneTask;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.util.BitAddressUtil;
 
-public class JetManBehavior implements NonTileBehavior
+public class JetManBehavior implements NonTileBehavior<BlargNonTile>
 {
 	public static final double GRAVITY = 0.002;
 	
@@ -42,7 +43,7 @@ public class JetManBehavior implements NonTileBehavior
 	}
 	
 	public static NonTile createJetMan( long bitAddress, long uplinkBitAddress, JetManIcons icons ) {
-		return new NonTile(0, 0, 0, 0, 0,
+		return new BlargNonTile(0, 0, 0, 0, 0,
 			new AABB(-3/16f, -7/16f, -3/16f, 3/16f, 8/16f, 3/16f),
 			bitAddress, bitAddress, 1,
 			icons.walking[0], 
@@ -50,7 +51,7 @@ public class JetManBehavior implements NonTileBehavior
 		);
 	}
 	
-	@Override public NonTile update(final NonTile nt, long time, final World world,
+	@Override public NonTile update(final BlargNonTile nt, long time, final World world,
 		MessageSet messages, NonTileUpdateContext updateContext
 	) {
 		updateContext.startAsyncTask(new UploadSceneTask(nt, world, uplinkBitAddress));
@@ -96,7 +97,7 @@ public class JetManBehavior implements NonTileBehavior
 			Icon[] pieceIcons = new Icon[] { icons.leg1, icons.leg2, icons.torso, icons.jetpack };
 			for( int j=0; j<4; ++j ) {
 				Icon ic = pieceIcons[j];
-				updateContext.addNonTile(new NonTile(time, newX, newY,
+				updateContext.addNonTile(new BlargNonTile(time, newX, newY,
 					newVx+newVx*rand.nextGaussian()+newVy*rand.nextGaussian(), newVy+newVy*rand.nextGaussian()+newVx*rand.nextGaussian(),
 					new AABB(-ic.imageWidth/2f, -ic.imageHeight/2f, -ic.imageWidth/2f, +ic.imageWidth/2f, +ic.imageHeight/2f, +ic.imageWidth/2f),
 					0, 0, time+1, ic,
@@ -106,7 +107,7 @@ public class JetManBehavior implements NonTileBehavior
 			
 			// TODO: Some amount of remaining damage goes to head
 			
-			return new NonTile(time, newX, newY, newVx, newVy,
+			return new BlargNonTile(time, newX, newY, newVx, newVy,
 				new AABB(-3f/16, -2.5f/16, -3f/16, 3f/16, 2.5f/16, 3f/16),
 				messageBitAddress, messageBitAddress, time+1, icons.head,
 				new JetManHeadBehavior(messageBitAddress, uplinkBitAddress, newHeadState, icons)
