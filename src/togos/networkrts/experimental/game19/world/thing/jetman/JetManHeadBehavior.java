@@ -46,7 +46,6 @@ public class JetManHeadBehavior implements NonTileBehavior<BlargNonTile>
 			newBattery -= 0.0001; // These transmissions cost something!
 		}
 		
-		// TODO: Collision detection!
 		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.BLOCK_IWNT, Block.FLAG_SOLID);
 		if( c != null ) {
 			double collisionDamage;
