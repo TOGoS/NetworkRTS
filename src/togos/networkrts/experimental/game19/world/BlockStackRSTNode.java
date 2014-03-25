@@ -52,7 +52,7 @@ public class BlockStackRSTNode extends BaseRSTNode
 	@Override public RSTNode[] getSubNodes() { return RSTNode.EMPTY_LIST; }
 	
 	@Override protected RSTNode _update( int x, int y, int sizePower, long time, MessageSet messages, UpdateContext updateContext ) {
-		// TODO: handle 'create block' messages here
+		// TODO: handle 'create block' messages here?
 		
 		//int resCount0 = results.size();
 		Block[] newBlocks = new Block[blocks.length];

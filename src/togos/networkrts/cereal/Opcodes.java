@@ -19,7 +19,7 @@ import togos.networkrts.cereal.op.PushSHA1ObjectReference;
 import togos.networkrts.cereal.op.PushShortString;
 import togos.networkrts.cereal.op.PushTrue;
 
-class Opcodes
+public class Opcodes
 {
 	private static final OpcodeDefinition[] ALL = new OpcodeDefinition[] {
 		LoadOpcode.INSTANCE,
