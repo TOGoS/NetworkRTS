@@ -9,7 +9,6 @@ import togos.networkrts.cereal.InvalidEncoding;
 
 public class HashUtil
 {
-
 	public static final byte[] extractSha1FromUrn( String urn ) throws InvalidEncoding {
 		Matcher m;
 		if( (m = CerealUtil.SHA1_PATTERN.matcher(urn)).matches() ) {
@@ -37,5 +36,4 @@ public class HashUtil
 		assert sha1.length == 20;
 		return "urn:sha1:"+Base32.encode(sha1);
 	}
-
 }

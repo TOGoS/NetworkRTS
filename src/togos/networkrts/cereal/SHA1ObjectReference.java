@@ -5,6 +5,8 @@ import togos.networkrts.util.HashUtil;
 
 public class SHA1ObjectReference implements HasURI
 {
+	protected static final String SUBJECT_OF_PREFIX = "subject-of:";
+	
 	private final byte[] sha1;
 	private final boolean sha1IdentifiesSerialization;
 	private String uri = null;
@@ -20,7 +22,7 @@ public class SHA1ObjectReference implements HasURI
 	
 	public synchronized String getUri() {
 		if( uri == null ) {
-			uri = (sha1IdentifiesSerialization ? "subject-of:" : "") + HashUtil.sha1Urn(sha1); 
+			uri = (sha1IdentifiesSerialization ? SUBJECT_OF_PREFIX : "") + HashUtil.sha1Urn(sha1); 
 		}
 		return uri;
 	}
@@ -30,5 +32,20 @@ public class SHA1ObjectReference implements HasURI
 	}
 	@Override public boolean equals(Object o) {
 		return o instanceof HasURI && getUri().equals(((HasURI)o).getUri());
+	}
+	
+	public static SHA1ObjectReference parse( String uri, boolean identifiesSerialization ) throws InvalidEncoding {
+		return new SHA1ObjectReference(HashUtil.extractSha1FromUrn(uri), identifiesSerialization);
+	}
+	
+	public static SHA1ObjectReference parse( String uri ) throws InvalidEncoding {
+		boolean postfixIdentifiesSerialization;
+		if( uri.startsWith(SUBJECT_OF_PREFIX) ) {
+			postfixIdentifiesSerialization = true;
+			uri = uri.substring(SUBJECT_OF_PREFIX.length());
+		} else {
+			postfixIdentifiesSerialization = false;
+		}
+		return parse( uri, postfixIdentifiesSerialization );
 	}
 }
