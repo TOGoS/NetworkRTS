@@ -19,7 +19,15 @@ public class StandardValueEncodingTest extends BaseCerealDecoderTest
 			} else {
 				assertEquals(optimalEncoding, encoded[0]);
 			}
-			DecodeState ds = new DecodeState(StandardValueOps.DEFAULT_OP_TABLE);
+			// rather than storing a proper header full of imports,
+			// we'll cheat a little bit, here.
+			OpcodeBehavior[] opcodeBehavior = Opcodes.createInitialOpcodeTable();
+			for( int i=0; i<StandardValueOps.STANDARD_OPS.length; ++i ) {
+				if( StandardValueOps.STANDARD_OPS[i] != null ) {
+					opcodeBehavior[i] = StandardValueOps.STANDARD_OPS[i];
+				}
+			}
+			DecodeState ds = new DecodeState(opcodeBehavior);
 			ds.process(encoded, 0, null);
 			if( v instanceof Double || v instanceof Float ) {
 				assertEquals( v.doubleValue(), ((Number)ds.getValue()).doubleValue() );

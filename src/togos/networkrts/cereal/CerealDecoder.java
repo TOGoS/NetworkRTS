@@ -104,11 +104,15 @@ public class CerealDecoder implements Getter<Object>
 	protected final ResourceHandlePool decodeStateCache = new ResourceHandlePool();
 	protected final DecodeState initialDecodeState;
 	
-	public CerealDecoder( Getter<byte[]> chunkSource, DecodeState initialDecodeState ) {
+	protected CerealDecoder( Getter<byte[]> chunkSource, String initialDecodeStateUrn, DecodeState initialDecodeState ) {
 		this.chunkSource = chunkSource;
 		
-		decodeStateCache.<DecodeState>get(CerealUtil.CEREAL_SCHEMA_SHA1_URN).setValue(initialDecodeState);
+		decodeStateCache.<DecodeState>get(initialDecodeStateUrn).setValue(initialDecodeState);
 		this.initialDecodeState = initialDecodeState.freeze();
+	}
+	
+	public CerealDecoder( Getter<byte[]> chunkSource ) {
+		this( chunkSource, CerealUtil.CEREAL_SCHEMA_SHA1_URN, new DecodeState(Opcodes.createInitialOpcodeTable()) );
 	}
 	
 	protected static boolean equals( byte[] a, int offsetA, byte[] b, int offsetB, int length ) {

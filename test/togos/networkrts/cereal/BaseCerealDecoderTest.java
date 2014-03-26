@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import junit.framework.TestCase;
-import togos.networkrts.cereal.CerealDecoder.DecodeState;
 import togos.networkrts.util.MemoryRepo;
 
 public abstract class BaseCerealDecoderTest extends TestCase
@@ -14,7 +13,7 @@ public abstract class BaseCerealDecoderTest extends TestCase
 	
 	public void setUp() {
 		repo = new MemoryRepo();
-		decoder = new CerealDecoder(repo, new DecodeState(Opcodes.createDefaultOpTable()));
+		decoder = new CerealDecoder(repo);
 		//decoder = new CerealDecoder(repo, new DecodeState(ScalarLiterals.DEFAULT_OP_TABLE));
 	}
 	

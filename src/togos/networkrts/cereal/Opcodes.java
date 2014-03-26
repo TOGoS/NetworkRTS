@@ -58,7 +58,11 @@ public class Opcodes
 		return BY_URN.get(urn);
 	}
 	
-	public static final OpcodeDefinition[] createDefaultOpTable() {
+	/**
+	 * Get a copy of the opcode table that is provided by the
+	 * initial CoolCereal decode state.
+	 */
+	public static final OpcodeBehavior[] createInitialOpcodeTable() {
 		OpcodeDefinition[] defs = new OpcodeDefinition[256];
 		for( int i=0; i<256; ++i ) defs[i] = PushOpcodeByteValue.INSTANCE;
 		defs[0x41] = LoadOpcode.INSTANCE;

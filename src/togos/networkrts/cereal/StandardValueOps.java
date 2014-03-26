@@ -85,15 +85,6 @@ public class StandardValueOps
 		STANDARD_OPS[NE_INT64       ] = PushInt64.INSTANCE;
 	}
 	
-	public static final OpcodeBehavior[] DEFAULT_OP_TABLE = Opcodes.createDefaultOpTable();
-	static {
-		for( int i=0; i<STANDARD_OPS.length; ++i ) {
-			if( STANDARD_OPS[i] != null ) {
-				DEFAULT_OP_TABLE[i] = STANDARD_OPS[i];
-			}
-		}
-	}
-	
 	public static final void writeInt6( byte val, OutputStream os ) throws IOException {
 		os.write( encodeSmallInt(val) );
 	}
