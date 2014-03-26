@@ -4,7 +4,7 @@ import java.util.HashMap;
 
 import togos.networkrts.repo.BitprintDigest;
 
-public class MemoryRepo implements Getter<byte[]>
+public class MemoryRepo implements Getter<byte[]>, Storer<byte[]>
 {
 	protected final HashMap<String,byte[]> store = new HashMap<String,byte[]>();
 	
