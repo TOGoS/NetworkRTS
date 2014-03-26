@@ -63,6 +63,8 @@ public class NumberEncoding
 	}
 	*/
 	
+	public static final long BASE128_VALUE_MASK = 0x00FFFFFFFFFFFFFFl;
+	
 	/**
 	 * Returns a long where the upper 8 bits indicate the number of bytes read,
 	 * and the lower 56 indicate the number read,

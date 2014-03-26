@@ -68,7 +68,7 @@ public class NumberEncodingTest extends TestCase
 		byte[] b = baos.toByteArray();
 		long decodeResult = NumberEncoding.readUnsignedBase128(b, offset);
 		assertEquals( b.length-offset, decodeResult>>56 );
-		assertEquals( v, decodeResult & 0x00FFFFFFFFFFFFFFl );
+		assertEquals( v, decodeResult & NumberEncoding.BASE128_VALUE_MASK );
 	}
 	
 	public void testUnsignedBase128EncodeDecode() throws InvalidEncoding {
