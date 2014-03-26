@@ -1,13 +1,61 @@
 package togos.networkrts.experimental.game19.world;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
+import togos.networkrts.cereal.CerealDecoder;
+import togos.networkrts.cereal.CerealDecoder.DecodeState;
+import togos.networkrts.cereal.InvalidEncoding;
+import togos.networkrts.experimental.game19.io.CerealWorldIO;
+import togos.networkrts.experimental.game19.io.WorldObjectCCCodec;
 import togos.networkrts.experimental.game19.sim.UpdateContext;
+import togos.networkrts.util.HasURI;
+import togos.networkrts.util.ResourceNotFound;
 
 public class QuadRSTNode extends BaseRSTNode
 {
+	public static final WorldObjectCCCodec<QuadRSTNode> CCC = new WorldObjectCCCodec<QuadRSTNode>() {
+		@Override public Class<QuadRSTNode> getEncodableClass() {
+			return QuadRSTNode.class;
+		}
+		
+		@Override public void encode(
+			QuadRSTNode node, byte[] constructorPrefix, OutputStream os, CerealWorldIO cwio
+		) throws IOException {
+			RSTNode[] subNodes = node.getSubNodes();
+			cwio.writeObjectReference(subNodes[0], os);
+			cwio.writeObjectReference(subNodes[1], os);
+			cwio.writeObjectReference(subNodes[2], os);
+			cwio.writeObjectReference(subNodes[3], os);
+			os.write(constructorPrefix);
+		}
+		
+		@Override
+		public int decode(
+			byte[] data, int offset, DecodeState ds, CerealDecoder context
+		) throws InvalidEncoding, ResourceNotFound {
+			// Can't load lazily because we lack metadata
+			// which is dependent on all subnodes, which this codec
+			// doesn't store.
+			RSTNode[] subNodes = new RSTNode[4];
+			for( int i=3; i>=0; ++i ) {
+				Object obj = ds.removeStackItem(-1);
+				if( obj instanceof HasURI ) {
+					subNodes[i] = (RSTNode)context.get(((HasURI)obj).getUri());
+				} else {
+					throw new InvalidEncoding("Unexpected "+obj.getClass());
+				}
+			}
+			ds.pushStackItem( QuadRSTNode.create(subNodes) );
+			return offset;
+		}
+	};
+	
 	protected final RSTNode[] subNodes;
 	
 	private QuadRSTNode( RSTNode[] subNodes, long minId, long maxId, long nextAutoUpdateTime ) {
 		super( minId, maxId, nextAutoUpdateTime );
+		assert subNodes != null;
 		assert subNodes.length == 4;
 		this.subNodes = subNodes;
 	}
