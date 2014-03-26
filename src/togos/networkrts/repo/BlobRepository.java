@@ -12,6 +12,7 @@ import togos.blob.FileInputStreamable;
 import togos.blob.InputStreamable;
 import togos.networkrts.util.Getter;
 import togos.networkrts.util.ResourceNotFound;
+import togos.networkrts.util.Storer;
 
 public class BlobRepository
 {
@@ -132,6 +133,8 @@ public class BlobRepository
 		return null;
 	}
 	
+	// TODO: replace with things that implement both getter and storer 
+	
 	public Getter<InputStreamable> toBlobGetter() {
 		return new Getter<InputStreamable>() {
 			@Override
@@ -139,6 +142,20 @@ public class BlobRepository
 				File f = BlobRepository.this.get(uri);
 				if( f == null ) throw new ResourceNotFound(uri);
 				return new FileInputStreamable(f);
+			}
+		};
+	}
+	
+	public Storer<byte[]> toChunkStorer() {
+		return new Storer<byte[]>() {
+			@Override public String store(byte[] v) {
+				try {
+					return BlobRepository.this.store(v, 0, v.length);
+				} catch( IOException e ) {
+					// TODO: could emit a warning and return calculated ID anyway
+					// System.err.println("Warning: failed to store a chunk due to "+e.getMessage());
+					throw new RuntimeException(e);
+				}
 			}
 		};
 	}
