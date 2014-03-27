@@ -107,7 +107,7 @@ public class CerealWorldIO implements WorldIO, OpcodeBehavior
 		return expectedClass.cast(getObject(ref));
 	}
 	
-	public SHA1ObjectReference storeObject(Object o) {
+	@Override public SHA1ObjectReference storeObject(Object o) {
 		// TODO: Look up in a WeakHashMap to see f it's already been saved
 		
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();

@@ -15,8 +15,8 @@ import java.util.HashSet;
 
 import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.experimental.gameengine1.index.BaseEntity;
+import togos.networkrts.experimental.gameengine1.index.EntityAggregation;
 import togos.networkrts.experimental.gameengine1.index.EntityIndex;
-import togos.networkrts.experimental.gameengine1.index.EntityRange;
 import togos.networkrts.experimental.gameengine1.index.EntityRanges;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
 import togos.networkrts.experimental.gameengine1.index.EntityUpdater;
@@ -91,7 +91,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 		}
 	}
 	
-	interface EntityBehavior<EC extends EntityRange>
+	interface EntityBehavior<EC extends EntityAggregation>
 	{
 		public EC onMove( long time, EC self, Collection<EC> newEntities );
 		public EC onCollision( long time, EC self, Bouncer other, Collection<EC> newEntities );
@@ -168,7 +168,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 			@Override public Bouncer update( Bouncer e, Collection<Bouncer> newEntities ) {
 				collisionCheckEntity = e;
 				collisionTargetEntity = null;
-				entityIndex.forEachEntity( EntityRanges.forAABB(e.getAabb()), collisionChecker );
+				entityIndex.forEachEntity( EntityRanges.forAabb(e.getAabb()), collisionChecker );
 				return collisionTargetEntity == null ? e : 
 					e.behavior.onCollision( targetTime, e, collisionTargetEntity, newEntities );
 			}
@@ -315,7 +315,7 @@ public class BouncyDemo extends BaseMutableAutoUpdatable<BouncyDemo.Signal>
 		public double scale = 1;
 		
 		public void draw( EntityIndex<Bouncer> entities, AABB screenBounds, final Graphics g ) {
-			entities.forEachEntity(EntityRanges.forAABB(screenBounds), new Visitor<Bouncer>() {
+			entities.forEachEntity(EntityRanges.forAabb(screenBounds), new Visitor<Bouncer>() {
 				public void visit(Bouncer e) {
 					g.setColor( e.color );
 					g.fillOval( (int)(scx + scale*(e.x-e.radius)), (int)(scy - scale*(e.y-e.radius)), (int)(e.radius*scale*2), (int)(e.radius*scale*2) );

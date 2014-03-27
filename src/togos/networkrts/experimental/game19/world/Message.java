@@ -16,6 +16,8 @@ public class Message implements BitAddressRange, MessageSet
 	
 	public enum MessageType {
 		INCOMING_PACKET,
+		REQUEST_PICKUP, // Somebody wants to take you!  Remove self and respond with INCOMING_ITEM if successful
+		INCOMING_ITEM, // Payload will be a NonTileInternals
 		NEIGHBOR_UPDATED
 	}
 	
@@ -51,6 +53,10 @@ public class Message implements BitAddressRange, MessageSet
 	
 	public static Message create( int targetId, MessageType type, Object payload ) {
 		return create( targetId, TBoundless.INSTANCE, type, BitAddressUtil.NO_ADDRESS, payload );
+	}
+	
+	public static Message create( NonTile target, MessageType type, long sourceAddress, Object payload ) {
+		return new Message( target.getMinBitAddress(), target.getMaxBitAddress(), target.getAabb(), type, sourceAddress, payload );
 	}
 	
 	@Override public long getMinBitAddress() { return minBitAddress; }

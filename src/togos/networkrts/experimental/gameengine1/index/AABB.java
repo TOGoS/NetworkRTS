@@ -1,7 +1,10 @@
 package togos.networkrts.experimental.gameengine1.index;
 
+import togos.networkrts.experimental.shape.RectIntersector;
+
 /** Axis-aligned bounding box */
-public class AABB {
+public class AABB implements RectIntersector
+{
 	public static final AABB BOUNDLESS = new AABB(
 		Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
 		Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY
@@ -26,24 +29,32 @@ public class AABB {
 		return new AABB( x-rad, y-rad, z-rad, x+rad, y+rad, z+rad );
 	}
 	
+	protected final boolean contains( double ox0, double oy0, double oz0, double ox1, double oy1, double oz1 ) {
+		if( ox0 < minX ) return false;
+		if( oy0 < minY ) return false;
+		if( oz0 < minZ ) return false;
+		if( ox1 > maxX ) return false;
+		if( oy1 > maxY ) return false;
+		if( oz1 > maxZ ) return false;
+		return true;
+	}
+	
 	public final boolean contains( AABB other ) {
-		if( other.minX < minX ) return false;
-		if( other.minY < minY ) return false;
-		if( other.minZ < minZ ) return false;
-		if( other.maxX > maxX ) return false;
-		if( other.maxY > maxY ) return false;
-		if( other.maxZ > maxZ ) return false;
+		return contains( other.minX, other.minY, other.minZ, other.maxX, other.maxY, other.maxZ );
+	}
+	
+	protected final boolean intersects( double ox0, double oy0, double oz0, double ox1, double oy1, double oz1 ) {
+		if( maxX <= ox0 ) return false;
+		if( maxY <= oy0 ) return false;
+		if( maxZ <= oz0 ) return false;
+		if( minX >= ox1 ) return false;
+		if( minY >= oy1 ) return false;
+		if( minZ >= oz1 ) return false;
 		return true;
 	}
 	
 	public final boolean intersects( AABB other ) {
-		if( maxX < other.minX ) return false;
-		if( maxY < other.minY ) return false;
-		if( maxZ < other.minZ ) return false;
-		if( minX > other.maxX ) return false;
-		if( minY > other.maxY ) return false;
-		if( minZ > other.maxZ ) return false;
-		return true;
+		return intersects( other.minX, other.minY, other.minZ, other.maxX, other.maxY, other.maxZ );
 	}
 	
 	protected static boolean isFinite( double v ) {
@@ -58,5 +69,12 @@ public class AABB {
 	
 	public final AABB shiftedBy( double dx, double dy, double dz ) {
 		return new AABB(minX+dx, minY+dy, minZ+dz, maxX+dx, maxY+dy, maxZ+dz);
+	}
+	
+	@Override public int rectIntersection(double x, double y, double w, double h) {
+		return
+			contains(x, y, minZ, x+w, y+h, maxZ) ? INCLUDES_ALL :
+			intersects(x, y, minZ, x+w, y+h, maxZ) ? INCLUDES_SOME :
+			INCLUDES_NONE;
 	}
 }

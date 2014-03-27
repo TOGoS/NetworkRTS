@@ -41,8 +41,11 @@ public class BlargNonTile implements NonTile
 	
 	@Override public long getReferenceTime() { return referenceTime; }
 	@Override public AABB getAabb() { return absolutePhysicalAabb; }
-	@Override public long getMinBitAddress() { return BitAddresses.TYPE_NONTILE | id; }
-	@Override public long getMaxBitAddress() { return BitAddresses.TYPE_NONTILE | id; }
+	@Override public long getBitAddress() {
+		return BitAddresses.TYPE_NONTILE | internals.getNonTileAddressFlags() | id;
+	}
+	@Override public long getMinBitAddress() { return getBitAddress(); }
+	@Override public long getMaxBitAddress() { return getBitAddress(); }
 	@Override public long getNextAutoUpdateTime() { return internals.getNextAutoUpdateTime(); }
 
 	@Override public double getX() { return x; }

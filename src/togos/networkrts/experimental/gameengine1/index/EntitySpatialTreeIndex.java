@@ -5,9 +5,9 @@ import java.util.Collection;
 
 import togos.networkrts.util.BitAddressUtil;
 
-public class EntitySpatialTreeIndex<EC extends EntityRange> implements EntityIndex<EC>
+public class EntitySpatialTreeIndex<EC extends EntityAggregation> implements EntityIndex<EC>
 {
-	static class EntityTreeNode<EC extends EntityRange> extends AABB implements EntityRange {
+	static class EntityTreeNode<EC extends EntityAggregation> extends AABB implements EntityAggregation {
 		private ArrayList<EC> localEntities = new ArrayList<EC>();
 		private EntityTreeNode<EC> subNodeA = null;
 		private EntityTreeNode<EC> subNodeB = null;
@@ -132,7 +132,7 @@ public class EntitySpatialTreeIndex<EC extends EntityRange> implements EntityInd
 			assert contains(aabb);
 			
 			minBitAddress &= e.getMinBitAddress();
-			maxBitAddress &= e.getMaxBitAddress();
+			maxBitAddress |= e.getMaxBitAddress();
 			nextAutoUpdateTime = Math.min( nextAutoUpdateTime, e.getNextAutoUpdateTime() );
 			totalEntityCount += 1;
 			

@@ -9,11 +9,15 @@ import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.BlargNonTile;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.Message;
+import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.NonTileInternals;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.gameengine1.index.AABB;
+import togos.networkrts.experimental.gameengine1.index.EntityRanges;
+import togos.networkrts.experimental.gameengine1.index.Visitor;
+import togos.networkrts.util.BitAddressUtil;
 
 public class JetManInternals implements NonTileInternals<BlargNonTile>
 {
@@ -67,8 +71,9 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		return new BlargNonTile(id, 0, 0, 0, 0, 0, new JetManInternals(uplinkBitAddress, icons));
 	}
 	
-	@Override public NonTile update(final BlargNonTile nt, long time, final World world,
-		MessageSet messages, NonTileUpdateContext updateContext
+	@Override public NonTile update(
+		final BlargNonTile nt, long time, final World world,
+		MessageSet messages, final NonTileUpdateContext updateContext
 	) {
 		headInternals.sendUpdate(nt, time, world, messages, updateContext, getStats());
 		
@@ -77,7 +82,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		boolean feetOnGround = false;
 		float newSuitHealth = suitHealth, newFuel = fuel;
 		
-		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.BLOCK_IWNT, Block.FLAG_SOLID);
+		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID);
 		if( c != null ) {
 			double collisionDamage;
 			if( c.correctionX != 0 && Math.abs(c.correctionX) < Math.abs(c.correctionY) ) {
@@ -104,6 +109,18 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 			newSuitHealth -= collisionDamage;
 		}
 		
+		world.nonTiles.forEachEntity(EntityRanges.create(nt.getAabb(), BitAddresses.PHYSINTERACT, BitAddressUtil.MAX_ADDRESS), new Visitor<NonTile>() {
+			@Override public void visit(NonTile v) {
+				if( v == nt ) {
+					// It's myself!
+				} else 	if( (v.getBitAddress() & BitAddresses.PICKUP) == BitAddresses.PICKUP ) {
+					System.err.println("Found a pickup: "+v);
+					// TODO: And we have room for it; otherwise don't bother
+					updateContext.sendMessage(Message.create(v, MessageType.REQUEST_PICKUP, nt.getBitAddress(), null));
+				}
+			}
+		});
+		
 		JetManHeadInternals newHeadInternals = headInternals;
 		
 		if( newSuitHealth < 0 ) {
@@ -126,12 +143,20 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		int newThrustDir = thrustDir;
 		for( Message m : messages ) {
 			if( m.isApplicableTo(nt) ) {
-				Object p = m.payload;
-				if( p instanceof Number ) {
-					int _wd = ((Number)p).intValue();
-					if( _wd >= -1 && _wd <= 7 ) {
-						newThrustDir = _wd;
+				switch( m.type ) {
+				case INCOMING_PACKET:
+					Object p = m.payload;
+					if( p instanceof Number ) {
+						int _wd = ((Number)p).intValue();
+						if( _wd >= -1 && _wd <= 7 ) {
+							newThrustDir = _wd;
+						}
 					}
+					break;
+				case INCOMING_ITEM:
+					// TODO: something more interesting
+					System.err.println("Got an item, rad!");
+					break;
 				}
 			}
 		}
@@ -232,4 +257,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 	
 	@Override public AABB getRelativePhysicalAabb() { return aabb; }
 	@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }
+	@Override public long getNonTileAddressFlags() {
+		return BitAddresses.PHYSINTERACT;
+	}
 }

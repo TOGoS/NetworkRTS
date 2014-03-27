@@ -8,7 +8,6 @@ public class EntityRanges
 		@Override public AABB getAabb() { return AABB.BOUNDLESS; }
 		@Override public long getMaxBitAddress() { return BitAddressUtil.MAX_ADDRESS; }
 		@Override public long getMinBitAddress() { return BitAddressUtil.MIN_ADDRESS; }
-		@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }
 	};
 	
 	/**
@@ -20,12 +19,15 @@ public class EntityRanges
 		return BitAddressUtil.rangesIntersect(a, b) && a.getAabb().intersects(b.getAabb());
 	}
 
-	public static EntityRange forAABB(final AABB aabb) {
+	public static EntityRange create(final AABB aabb, final long minBa, final long maxBa) {
 		return new EntityRange() {
 			@Override public AABB getAabb() { return aabb; }
-			@Override public long getMaxBitAddress() { return BitAddressUtil.MAX_ADDRESS; }
-			@Override public long getMinBitAddress() { return BitAddressUtil.MIN_ADDRESS; }
-			@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }
+			@Override public long getMinBitAddress() { return minBa; }
+			@Override public long getMaxBitAddress() { return maxBa; }
 		};
+	}
+	
+	public static EntityRange forAabb(final AABB aabb) {
+		return create(aabb, BitAddressUtil.MIN_ADDRESS, BitAddressUtil.MAX_ADDRESS);
 	}
 }

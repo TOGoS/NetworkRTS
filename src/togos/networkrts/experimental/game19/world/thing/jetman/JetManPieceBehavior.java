@@ -28,7 +28,7 @@ public class JetManPieceBehavior implements NonTileInternals<BlargNonTile>
 		double newX = nt.x, newY = nt.y;
 		double newVx = nt.vx, newVy = nt.vy + JetManInternals.GRAVITY;
 		
-		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.BLOCK_IWNT, Block.FLAG_SOLID);
+		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID);
 		if( c != null ) {
 			if( c.correctionX != 0 && Math.abs(c.correctionX) < Math.abs(c.correctionY) ) {
 				newX += c.correctionX;
@@ -51,4 +51,6 @@ public class JetManPieceBehavior implements NonTileInternals<BlargNonTile>
 	@Override public Icon getIcon() { return icon; }
 	@Override public AABB getRelativePhysicalAabb() { return aabb; }
 	@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }
+	@Override public long getNonTileAddressFlags() { return 0; }
+
 }

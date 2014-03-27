@@ -2,7 +2,10 @@ package togos.networkrts.experimental.game19.world.thing.pickup;
 
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
+import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.BlargNonTile;
+import togos.networkrts.experimental.game19.world.Message;
+import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.NonTileInternals;
@@ -21,7 +24,17 @@ public class SubstanceContainerInternals implements NonTileInternals<BlargNonTil
 	}
 
 	@Override public NonTile update(BlargNonTile nt, long time, World w, MessageSet messages, NonTileUpdateContext updateContext) {
-		return nt;
+		boolean pickedUp = false;
+		for( Message m : messages ) {
+			switch( m.type ) {
+			case REQUEST_PICKUP:
+				if( !pickedUp ) {
+					updateContext.sendMessage(Message.create((int)m.sourceAddress, MessageType.INCOMING_ITEM, this));
+					pickedUp = true;
+				}
+			}
+		}
+		return pickedUp ? null : nt;
 	}
 	
 	@Override public Icon getIcon() {
@@ -32,5 +45,8 @@ public class SubstanceContainerInternals implements NonTileInternals<BlargNonTil
 		return type.icons[iconIdx];
 	}
 	@Override public AABB getRelativePhysicalAabb() { return type.relativePhysicalAabb; }
+	@Override public long getNonTileAddressFlags() {
+		return BitAddresses.PHYSINTERACT|BitAddresses.PICKUP;
+	}
 	@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }
 }

@@ -1,6 +1,6 @@
 package togos.networkrts.experimental.gameengine1.index;
 
-public interface EntityIndex<EC extends EntityRange> extends EntityRange
+public interface EntityIndex<EC extends EntityAggregation> extends EntityAggregation
 {
 	public EntityIndex<EC> with(EC e);
 	public void forEachEntity(EntityRange er, Visitor<EC> callback);

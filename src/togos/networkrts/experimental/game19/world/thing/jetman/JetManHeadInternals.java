@@ -57,7 +57,7 @@ public class JetManHeadInternals implements NonTileInternals<BlargNonTile>
 			newBattery -= 0.0001; // These transmissions cost something!
 		}
 		
-		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.BLOCK_IWNT, Block.FLAG_SOLID);
+		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID);
 		if( c != null ) {
 			double collisionDamage;
 			if( c.correctionX != 0 && Math.abs(c.correctionX) < Math.abs(c.correctionY) ) {
@@ -107,4 +107,7 @@ public class JetManHeadInternals implements NonTileInternals<BlargNonTile>
 	@Override public Icon getIcon() { return facingLeft ? JetManIcons.flipped(icons.head) : icons.head; }
 	@Override public AABB getRelativePhysicalAabb() { return aabb; }
 	@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }
+	@Override public long getNonTileAddressFlags() {
+		return BitAddresses.PHYSINTERACT|BitAddresses.PICKUP;
+	}
 }

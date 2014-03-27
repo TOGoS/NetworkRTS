@@ -12,5 +12,6 @@ public interface NonTileInternals<NT extends BlargNonTile>
 	public NonTile update( NT nt, long time, World w, MessageSet messages, NonTileUpdateContext updateContext );
 	public Icon getIcon();
 	public AABB getRelativePhysicalAabb();
+	public long getNonTileAddressFlags();
 	public long getNextAutoUpdateTime();
 }

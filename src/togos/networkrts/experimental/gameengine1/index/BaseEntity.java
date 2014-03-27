@@ -3,7 +3,7 @@ package togos.networkrts.experimental.gameengine1.index;
 /**
  * An object defined by a bounding box, optional tag, and flags.
  */
-public class BaseEntity extends AABB implements EntityRange
+public class BaseEntity extends AABB implements EntityAggregation
 {
 	/** Can be used to reference an entity regardless of its state */ 
 	public final long minBitAddress;
