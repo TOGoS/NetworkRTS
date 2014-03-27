@@ -54,7 +54,7 @@ public class BlargNonTile implements NonTile
 	@Override public AABB getAbsolutePhysicalAabb() { return absolutePhysicalAabb; }
 	@Override public AABB getRelativePhysicalAabb() { return behavior.getRelativePhysicalAabb(); }
 	
-	public BlargNonTile withBehavior(NonTileInternals<? super BlargNonTile> behavior) {
+	public BlargNonTile withInternals(NonTileInternals<? super BlargNonTile> behavior) {
 		return new BlargNonTile(id, referenceTime, x, y, vx, vy, behavior);
 	}
 	

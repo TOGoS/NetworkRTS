@@ -191,7 +191,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		
 		JetManState newState = new JetManState(newWalkState, newThrustDir, stateFlags, newSuitHealth, newFuel, newHeadState);
 		
-		return nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withBehavior(withState(newState));
+		return nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withInternals(withState(newState));
 	}
 	
 	@Override public Icon getIcon() {

@@ -79,7 +79,7 @@ public class JetManHeadInternals implements NonTileInternals<BlargNonTile>
 			}
 		}
 		JetManHeadState newState = new JetManHeadState(state.facingLeft, newSuitHealth, newBattery);
-		return nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withBehavior(withState(newState));
+		return nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withInternals(withState(newState));
 	}
 
 	@Override public Icon getIcon() { return state.facingLeft ? JetManIcons.flipped(icons.head) : icons.head; }
