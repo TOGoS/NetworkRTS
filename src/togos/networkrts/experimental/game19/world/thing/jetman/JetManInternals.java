@@ -9,12 +9,10 @@ import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.BlargNonTile;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.Message;
-import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.NonTileInternals;
 import togos.networkrts.experimental.game19.world.World;
-import togos.networkrts.experimental.game19.world.msg.UploadSceneTask;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 
 public class JetManInternals implements NonTileInternals<BlargNonTile>
@@ -27,28 +25,25 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 	public static final int S_BOTTOM_THRUSTER_ON = 0x04;
 	public static final int S_FEET_ON_GROUND = 0x8;
 	
-	final long uplinkBitAddress;
 	final int walkFrame;
 	final int thrustDir;
 	final int stateFlags;
 	final float suitHealth, fuel;
-	final JetManHeadState headState;
+	final JetManHeadInternals headInternals;
 	final JetManIcons icons;
 	
 	public JetManInternals(
-		long uplinkBitAddress,
 		int walkFrame, int thrustDir, int state,
 		float suitHealth, float fuel,
-		JetManHeadState headState,
+		JetManHeadInternals headInternals,
 		JetManIcons icons
 	) {
-		this.uplinkBitAddress = uplinkBitAddress;
 		this.walkFrame = walkFrame;
 		this.thrustDir = thrustDir;
 		this.stateFlags = state;
 		this.suitHealth = suitHealth;
 		this.fuel = fuel;
-		this.headState = headState;
+		this.headInternals = headInternals;
 		this.icons = icons;
 	}
 	
@@ -60,12 +55,12 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		return new JetManCoreStats(
 			1  , suitHealth,
 			100, fuel,
-			JetManHeadState.MAX_HEALTH, headState.health,
-			JetManHeadState.MAX_BATTERY, headState.battery
+			JetManHeadInternals.MAX_HEALTH, headInternals.health,
+			JetManHeadInternals.MAX_BATTERY, headInternals.battery
 		);
 	}
 	public JetManInternals(long clientId, JetManIcons icons) {
-		this(clientId, 0, -1, 0, 1, 100, JetManHeadState.DEFAULT, icons);
+		this(0, -1, 0, 1, 100, new JetManHeadInternals(clientId, false, JetManHeadInternals.MAX_HEALTH, JetManHeadInternals.MAX_BATTERY, icons), icons);
 	}
 	
 	public static NonTile createJetMan( int id, long uplinkBitAddress, JetManIcons icons ) {
@@ -75,8 +70,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 	@Override public NonTile update(final BlargNonTile nt, long time, final World world,
 		MessageSet messages, NonTileUpdateContext updateContext
 	) {
-		updateContext.startAsyncTask(new UploadSceneTask(nt, world, uplinkBitAddress));
-		updateContext.sendMessage(Message.create(uplinkBitAddress, uplinkBitAddress, MessageType.INCOMING_PACKET, getStats()));
+		headInternals.sendUpdate(nt, time, world, messages, updateContext, getStats());
 		
 		double newX = nt.x, newY = nt.y;
 		double newVx = nt.vx, newVy = nt.vy;
@@ -110,7 +104,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 			newSuitHealth -= collisionDamage;
 		}
 		
-		JetManHeadState newHeadState = headState;
+		JetManHeadInternals newHeadInternals = headInternals;
 		
 		if( newSuitHealth < 0 ) {
 			Random rand = new Random();
@@ -126,9 +120,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 			
 			// TODO: Some amount of remaining damage goes to head
 			
-			return new BlargNonTile(nt.id, time, newX, newY, newVx, newVy,
-				new JetManHeadInternals(uplinkBitAddress, newHeadState, icons)
-			);
+			return new BlargNonTile(nt.id, time, newX, newY, newVx, newVy, newHeadInternals);
 		}
 		
 		int newThrustDir = thrustDir;
@@ -218,7 +210,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 			(feetOnGround ? S_FEET_ON_GROUND     : 0);
 		
 		return nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withInternals(
-			new JetManInternals(uplinkBitAddress, newWalkState, newThrustDir, stateFlags, newSuitHealth, newFuel, newHeadState, icons)
+			new JetManInternals(newWalkState, newThrustDir, stateFlags, newSuitHealth, newFuel, newHeadInternals, icons)
 		);
 	}
 	

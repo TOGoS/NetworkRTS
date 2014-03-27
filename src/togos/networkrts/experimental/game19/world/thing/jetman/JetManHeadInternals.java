@@ -17,32 +17,43 @@ import togos.networkrts.experimental.gameengine1.index.AABB;
 
 public class JetManHeadInternals implements NonTileInternals<BlargNonTile>
 {
+	public static final float MAX_HEALTH = 0.25f;
+	public static final float MAX_BATTERY = 1;
 	protected static final AABB aabb = new AABB(-3f/16, -2.5f/16, -3f/16, 3f/16, 2.5f/16, 3f/16);
 	
 	final long uplinkBitAddress;
-	final JetManHeadState state;
+	final boolean facingLeft;
+	final float health;
+	final float battery;
 	final JetManIcons icons;
 	
-	public JetManHeadInternals(long uplinkBitAddress, JetManHeadState state, JetManIcons icons) {
+	public JetManHeadInternals(long uplinkBitAddress, boolean facingLeft, float health, float battery, JetManIcons icons) {
 		this.uplinkBitAddress = uplinkBitAddress;
-		this.state = state;
+		this.facingLeft = facingLeft;
+		this.health = health;
+		this.battery = battery;
 		this.icons = icons;
 	}
 	
-	protected JetManHeadInternals withState(JetManHeadState ps) {
-		return new JetManHeadInternals(uplinkBitAddress, ps, icons);
+	public void sendUpdate(
+		final BlargNonTile nt, long time, final World world,
+		MessageSet messages, NonTileUpdateContext updateContext,
+		JetManCoreStats stats
+	) {
+		updateContext.startAsyncTask(new UploadSceneTask(nt, world, uplinkBitAddress));
+		updateContext.sendMessage(Message.create(uplinkBitAddress, uplinkBitAddress, MessageType.INCOMING_PACKET, stats));
 	}
 	
-	@Override public NonTile update(final BlargNonTile nt, long time, final World world,
+	@Override public NonTile update(
+		final BlargNonTile nt, long time, final World world,
 		MessageSet messages, NonTileUpdateContext updateContext
 	) {
 		double newX = nt.x, newY = nt.y;
 		double newVx = nt.vx, newVy = nt.vy + JetManInternals.GRAVITY;
-		float newSuitHealth = state.health, newBattery = state.battery;
+		float newSuitHealth = health, newBattery = battery;
 		
 		if( newBattery >= 0.0001 ) {
-			updateContext.startAsyncTask(new UploadSceneTask(nt, world, uplinkBitAddress));
-			updateContext.sendMessage(Message.create(uplinkBitAddress, uplinkBitAddress, MessageType.INCOMING_PACKET, state.getStats()));
+			sendUpdate(nt, time, world, messages, updateContext, getStats());
 			newBattery -= 0.0001; // These transmissions cost something!
 		}
 		
@@ -78,11 +89,22 @@ public class JetManHeadInternals implements NonTileInternals<BlargNonTile>
 				// like turn vision on/off to save battery
 			}
 		}
-		JetManHeadState newState = new JetManHeadState(state.facingLeft, newSuitHealth, newBattery);
-		return nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withInternals(withState(newState));
+		
+		return nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withInternals(
+			new JetManHeadInternals(uplinkBitAddress, facingLeft, newSuitHealth, newBattery, icons)
+		);
+	}
+	
+	public JetManCoreStats getStats() {
+		return new JetManCoreStats(
+			0, 0,
+			0, 0,
+			MAX_HEALTH, health,
+			MAX_BATTERY, battery
+		);
 	}
 
-	@Override public Icon getIcon() { return state.facingLeft ? JetManIcons.flipped(icons.head) : icons.head; }
+	@Override public Icon getIcon() { return facingLeft ? JetManIcons.flipped(icons.head) : icons.head; }
 	@Override public AABB getRelativePhysicalAabb() { return aabb; }
 	@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }
 }
