@@ -7,30 +7,27 @@ import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.BlargNonTile;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.Message;
+import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.NonTileBehavior;
 import togos.networkrts.experimental.game19.world.World;
-import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.msg.UploadSceneTask;
-import togos.networkrts.util.BitAddressUtil;
 
 public class JetManHeadBehavior implements NonTileBehavior<BlargNonTile>
 {
-	final long messageBitAddress;
 	final long uplinkBitAddress;
 	final JetManHeadState state;
 	final JetManIcons icons;
 	
-	public JetManHeadBehavior(long id, long uplinkBitAddress, JetManHeadState state, JetManIcons icons) {
-		this.messageBitAddress = id;
+	public JetManHeadBehavior(long uplinkBitAddress, JetManHeadState state, JetManIcons icons) {
 		this.uplinkBitAddress = uplinkBitAddress;
 		this.state = state;
 		this.icons = icons;
 	}
 	
 	protected JetManHeadBehavior withState(JetManHeadState ps) {
-		return new JetManHeadBehavior(messageBitAddress, uplinkBitAddress, ps, icons);
+		return new JetManHeadBehavior(uplinkBitAddress, ps, icons);
 	}
 	
 	@Override public NonTile update(final BlargNonTile nt, long time, final World world,
@@ -68,7 +65,7 @@ public class JetManHeadBehavior implements NonTileBehavior<BlargNonTile>
 		if( newSuitHealth < 0 ) return null; // Immediate death!
 		
 		for( Message m : messages ) {
-			if( m.isApplicableTo(nt) && BitAddressUtil.rangeContains(m, messageBitAddress)) {
+			if( m.isApplicableTo(nt) ) {
 				//Object p = m.payload;
 				// Whatever messages head can act on
 				// like turn vision on/off to save battery

@@ -4,7 +4,6 @@ import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.gameengine1.index.AABB;
-import togos.networkrts.util.BitAddressUtil;
 
 public class BlargNonTile implements NonTile
 {
@@ -12,14 +11,14 @@ public class BlargNonTile implements NonTile
 	public final double x, y, vx, vy; // For simplicity, velocity is meters per clock tick
 	public final AABB relativePhysicalAabb;
 	public final AABB absolutePhysicalAabb;
-	public final long minBitAddress, maxBitAddress;
+	public final int id;
 	public final long nextAutoUpdateTime;
 	public final Icon icon;
 	public final NonTileBehavior<? super BlargNonTile> behavior;
 	
 	public BlargNonTile(
 		long referenceTime, double x, double y, double vx, double vy,
-		AABB relativeAabb, long minBa, long maxBa, long nextAut,
+		AABB relativeAabb, int id, long nextAut,
 		Icon icon, NonTileBehavior<? super BlargNonTile> behavior
 	) {
 		this.referenceTime = referenceTime;
@@ -27,8 +26,7 @@ public class BlargNonTile implements NonTile
 		this.y = y; this.vy = vy;
 		this.relativePhysicalAabb = relativeAabb;
 		this.absolutePhysicalAabb = relativeAabb.shiftedBy(x,y,0);
-		this.minBitAddress = minBa;
-		this.maxBitAddress = maxBa;
+		this.id = id;
 		this.nextAutoUpdateTime = nextAut;
 		this.icon = icon;
 		this.behavior = behavior;
@@ -41,7 +39,7 @@ public class BlargNonTile implements NonTile
 	}
 	
 	public static BlargNonTile create( long referenceTime, double x, double y, Icon icon, float diameter, NonTileBehavior<? super BlargNonTile> behavior ) {
-		return new BlargNonTile( referenceTime, x, y, 0, 0, ccbb(x,y,diameter), BitAddressUtil.MAX_ADDRESS, BitAddressUtil.MIN_ADDRESS, Long.MAX_VALUE, icon, behavior );
+		return new BlargNonTile( referenceTime, x, y, 0, 0, ccbb(x,y,diameter), 0, Long.MAX_VALUE, icon, behavior );
 	}
 
 	public static BlargNonTile create( long referenceTime, double x, double y, ImageHandle image, float diameter, NonTileBehavior<? super BlargNonTile> behavior ) {
@@ -56,8 +54,8 @@ public class BlargNonTile implements NonTile
 	
 	@Override public long getReferenceTime() { return referenceTime; }
 	@Override public AABB getAabb() { return absolutePhysicalAabb; }
-	@Override public long getMinBitAddress() { return minBitAddress; }
-	@Override public long getMaxBitAddress() { return maxBitAddress; }
+	@Override public long getMinBitAddress() { return BitAddresses.TYPE_NONTILE | id; }
+	@Override public long getMaxBitAddress() { return BitAddresses.TYPE_NONTILE | id; }
 	@Override public long getNextAutoUpdateTime() { return nextAutoUpdateTime; }
 
 	@Override public double getX() { return x; }
@@ -72,27 +70,23 @@ public class BlargNonTile implements NonTile
 	public BlargNonTile withBehavior(NonTileBehavior<? super BlargNonTile> behavior) {
 		return new BlargNonTile(
 			referenceTime, x, y, vx, vy, relativePhysicalAabb,
-			minBitAddress, maxBitAddress, nextAutoUpdateTime,
-			icon, behavior
-		);
-	}
-	
-	public BlargNonTile withIdRange(long minBa, long maxBa) {
-		return new BlargNonTile(
-			referenceTime, x, y, vx, vy, relativePhysicalAabb,
-			minBa, maxBa, nextAutoUpdateTime,
+			id, nextAutoUpdateTime,
 			icon, behavior
 		);
 	}
 	
 	public BlargNonTile withId(int id) {
-		return withIdRange(BitAddresses.withMinFlags(id), BitAddresses.withMaxFlags(id));
+		return new BlargNonTile(
+			referenceTime, x, y, vx, vy, relativePhysicalAabb,
+			id, nextAutoUpdateTime,
+			icon, behavior
+		);
 	}
 	
 	public BlargNonTile withIcon(Icon icon) {
 		return new BlargNonTile(
 			referenceTime, x, y, vx, vy, relativePhysicalAabb,
-			minBitAddress, maxBitAddress, nextAutoUpdateTime,
+			id, nextAutoUpdateTime,
 			icon, behavior
 		);
 	}
@@ -100,7 +94,7 @@ public class BlargNonTile implements NonTile
 	@Override public BlargNonTile withPositionAndVelocity(long referenceTime, double x, double y, double vx, double vy) {
 		return new BlargNonTile(
 			referenceTime, x, y, vx, vy, relativePhysicalAabb,
-			minBitAddress, maxBitAddress, nextAutoUpdateTime,
+			id, nextAutoUpdateTime,
 			icon, behavior
 		);
 	}

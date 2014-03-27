@@ -16,38 +16,35 @@ import togos.networkrts.experimental.game19.world.NonTileBehavior;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.msg.UploadSceneTask;
 import togos.networkrts.experimental.gameengine1.index.AABB;
-import togos.networkrts.util.BitAddressUtil;
 
 public class JetManBehavior implements NonTileBehavior<BlargNonTile>
 {
 	public static final double GRAVITY = 0.002;
 	
-	final long messageBitAddress;
 	final long uplinkBitAddress;
 	final JetManState state;
 	final JetManIcons icons;
 	
-	public JetManBehavior(long id, long uplinkBitAddress, JetManState state, JetManIcons icons) {
-		this.messageBitAddress = id;
+	public JetManBehavior(long uplinkBitAddress, JetManState state, JetManIcons icons) {
 		this.uplinkBitAddress = uplinkBitAddress;
 		this.state = state;
 		this.icons = icons;
 	}
 	
-	public JetManBehavior(long id, long clientId, JetManIcons icons) {
-		this(id, clientId, JetManState.DEFAULT, icons);
+	public JetManBehavior(long clientId, JetManIcons icons) {
+		this(clientId, JetManState.DEFAULT, icons);
 	}
 	
 	protected JetManBehavior withState(JetManState ps) {
-		return new JetManBehavior(messageBitAddress, uplinkBitAddress, ps, icons);
+		return new JetManBehavior(uplinkBitAddress, ps, icons);
 	}
 	
-	public static NonTile createJetMan( long bitAddress, long uplinkBitAddress, JetManIcons icons ) {
+	public static NonTile createJetMan( int id, long uplinkBitAddress, JetManIcons icons ) {
 		return new BlargNonTile(0, 0, 0, 0, 0,
 			new AABB(-3/16f, -7/16f, -3/16f, 3/16f, 8/16f, 3/16f),
-			bitAddress, bitAddress, 1,
+			id, 1,
 			icons.walking[0], 
-			new JetManBehavior(bitAddress, uplinkBitAddress, icons)
+			new JetManBehavior(uplinkBitAddress, icons)
 		);
 	}
 	
@@ -99,7 +96,7 @@ public class JetManBehavior implements NonTileBehavior<BlargNonTile>
 				updateContext.addNonTile(new BlargNonTile(time, newX, newY,
 					newVx+newVx*rand.nextGaussian()+newVy*rand.nextGaussian(), newVy+newVy*rand.nextGaussian()+newVx*rand.nextGaussian(),
 					new AABB(-ic.imageWidth/2f, -ic.imageHeight/2f, -ic.imageWidth/2f, +ic.imageWidth/2f, +ic.imageHeight/2f, +ic.imageWidth/2f),
-					0, 0, time+1, ic,
+					0, time+1, ic,
 					new JetManPieceBehavior()
 				));
 			}
@@ -108,14 +105,14 @@ public class JetManBehavior implements NonTileBehavior<BlargNonTile>
 			
 			return new BlargNonTile(time, newX, newY, newVx, newVy,
 				new AABB(-3f/16, -2.5f/16, -3f/16, 3f/16, 2.5f/16, 3f/16),
-				messageBitAddress, messageBitAddress, time+1, icons.head,
-				new JetManHeadBehavior(messageBitAddress, uplinkBitAddress, newHeadState, icons)
+				nt.id, time+1, icons.head,
+				new JetManHeadBehavior(uplinkBitAddress, newHeadState, icons)
 			);
 		}
 		
 		int newThrustDir = state.thrustDir;
 		for( Message m : messages ) {
-			if( m.isApplicableTo(nt) && BitAddressUtil.rangeContains(m, messageBitAddress)) {
+			if( m.isApplicableTo(nt) ) {
 				Object p = m.payload;
 				if( p instanceof Number ) {
 					int _wd = ((Number)p).intValue();

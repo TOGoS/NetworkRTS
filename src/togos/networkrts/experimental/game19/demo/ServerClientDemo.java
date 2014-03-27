@@ -279,7 +279,6 @@ public class ServerClientDemo
 		final ResourceContext resourceContext = new ResourceContext(new File(".ccouch"));
 		final Client c = new Client(resourceContext);
 		final int playerId = idGenerator.newId();
-		final long playerNonTileBa = BitAddresses.forceType(BitAddresses.TYPE_NONTILE, playerId);
 		final int clientId = idGenerator.newId();
 		final long clientBa = BitAddresses.forceType(BitAddresses.TYPE_EXTERNAL, clientId);
 		c.startUi();
@@ -363,7 +362,7 @@ public class ServerClientDemo
 		
 		final Simulator sim;
 		{
-			NonTile playerNonTile = JetManBehavior.createJetMan(playerNonTileBa, clientBa, jetManIcons);
+			NonTile playerNonTile = JetManBehavior.createJetMan(playerId, clientBa, jetManIcons);
 			World world = DemoWorld.initWorld(resourceContext).withNonTile(playerNonTile);
 			sim = new Simulator( world, 50 );
 		}
