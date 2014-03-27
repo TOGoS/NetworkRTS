@@ -22,22 +22,50 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 	protected static final AABB aabb = new AABB(-3f/16, -7f/16, -3f/16, 3f/16, 8f/16, 3f/16);
 	public static final double GRAVITY = 0.002;
 	
+	public static final int S_FACING_LEFT = 0x01;
+	public static final int S_BACK_THRUSTER_ON = 0x02;
+	public static final int S_BOTTOM_THRUSTER_ON = 0x04;
+	public static final int S_FEET_ON_GROUND = 0x8;
+	
 	final long uplinkBitAddress;
-	final JetManState state;
+	final int walkFrame;
+	final int thrustDir;
+	final int stateFlags;
+	final float suitHealth, fuel;
+	final JetManHeadState headState;
 	final JetManIcons icons;
 	
-	public JetManInternals(long uplinkBitAddress, JetManState state, JetManIcons icons) {
+	public JetManInternals(
+		long uplinkBitAddress,
+		int walkFrame, int thrustDir, int state,
+		float suitHealth, float fuel,
+		JetManHeadState headState,
+		JetManIcons icons
+	) {
 		this.uplinkBitAddress = uplinkBitAddress;
-		this.state = state;
+		this.walkFrame = walkFrame;
+		this.thrustDir = thrustDir;
+		this.stateFlags = state;
+		this.suitHealth = suitHealth;
+		this.fuel = fuel;
+		this.headState = headState;
 		this.icons = icons;
 	}
 	
-	public JetManInternals(long clientId, JetManIcons icons) {
-		this(clientId, JetManState.DEFAULT, icons);
+	public boolean checkStateFlag(int flag) {
+		return (stateFlags & flag) == flag;
 	}
 	
-	protected JetManInternals withState(JetManState ps) {
-		return new JetManInternals(uplinkBitAddress, ps, icons);
+	public JetManCoreStats getStats() {
+		return new JetManCoreStats(
+			1  , suitHealth,
+			100, fuel,
+			JetManHeadState.MAX_HEALTH, headState.health,
+			JetManHeadState.MAX_BATTERY, headState.battery
+		);
+	}
+	public JetManInternals(long clientId, JetManIcons icons) {
+		this(clientId, 0, -1, 0, 1, 100, JetManHeadState.DEFAULT, icons);
 	}
 	
 	public static NonTile createJetMan( int id, long uplinkBitAddress, JetManIcons icons ) {
@@ -48,12 +76,12 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		MessageSet messages, NonTileUpdateContext updateContext
 	) {
 		updateContext.startAsyncTask(new UploadSceneTask(nt, world, uplinkBitAddress));
-		updateContext.sendMessage(Message.create(uplinkBitAddress, uplinkBitAddress, MessageType.INCOMING_PACKET, state.getStats()));
+		updateContext.sendMessage(Message.create(uplinkBitAddress, uplinkBitAddress, MessageType.INCOMING_PACKET, getStats()));
 		
 		double newX = nt.x, newY = nt.y;
 		double newVx = nt.vx, newVy = nt.vy;
 		boolean feetOnGround = false;
-		float newSuitHealth = state.suitHealth, newFuel = state.fuel;
+		float newSuitHealth = suitHealth, newFuel = fuel;
 		
 		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.BLOCK_IWNT, Block.FLAG_SOLID);
 		if( c != null ) {
@@ -82,7 +110,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 			newSuitHealth -= collisionDamage;
 		}
 		
-		JetManHeadState newHeadState = state.headState;
+		JetManHeadState newHeadState = headState;
 		
 		if( newSuitHealth < 0 ) {
 			Random rand = new Random();
@@ -103,7 +131,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 			);
 		}
 		
-		int newThrustDir = state.thrustDir;
+		int newThrustDir = thrustDir;
 		for( Message m : messages ) {
 			if( m.isApplicableTo(nt) ) {
 				Object p = m.payload;
@@ -115,7 +143,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 				}
 			}
 		}
-		boolean facingLeft = state.checkState(JetManState.S_FACING_LEFT);
+		boolean facingLeft = checkStateFlag(S_FACING_LEFT);
 		boolean goUp = false, goForward =  false;
 		// Change our direction!
 		switch( newThrustDir ) {
@@ -178,32 +206,32 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 			}
 		}
 		
-		int newWalkState = state.walkFrame + ((feetOnGround && newVx != 0) ? 1 : 0);
+		int newWalkState = walkFrame + ((feetOnGround && newVx != 0) ? 1 : 0);
 		if( (newWalkState>>2) >= icons.walking.length ) {
 			newWalkState = 0;
 		}
 		
 		int stateFlags =
-			(facingLeft ? JetManState.S_FACING_LEFT : 0) |
-			(jetUp ? JetManState.S_BOTTOM_THRUSTER_ON : 0) |
-			(jetForward ? JetManState.S_BACK_THRUSTER_ON : 0) |
-			(feetOnGround ? JetManState.S_FEET_ON_GROUND : 0);
+			(facingLeft   ? S_FACING_LEFT        : 0) |
+			(jetUp        ? S_BOTTOM_THRUSTER_ON : 0) |
+			(jetForward   ? S_BACK_THRUSTER_ON   : 0) |
+			(feetOnGround ? S_FEET_ON_GROUND     : 0);
 		
-		JetManState newState = new JetManState(newWalkState, newThrustDir, stateFlags, newSuitHealth, newFuel, newHeadState);
-		
-		return nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withInternals(withState(newState));
+		return nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withInternals(
+			new JetManInternals(uplinkBitAddress, newWalkState, newThrustDir, stateFlags, newSuitHealth, newFuel, newHeadState, icons)
+		);
 	}
 	
 	@Override public Icon getIcon() {
-		boolean jetUp = state.checkState(JetManState.S_BOTTOM_THRUSTER_ON);
-		boolean jetForward = state.checkState(JetManState.S_BACK_THRUSTER_ON);
-		boolean feetOnGround = state.checkState(JetManState.S_FEET_ON_GROUND);
-		boolean facingLeft = state.checkState(JetManState.S_FACING_LEFT);
+		boolean jetUp        = checkStateFlag(S_BOTTOM_THRUSTER_ON);
+		boolean jetForward   = checkStateFlag(S_BACK_THRUSTER_ON);
+		boolean feetOnGround = checkStateFlag(S_FEET_ON_GROUND);
+		boolean facingLeft   = checkStateFlag(S_FACING_LEFT);
 		
 		Icon icon =
 			jetUp && jetForward ? icons.jetUpAndForward :
 			jetUp               ? icons.jetUp :
-			feetOnGround        ? icons.walking[state.walkFrame>>2] :
+			feetOnGround        ? icons.walking[walkFrame>>2] :
 			jetForward          ? icons.jetForward :
 			icons.fall0;
 		if( facingLeft ) icon = JetManIcons.flipped(icon);
