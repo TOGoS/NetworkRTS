@@ -29,7 +29,7 @@ import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.World;
-import togos.networkrts.experimental.game19.world.thing.jetman.JetManBehavior;
+import togos.networkrts.experimental.game19.world.thing.jetman.JetManInternals;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManCoreStats;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManIcons;
 import togos.networkrts.ui.ImageCanvas;
@@ -362,7 +362,7 @@ public class ServerClientDemo
 		
 		final Simulator sim;
 		{
-			NonTile playerNonTile = JetManBehavior.createJetMan(playerId, clientBa, jetManIcons);
+			NonTile playerNonTile = JetManInternals.createJetMan(playerId, clientBa, jetManIcons);
 			World world = DemoWorld.initWorld(resourceContext).withNonTile(playerNonTile);
 			sim = new Simulator( world, 50 );
 		}

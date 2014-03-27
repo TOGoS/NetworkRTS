@@ -10,31 +10,34 @@ import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
-import togos.networkrts.experimental.game19.world.NonTileBehavior;
+import togos.networkrts.experimental.game19.world.NonTileInternals;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.msg.UploadSceneTask;
+import togos.networkrts.experimental.gameengine1.index.AABB;
 
-public class JetManHeadBehavior implements NonTileBehavior<BlargNonTile>
+public class JetManHeadInternals implements NonTileInternals<BlargNonTile>
 {
+	protected static final AABB aabb = new AABB(-3f/16, -2.5f/16, -3f/16, 3f/16, 2.5f/16, 3f/16);
+	
 	final long uplinkBitAddress;
 	final JetManHeadState state;
 	final JetManIcons icons;
 	
-	public JetManHeadBehavior(long uplinkBitAddress, JetManHeadState state, JetManIcons icons) {
+	public JetManHeadInternals(long uplinkBitAddress, JetManHeadState state, JetManIcons icons) {
 		this.uplinkBitAddress = uplinkBitAddress;
 		this.state = state;
 		this.icons = icons;
 	}
 	
-	protected JetManHeadBehavior withState(JetManHeadState ps) {
-		return new JetManHeadBehavior(uplinkBitAddress, ps, icons);
+	protected JetManHeadInternals withState(JetManHeadState ps) {
+		return new JetManHeadInternals(uplinkBitAddress, ps, icons);
 	}
 	
 	@Override public NonTile update(final BlargNonTile nt, long time, final World world,
 		MessageSet messages, NonTileUpdateContext updateContext
 	) {
 		double newX = nt.x, newY = nt.y;
-		double newVx = nt.vx, newVy = nt.vy + JetManBehavior.GRAVITY;
+		double newVx = nt.vx, newVy = nt.vy + JetManInternals.GRAVITY;
 		float newSuitHealth = state.health, newBattery = state.battery;
 		
 		if( newBattery >= 0.0001 ) {
@@ -75,13 +78,11 @@ public class JetManHeadBehavior implements NonTileBehavior<BlargNonTile>
 				// like turn vision on/off to save battery
 			}
 		}
-		boolean facingLeft = state.facingLeft;
-		
-		JetManHeadState newState = new JetManHeadState(facingLeft, newSuitHealth, newBattery);
-		
-		Icon newIcon = icons.head;
-		if( facingLeft ) newIcon = JetManIcons.flipped(newIcon);
-		
-		return nt.withIcon(newIcon).withPositionAndVelocity(time, newX, newY, newVx, newVy).withBehavior(withState(newState));
+		JetManHeadState newState = new JetManHeadState(state.facingLeft, newSuitHealth, newBattery);
+		return nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withBehavior(withState(newState));
 	}
+
+	@Override public Icon getIcon() { return state.facingLeft ? JetManIcons.flipped(icons.head) : icons.head; }
+	@Override public AABB getRelativePhysicalAabb() { return aabb; }
+	@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }
 }

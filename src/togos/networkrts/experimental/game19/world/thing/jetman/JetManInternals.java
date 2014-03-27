@@ -12,40 +12,36 @@ import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
-import togos.networkrts.experimental.game19.world.NonTileBehavior;
+import togos.networkrts.experimental.game19.world.NonTileInternals;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.msg.UploadSceneTask;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 
-public class JetManBehavior implements NonTileBehavior<BlargNonTile>
+public class JetManInternals implements NonTileInternals<BlargNonTile>
 {
+	protected static final AABB aabb = new AABB(-3f/16, -7f/16, -3f/16, 3f/16, 8f/16, 3f/16);
 	public static final double GRAVITY = 0.002;
 	
 	final long uplinkBitAddress;
 	final JetManState state;
 	final JetManIcons icons;
 	
-	public JetManBehavior(long uplinkBitAddress, JetManState state, JetManIcons icons) {
+	public JetManInternals(long uplinkBitAddress, JetManState state, JetManIcons icons) {
 		this.uplinkBitAddress = uplinkBitAddress;
 		this.state = state;
 		this.icons = icons;
 	}
 	
-	public JetManBehavior(long clientId, JetManIcons icons) {
+	public JetManInternals(long clientId, JetManIcons icons) {
 		this(clientId, JetManState.DEFAULT, icons);
 	}
 	
-	protected JetManBehavior withState(JetManState ps) {
-		return new JetManBehavior(uplinkBitAddress, ps, icons);
+	protected JetManInternals withState(JetManState ps) {
+		return new JetManInternals(uplinkBitAddress, ps, icons);
 	}
 	
 	public static NonTile createJetMan( int id, long uplinkBitAddress, JetManIcons icons ) {
-		return new BlargNonTile(0, 0, 0, 0, 0,
-			new AABB(-3/16f, -7/16f, -3/16f, 3/16f, 8/16f, 3/16f),
-			id, 1,
-			icons.walking[0], 
-			new JetManBehavior(uplinkBitAddress, icons)
-		);
+		return new BlargNonTile(id, 0, 0, 0, 0, 0, new JetManInternals(uplinkBitAddress, icons));
 	}
 	
 	@Override public NonTile update(final BlargNonTile nt, long time, final World world,
@@ -93,20 +89,17 @@ public class JetManBehavior implements NonTileBehavior<BlargNonTile>
 			Icon[] pieceIcons = new Icon[] { icons.leg1, icons.leg2, icons.torso, icons.jetpack };
 			for( int j=0; j<4; ++j ) {
 				Icon ic = pieceIcons[j];
-				updateContext.addNonTile(new BlargNonTile(time, newX, newY,
-					newVx+newVx*rand.nextGaussian()+newVy*rand.nextGaussian(), newVy+newVy*rand.nextGaussian()+newVx*rand.nextGaussian(),
-					new AABB(-ic.imageWidth/2f, -ic.imageHeight/2f, -ic.imageWidth/2f, +ic.imageWidth/2f, +ic.imageHeight/2f, +ic.imageWidth/2f),
-					0, time+1, ic,
-					new JetManPieceBehavior()
+				updateContext.addNonTile(new BlargNonTile(0, time, newX, newY,
+					newVx+newVx*rand.nextGaussian()+newVy*rand.nextGaussian(),
+					newVy+newVy*rand.nextGaussian()+newVx*rand.nextGaussian(),
+					new JetManPieceBehavior(ic)
 				));
 			}
 			
 			// TODO: Some amount of remaining damage goes to head
 			
-			return new BlargNonTile(time, newX, newY, newVx, newVy,
-				new AABB(-3f/16, -2.5f/16, -3f/16, 3f/16, 2.5f/16, 3f/16),
-				nt.id, time+1, icons.head,
-				new JetManHeadBehavior(uplinkBitAddress, newHeadState, icons)
+			return new BlargNonTile(nt.id, time, newX, newY, newVx, newVy,
+				new JetManHeadInternals(uplinkBitAddress, newHeadState, icons)
 			);
 		}
 		
@@ -122,7 +115,7 @@ public class JetManBehavior implements NonTileBehavior<BlargNonTile>
 				}
 			}
 		}
-		boolean facingLeft = state.facingLeft;
+		boolean facingLeft = state.checkState(JetManState.S_FACING_LEFT);
 		boolean goUp = false, goForward =  false;
 		// Change our direction!
 		switch( newThrustDir ) {
@@ -185,25 +178,38 @@ public class JetManBehavior implements NonTileBehavior<BlargNonTile>
 			}
 		}
 		
-		int newWalkState = state.walkState + ((feetOnGround && newVx != 0) ? 1 : 0);
+		int newWalkState = state.walkFrame + ((feetOnGround && newVx != 0) ? 1 : 0);
 		if( (newWalkState>>2) >= icons.walking.length ) {
 			newWalkState = 0;
 		}
 		
-		JetManState newState = new JetManState(newWalkState, newThrustDir, facingLeft, newSuitHealth, newFuel, newHeadState);
-		if( newFuel != state.fuel || newSuitHealth != state.suitHealth ) {
-			// TODO: Some way to send status info to the client
-			//System.err.println(String.format("Jetman s:%4.3f f:%8.3f",newSuitHealth,newFuel));
-		}
+		int stateFlags =
+			(facingLeft ? JetManState.S_FACING_LEFT : 0) |
+			(jetUp ? JetManState.S_BOTTOM_THRUSTER_ON : 0) |
+			(jetForward ? JetManState.S_BACK_THRUSTER_ON : 0) |
+			(feetOnGround ? JetManState.S_FEET_ON_GROUND : 0);
 		
-		Icon newIcon =
+		JetManState newState = new JetManState(newWalkState, newThrustDir, stateFlags, newSuitHealth, newFuel, newHeadState);
+		
+		return nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withBehavior(withState(newState));
+	}
+	
+	@Override public Icon getIcon() {
+		boolean jetUp = state.checkState(JetManState.S_BOTTOM_THRUSTER_ON);
+		boolean jetForward = state.checkState(JetManState.S_BACK_THRUSTER_ON);
+		boolean feetOnGround = state.checkState(JetManState.S_FEET_ON_GROUND);
+		boolean facingLeft = state.checkState(JetManState.S_FACING_LEFT);
+		
+		Icon icon =
 			jetUp && jetForward ? icons.jetUpAndForward :
 			jetUp               ? icons.jetUp :
-			feetOnGround        ? icons.walking[newWalkState>>2] :
+			feetOnGround        ? icons.walking[state.walkFrame>>2] :
 			jetForward          ? icons.jetForward :
 			icons.fall0;
-		if( facingLeft ) newIcon = JetManIcons.flipped(newIcon);
-		
-		return nt.withIcon(newIcon).withPositionAndVelocity(time, newX, newY, newVx, newVy).withBehavior(withState(newState));
+		if( facingLeft ) icon = JetManIcons.flipped(icon);
+		return icon;
 	}
+	
+	@Override public AABB getRelativePhysicalAabb() { return aabb; }
+	@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }
 }
