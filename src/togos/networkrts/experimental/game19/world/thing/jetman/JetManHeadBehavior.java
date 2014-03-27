@@ -59,6 +59,10 @@ public class JetManHeadBehavior implements NonTileBehavior<BlargNonTile>
 			if( c.correctionY < 0 && Math.abs(newVy) < 0.03 ) {
 				newVy = 0;
 			}
+			Block b = c.block;
+			if( (b.flags & Block.FLAG_SPIKEY) == Block.FLAG_SPIKEY ) {
+				collisionDamage += 50;
+			}
 			newSuitHealth -= collisionDamage;
 		}
 		
@@ -74,10 +78,6 @@ public class JetManHeadBehavior implements NonTileBehavior<BlargNonTile>
 		boolean facingLeft = state.facingLeft;
 		
 		JetManHeadState newState = new JetManHeadState(facingLeft, newSuitHealth, newBattery);
-		if( newBattery != state.battery || newSuitHealth != state.health ) {
-			// TODO: Some way to send status info to the client
-			System.err.println(String.format("Jetman s:%4.3f f:%8.3f",newSuitHealth,newBattery));
-		}
 		
 		Icon newIcon = icons.head;
 		if( facingLeft ) newIcon = JetManIcons.flipped(newIcon);
