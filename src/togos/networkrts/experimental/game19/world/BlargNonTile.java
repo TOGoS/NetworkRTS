@@ -11,18 +11,18 @@ public class BlargNonTile implements NonTile
 	public final double x, y, vx, vy; // For simplicity, velocity is meters per clock tick
 	public final AABB absolutePhysicalAabb;
 	public final int id;
-	public final NonTileInternals<? super BlargNonTile> behavior;
+	public final NonTileInternals<? super BlargNonTile> internals;
 	
 	public BlargNonTile(
 		int id, long referenceTime, double x, double y, double vx, double vy,
-		NonTileInternals<? super BlargNonTile> behavior
+		NonTileInternals<? super BlargNonTile> internals
 	) {
 		this.id = id;
 		this.referenceTime = referenceTime;
 		this.x = x; this.vx = vx;
 		this.y = y; this.vy = vy;
-		this.absolutePhysicalAabb = behavior.getRelativePhysicalAabb().shiftedBy(x,y,0);
-		this.behavior = behavior;
+		this.absolutePhysicalAabb = internals.getRelativePhysicalAabb().shiftedBy(x,y,0);
+		this.internals = internals;
 	}
 	
 	/** 'Centered cube bounding box' */
@@ -34,7 +34,7 @@ public class BlargNonTile implements NonTile
 	public static BlargNonTile create( int id, long referenceTime, double x, double y, NonTileInternals<? super BlargNonTile> behavior ) {
 		return new BlargNonTile( id, referenceTime, x, y, 0, 0, behavior );
 	}
-
+	
 	public static BlargNonTile create( int id, long referenceTime, double x, double y, ImageHandle image, float diameter, NonTileInternals<? super BlargNonTile> behavior ) {
 		return create( id, referenceTime, x, y, behavior );
 	}
@@ -43,27 +43,27 @@ public class BlargNonTile implements NonTile
 	@Override public AABB getAabb() { return absolutePhysicalAabb; }
 	@Override public long getMinBitAddress() { return BitAddresses.TYPE_NONTILE | id; }
 	@Override public long getMaxBitAddress() { return BitAddresses.TYPE_NONTILE | id; }
-	@Override public long getNextAutoUpdateTime() { return behavior.getNextAutoUpdateTime(); }
+	@Override public long getNextAutoUpdateTime() { return internals.getNextAutoUpdateTime(); }
 
 	@Override public double getX() { return x; }
 	@Override public double getY() { return y; }
 	@Override public double getVelocityX() { return vx; }
 	@Override public double getVelocityY() { return vy; }
-	@Override public Icon getIcon() { return behavior.getIcon(); }
+	@Override public Icon getIcon() { return internals.getIcon(); }
 	
 	@Override public AABB getAbsolutePhysicalAabb() { return absolutePhysicalAabb; }
-	@Override public AABB getRelativePhysicalAabb() { return behavior.getRelativePhysicalAabb(); }
+	@Override public AABB getRelativePhysicalAabb() { return internals.getRelativePhysicalAabb(); }
 	
 	public BlargNonTile withInternals(NonTileInternals<? super BlargNonTile> behavior) {
 		return new BlargNonTile(id, referenceTime, x, y, vx, vy, behavior);
 	}
 	
 	public BlargNonTile withId(int id) {
-		return new BlargNonTile(id, referenceTime, x, y, vx, vy, behavior);
+		return new BlargNonTile(id, referenceTime, x, y, vx, vy, internals);
 	}
 	
 	@Override public BlargNonTile withPositionAndVelocity(long referenceTime, double x, double y, double vx, double vy) {
-		return new BlargNonTile(id, referenceTime, x, y, vx, vy, behavior);
+		return new BlargNonTile(id, referenceTime, x, y, vx, vy, internals);
 	}
 	
 	public BlargNonTile withVelocity(long referenceTime, double vx, double vy) {
@@ -86,6 +86,6 @@ public class BlargNonTile implements NonTile
 	@Override public NonTile update(
 		long time, World w, MessageSet incomingMessages, NonTileUpdateContext updateContext
 	) {
-		return behavior.update(this, time, w, incomingMessages, updateContext);
+		return internals.update(this, time, w, incomingMessages, updateContext);
 	}
 }
