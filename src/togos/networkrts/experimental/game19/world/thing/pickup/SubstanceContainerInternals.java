@@ -29,7 +29,7 @@ public class SubstanceContainerInternals implements NonTileInternals<BlargNonTil
 			switch( m.type ) {
 			case REQUEST_PICKUP:
 				if( !pickedUp ) {
-					updateContext.sendMessage(Message.create((int)m.sourceAddress, MessageType.INCOMING_ITEM, this));
+					updateContext.sendMessage(Message.create(m.sourceAddress, MessageType.INCOMING_ITEM, this));
 					pickedUp = true;
 				}
 			}

@@ -278,8 +278,9 @@ public class ServerClientDemo
 		
 		final ResourceContext resourceContext = new ResourceContext(new File(".ccouch"));
 		final Client c = new Client(resourceContext);
-		final int playerId = idGenerator.newId();
-		final int clientId = idGenerator.newId();
+		final long playerId = idGenerator.newId();
+		final long playerBa = BitAddresses.forceType(BitAddresses.TYPE_NONTILE, playerId);
+		final long clientId = idGenerator.newId();
 		final long clientBa = BitAddresses.forceType(BitAddresses.TYPE_EXTERNAL, clientId);
 		c.startUi();
 		c.sceneCanvas.addKeyListener(new KeyAdapter() {
@@ -341,7 +342,7 @@ public class ServerClientDemo
 				
 				int dir = dir(dirX, dirY);
 				if( dir != oldDir ) {
-					messageQueue.add(Message.create(playerId, MessageType.INCOMING_PACKET, Integer.valueOf(dir)));
+					messageQueue.add(Message.create(playerBa, MessageType.INCOMING_PACKET, Integer.valueOf(dir)));
 					oldDir = dir;
 				}
 			}

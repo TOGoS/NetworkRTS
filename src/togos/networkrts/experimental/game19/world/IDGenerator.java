@@ -1,15 +1,15 @@
 package togos.networkrts.experimental.game19.world;
 
 public class IDGenerator {
-	int next;
+	long next;
 	
-	public IDGenerator( int startAt ) {
+	public IDGenerator( long startAt ) {
 		next = startAt;
 	}
 	
 	public IDGenerator() { this(1); }
 	
-	public synchronized int newId() {
+	public synchronized long newId() {
 		return next++;
 	}
 }

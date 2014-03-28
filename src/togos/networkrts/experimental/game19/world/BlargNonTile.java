@@ -10,14 +10,14 @@ public class BlargNonTile implements NonTile
 	public final long referenceTime;
 	public final double x, y, vx, vy; // For simplicity, velocity is meters per clock tick
 	public final AABB absolutePhysicalAabb;
-	public final int id;
+	public final long id;
 	public final NonTileInternals<? super BlargNonTile> internals;
 	
 	public BlargNonTile(
-		int id, long referenceTime, double x, double y, double vx, double vy,
+		long id, long referenceTime, double x, double y, double vx, double vy,
 		NonTileInternals<? super BlargNonTile> internals
 	) {
-		this.id = id;
+		this.id = id & BitAddresses.ID_MASK;
 		this.referenceTime = referenceTime;
 		this.x = x; this.vx = vx;
 		this.y = y; this.vy = vy;

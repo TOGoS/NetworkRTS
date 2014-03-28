@@ -67,7 +67,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		this(0, -1, 0, 1, 100, new JetManHeadInternals(clientId, false, JetManHeadInternals.MAX_HEALTH, JetManHeadInternals.MAX_BATTERY, icons), icons);
 	}
 	
-	public static NonTile createJetMan( int id, long uplinkBitAddress, JetManIcons icons ) {
+	public static NonTile createJetMan( long id, long uplinkBitAddress, JetManIcons icons ) {
 		return new BlargNonTile(id, 0, 0, 0, 0, 0, new JetManInternals(uplinkBitAddress, icons));
 	}
 	

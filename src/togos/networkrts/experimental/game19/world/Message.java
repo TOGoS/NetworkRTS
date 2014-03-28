@@ -43,16 +43,16 @@ public class Message implements BitAddressRange, MessageSet
 		return create( minBa, maxBa, type, BitAddressUtil.NO_ADDRESS, payload );
 	}
 	
-	public static Message create( int targetId, RectIntersector targetShape, MessageType type, long sourceAddress, Object payload ) {
-		return new Message( BitAddresses.withMinFlags(targetId), BitAddresses.withMaxFlags(targetId), targetShape, type, sourceAddress, payload );
+	public static Message create( long targetBa, RectIntersector targetShape, MessageType type, long sourceAddress, Object payload ) {
+		return new Message( BitAddresses.withMinFlags(targetBa), BitAddresses.withMaxFlags(targetBa), targetShape, type, sourceAddress, payload );
 	}
 	
-	public static Message create( int targetId, RectIntersector targetShape, MessageType type, Object payload ) {
-		return create( targetId, targetShape, type, BitAddressUtil.NO_ADDRESS, payload );
+	public static Message create( long targetBa, RectIntersector targetShape, MessageType type, Object payload ) {
+		return create( targetBa, targetShape, type, BitAddressUtil.NO_ADDRESS, payload );
 	}
 	
-	public static Message create( int targetId, MessageType type, Object payload ) {
-		return create( targetId, TBoundless.INSTANCE, type, BitAddressUtil.NO_ADDRESS, payload );
+	public static Message create( long targetBa, MessageType type, Object payload ) {
+		return create( targetBa, TBoundless.INSTANCE, type, BitAddressUtil.NO_ADDRESS, payload );
 	}
 	
 	public static Message create( NonTile target, MessageType type, long sourceAddress, Object payload ) {
@@ -79,6 +79,12 @@ public class Message implements BitAddressRange, MessageSet
 	
 	public Message withSourceAddress(long sourceAddress) {
 		return new Message(minBitAddress, maxBitAddress, targetShape, type, sourceAddress, payload);
+	}
+	
+	public String toString() {
+		return
+			"Message to "+BitAddresses.toString(minBitAddress)+".."+BitAddresses.toString(maxBitAddress)+
+			" from "+BitAddresses.toString(sourceAddress)+" type "+type+" payload "+(payload == null ? null : payload.toString());
 	}
 	
 	//// MessageSet implementation
