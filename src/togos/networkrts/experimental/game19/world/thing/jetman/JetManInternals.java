@@ -180,6 +180,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 						System.err.println("Don't know what to do with "+item);
 					}
 					break;
+				default: // Don't care
 				}
 			}
 		}

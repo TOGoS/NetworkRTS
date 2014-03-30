@@ -37,6 +37,7 @@ public class SubstanceContainerInternals implements NonTileInternals<BlargNonTil
 					updateContext.sendMessage(Message.create(m.sourceAddress, MessageType.INCOMING_ITEM, this));
 					pickedUp = true;
 				}
+			default: // Ignore everything else
 			}
 		}
 		return pickedUp ? null : nt;
