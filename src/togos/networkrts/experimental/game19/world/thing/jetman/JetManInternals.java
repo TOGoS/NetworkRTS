@@ -151,7 +151,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 							// TODO: Send happy chat messages back to client
 							double cap = newFuelTank.getCapacity();
 							double delta = Math.min(cap - newFuelTank.contents.quantity, sci.contents.quantity);
-							headInternals.sendToClient(nt.getBitAddress(), "Got "+delta+sci.contents.substance.unitOfMeasure.abbreviation+" of fuel, woohoo", updateContext);
+							headInternals.sendToClient(nt.getBitAddress(), String.format("Got %.2f%s of fuel.", delta, sci.contents.substance.unitOfMeasure.abbreviation), updateContext);
 							newFuelTank = newFuelTank.add( delta );
 							itemNt = itemNt.withInternals(sci.add(-delta));
 						}
@@ -181,7 +181,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 						BlargNonTile bnt = (BlargNonTile)v;
 						if( bnt.internals instanceof SubstanceContainerInternals ) {
 							SubstanceContainerInternals sci = (SubstanceContainerInternals)bnt.internals;
-							if( fuelTank.contents.substance.equals(sci.contents.substance) && sci.contents.quantity > 0 && !_newFuelTank.isFull() ) {
+							if( fuelTank.contents.substance.equals(sci.contents.substance) && sci.contents.quantity > 0 && _newFuelTank.fullness() < 0.99 ) {
 								pickItUp = true;
 							}
 						}
