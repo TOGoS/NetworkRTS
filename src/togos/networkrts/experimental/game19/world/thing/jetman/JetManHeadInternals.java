@@ -3,6 +3,7 @@ package togos.networkrts.experimental.game19.world.thing.jetman;
 import togos.networkrts.experimental.game19.physics.BlockCollision;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
+import togos.networkrts.experimental.game19.sim.UpdateContext;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.BlargNonTile;
 import togos.networkrts.experimental.game19.world.Block;
@@ -109,5 +110,18 @@ public class JetManHeadInternals implements NonTileInternals<BlargNonTile>
 	@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }
 	@Override public long getNonTileAddressFlags() {
 		return BitAddresses.PHYSINTERACT|BitAddresses.PICKUP;
+	}
+	
+	protected JetManHeadInternals batteryDrained(float amount) {
+		return new JetManHeadInternals(uplinkBitAddress, facingLeft, health, battery-amount, icons);
+	}
+	
+	public JetManHeadInternals sendToClient(long myAddress, Object payload, UpdateContext ctx) {
+		if( battery > 0.0001 ) {
+			ctx.sendMessage(Message.create(uplinkBitAddress, MessageType.INCOMING_PACKET, myAddress, payload)); 
+			return batteryDrained(0.0001f);
+		}
+		return this;
+		// Cannot send update; battery too low!
 	}
 }

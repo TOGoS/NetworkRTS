@@ -1,7 +1,6 @@
 package togos.networkrts.experimental.game19.demo;
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Frame;
@@ -13,6 +12,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -73,14 +73,30 @@ public class ServerClientDemo
 		}
 	}
 	
+	static class TextMessage implements Comparable<TextMessage> {
+		public final long receptionTime;
+		public final String text;
+		
+		public TextMessage( long r, String t ) {
+			this.receptionTime = r;
+			this.text = t;
+		}
+		
+		@Override public int compareTo(TextMessage o) {
+			return receptionTime < o.receptionTime ? -1 : receptionTime > o.receptionTime ? 1 : 0;
+		}
+	}
+	
 	public static class UIState {
 		public final Scene scene;
 		public final JetManCoreStats stats;
+		public final List<TextMessage> textMessages;
 		public final boolean connected;
 		
-		public UIState( Scene scene, JetManCoreStats stats, boolean connected ) {
+		public UIState( Scene scene, JetManCoreStats stats, List<TextMessage> textMessages, boolean connected ) {
 			this.scene = scene;
 			this.stats = stats;
+			this.textMessages = textMessages;
 			this.connected = connected;
 		}
 	}
@@ -105,7 +121,7 @@ public class ServerClientDemo
 		}
 		
 		Color sceneBackgroundColor = new Color(0.2f, 0, 0);
-		UIState uiState = new UIState(null, null, false);
+		UIState uiState = new UIState(null, null, Collections.<TextMessage>emptyList(), false);
 		
 		public synchronized void setUiState( UIState s ) {
 			this.uiState = s;
@@ -172,6 +188,13 @@ public class ServerClientDemo
 						g.drawString( String.format("Head: % 5.4f / % 5.4f", stats.helmetHealth, stats.maxHelmetHealth), 4, 12*3);
 						g.drawString( String.format("Batt: % 5.4f / % 5.4f", stats.batteryCharge, stats.maxBatteryCharge), 4, 12*4);
 					}
+					for( int ti=u.textMessages.size()-1, ty=sb.getHeight()-12; ti>=0; --ti, ty -= 12 ) {
+						TextMessage tm = u.textMessages.get(ti);
+						float tmOpacity = 1-(System.currentTimeMillis()-tm.receptionTime)/5000f;
+						if( tmOpacity <= 0 ) continue;
+						g.setColor(new Color(1,1,1,tmOpacity));
+						g.drawString( tm.text, 4, ty );
+					}
 					if( !u.connected ) {
 						Font f = new Font("Verdana", Font.PLAIN, 24);
 						g.setFont(f);
@@ -203,6 +226,7 @@ public class ServerClientDemo
 		public Queue<Message> messageQueue;
 		protected Scene scene;
 		protected JetManCoreStats stats;
+		protected List<TextMessage> textMessages = new ArrayList<TextMessage>();
 		public long lastUpdateFromAvatar;
 		
 		public Client( ResourceContext resourceContext ) {
@@ -211,7 +235,7 @@ public class ServerClientDemo
 		}
 		
 		protected void updateUiState() {
-			sceneCanvas.setUiState(new UIState(scene, stats, lastUpdateFromAvatar >= System.currentTimeMillis() - 1000));
+			sceneCanvas.setUiState(new UIState(scene, stats, textMessages, lastUpdateFromAvatar >= System.currentTimeMillis() - 1000));
 		}
 		
 		public synchronized void updateReceived() {
@@ -224,6 +248,13 @@ public class ServerClientDemo
 		public synchronized void setStats( JetManCoreStats s ) {
 			stats = s;
 			updateUiState();
+		}
+		public synchronized void addTextMessage( TextMessage m ) {
+			textMessages.add(m);
+			Collections.sort(textMessages);
+			if( textMessages.size() > 6 ) {
+				textMessages = textMessages.subList(textMessages.size()-6, 6);
+			}
 		}
 		
 		public synchronized void pokeWatchdog() {
@@ -409,6 +440,8 @@ public class ServerClientDemo
 						c.setScene((Scene)m.payload);
 					} else if( m.payload instanceof JetManCoreStats ) {
 						c.setStats((JetManCoreStats)m.payload);
+					} else if( m.payload instanceof String ) {
+						c.addTextMessage(new TextMessage(System.currentTimeMillis(), (String)m.payload));
 					} else {
 						System.err.println("Unrecognized message payload: "+m.payload.getClass());
 					}

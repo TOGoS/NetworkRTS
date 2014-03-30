@@ -55,8 +55,12 @@ public class Message implements BitAddressRange, MessageSet
 		return create( targetBa, TBoundless.INSTANCE, type, BitAddressUtil.NO_ADDRESS, payload );
 	}
 	
+	public static Message create( long targetBa, MessageType type, long sourceAddress, Object payload ) {
+		return new Message( targetBa, targetBa, TBoundless.INSTANCE, type, sourceAddress, payload );
+	}
+	
 	public static Message create( NonTile target, MessageType type, long sourceAddress, Object payload ) {
-		return new Message( target.getMinBitAddress(), target.getMaxBitAddress(), target.getAabb(), type, sourceAddress, payload );
+		return new Message( target.getBitAddress(), target.getBitAddress(), target.getAabb(), type, sourceAddress, payload );
 	}
 	
 	@Override public long getMinBitAddress() { return minBitAddress; }

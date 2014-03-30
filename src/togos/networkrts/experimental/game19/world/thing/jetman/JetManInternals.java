@@ -151,7 +151,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 							// TODO: Send happy chat messages back to client
 							double cap = newFuelTank.getCapacity();
 							double delta = Math.min(cap - newFuelTank.contents.quantity, sci.contents.quantity);
-							System.err.println("Got "+delta+sci.contents.substance.unitOfMeasure.abbreviation+" of fuel, woohoo");
+							headInternals.sendToClient(nt.getBitAddress(), "Got "+delta+sci.contents.substance.unitOfMeasure.abbreviation+" of fuel, woohoo", updateContext);
 							newFuelTank = newFuelTank.add( delta );
 							itemNt = itemNt.withInternals(sci.add(-delta));
 						}
