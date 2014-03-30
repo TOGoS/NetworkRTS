@@ -135,15 +135,16 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 					break;
 				case INCOMING_ITEM:
 					// TODO: Take the NonTile itself and incorporate its momentum!
-					Object item = m.payload;
-					if( !(item instanceof NonTileInternals<?>) ) {
-						System.err.println("Item received is not a NonTileInternals!  Whatever shall we dooo?  :(");
+					BlargNonTile itemNt;
+					if( m.payload instanceof BlargNonTile ) {
+						itemNt = (BlargNonTile)m.payload;
+					} else {
+						System.err.println("Item received is not a BlargNonTile!  Whatever shall we dooo?  :(");
 						break;
 					}
-					@SuppressWarnings("unchecked")
-					NonTileInternals<? super BlargNonTile> nti = (NonTileInternals<? super BlargNonTile>)item;
+					NonTileInternals<? super BlargNonTile> nti = (NonTileInternals<? super BlargNonTile>)itemNt.internals;
 					if( nti instanceof SubstanceContainerInternals ) {
-						SubstanceContainerInternals sci = (SubstanceContainerInternals)item;
+						SubstanceContainerInternals sci = (SubstanceContainerInternals)nti;
 						if( sci.contents.substance.equals(newFuelTank.contents.substance) ) {
 							// Yay fuel!
 							// TODO: Only fill tank, leaving remaining
@@ -152,38 +153,35 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 							double delta = Math.min(cap - newFuelTank.contents.quantity, sci.contents.quantity);
 							System.err.println("Got "+delta+sci.contents.substance.unitOfMeasure.abbreviation+" of fuel, woohoo");
 							newFuelTank = newFuelTank.add( delta );
-							nti = sci = sci.add(-delta);
+							itemNt = itemNt.withInternals(sci.add(-delta));
 						}
 					} else {
-						System.err.println("Don't know what to do with "+item);
+						System.err.println("Don't know what to do with "+itemNt);
 					}
-					if( nti != null ) {
+					if( itemNt != null ) {
 						// Return the (possibly altered) item to the world
 						// TODO: Update to keep its old ID
 						// TODO: Toss to retain old momentum
-						updateContext.addNonTile( new BlargNonTile(0, time, nt.x + 1, nt.y, nt.vx + 0.01, nt.vy, nti) );
+						updateContext.addNonTile( itemNt );
 					}
 					break;
 				default: // Don't care
 				}
 			}
 		}
-		
+
+		final SubstanceContainerInternals _newFuelTank = newFuelTank;
 		world.nonTiles.forEachEntity(EntityRanges.create(nt.getAabb(), BitAddresses.PHYSINTERACT, BitAddressUtil.MAX_ADDRESS), new Visitor<NonTile>() {
 			@Override public void visit(NonTile v) {
 				if( v == nt ) {
 					// It's myself!
 				} else 	if( (v.getBitAddress() & BitAddresses.PICKUP) == BitAddresses.PICKUP ) {
-					// TODO: Pass it up if we just dropped it
-					// to avoid an infinite loop!
-					System.err.println("Found a pickup: "+v);
 					boolean pickItUp = false;
-					// TODO: And we have room for it; otherwise don't bother
 					if( v instanceof BlargNonTile ) {
 						BlargNonTile bnt = (BlargNonTile)v;
 						if( bnt.internals instanceof SubstanceContainerInternals ) {
 							SubstanceContainerInternals sci = (SubstanceContainerInternals)bnt.internals;
-							if( fuelTank.contents.substance.equals(sci.contents.substance) && sci.contents.quantity > 0 ) {
+							if( fuelTank.contents.substance.equals(sci.contents.substance) && sci.contents.quantity > 0 && !_newFuelTank.isFull() ) {
 								pickItUp = true;
 							}
 						}

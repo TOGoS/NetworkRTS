@@ -32,18 +32,14 @@ public class SubstanceContainerInternals implements NonTileInternals<BlargNonTil
 	}
 
 	@Override public NonTile update(BlargNonTile nt, long time, World world, MessageSet messages, NonTileUpdateContext updateContext) {
-		boolean pickedUp = false;
 		for( Message m : messages ) {
 			switch( m.type ) {
 			case REQUEST_PICKUP:
-				if( !pickedUp ) {
-					updateContext.sendMessage(Message.create(m.sourceAddress, MessageType.INCOMING_ITEM, this));
-					pickedUp = true;
-				}
+				updateContext.sendMessage(Message.create(m.sourceAddress, MessageType.INCOMING_ITEM, nt));
+				return null;
 			default: // Ignore everything else
 			}
 		}
-		if( pickedUp ) return null;
 		
 		double newX = nt.x, newY = nt.y, newVx = nt.vx, newVy = nt.vy;
 		
@@ -83,12 +79,16 @@ public class SubstanceContainerInternals implements NonTileInternals<BlargNonTil
 		return BitAddresses.PHYSINTERACT|BitAddresses.PICKUP;
 	}
 	@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }
-
+	
 	public double getCapacity() {
 		return type.getCapacity(contents.substance);
 	}
-
+	
 	public SubstanceContainerInternals add(double delta) {
 		return new SubstanceContainerInternals(type, new SubstanceQuantity(contents.substance, contents.quantity + delta));
+	}
+	
+	public boolean isFull() {
+		return contents.quantity == getCapacity();
 	}
 }
