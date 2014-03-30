@@ -35,8 +35,8 @@ public class BlargNonTile implements NonTile
 		return new BlargNonTile( id, referenceTime, x, y, 0, 0, behavior );
 	}
 	
-	public static BlargNonTile create( int id, long referenceTime, double x, double y, ImageHandle image, float diameter, NonTileInternals<? super BlargNonTile> behavior ) {
-		return create( id, referenceTime, x, y, behavior );
+	public static BlargNonTile create( int id, long referenceTime, double x, double y, ImageHandle image, float diameter, NonTileInternals<? super BlargNonTile> internals ) {
+		return create( id, referenceTime, x, y, internals );
 	}
 	
 	@Override public long getReferenceTime() { return referenceTime; }

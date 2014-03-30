@@ -29,6 +29,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 	);
 	
 	protected static final AABB aabb = new AABB(-3f/16, -7f/16, -3f/16, 3f/16, 8f/16, 3f/16);
+	// TODO: Replace with a gravitational field function on world or something
 	public static final double GRAVITY = 0.002;
 	
 	public static final int S_FACING_LEFT = 0x01;
@@ -119,14 +120,77 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 			newSuitHealth -= collisionDamage;
 		}
 		
+		int newThrustDir = thrustDir;
+		for( Message m : messages ) {
+			if( m.isApplicableTo(nt) ) {
+				switch( m.type ) {
+				case INCOMING_PACKET:
+					Object p = m.payload;
+					if( p instanceof Number ) {
+						int _wd = ((Number)p).intValue();
+						if( _wd >= -1 && _wd <= 7 ) {
+							newThrustDir = _wd;
+						}
+					}
+					break;
+				case INCOMING_ITEM:
+					// TODO: Take the NonTile itself and incorporate its momentum!
+					Object item = m.payload;
+					if( !(item instanceof NonTileInternals<?>) ) {
+						System.err.println("Item received is not a NonTileInternals!  Whatever shall we dooo?  :(");
+						break;
+					}
+					@SuppressWarnings("unchecked")
+					NonTileInternals<? super BlargNonTile> nti = (NonTileInternals<? super BlargNonTile>)item;
+					if( nti instanceof SubstanceContainerInternals ) {
+						SubstanceContainerInternals sci = (SubstanceContainerInternals)item;
+						if( sci.contents.substance.equals(newFuelTank.contents.substance) ) {
+							// Yay fuel!
+							// TODO: Only fill tank, leaving remaining
+							// TODO: Send happy chat messages back to client
+							double cap = newFuelTank.getCapacity();
+							double delta = Math.min(cap - newFuelTank.contents.quantity, sci.contents.quantity);
+							System.err.println("Got "+delta+sci.contents.substance.unitOfMeasure.abbreviation+" of fuel, woohoo");
+							newFuelTank = newFuelTank.add( delta );
+							nti = sci = sci.add(-delta);
+						}
+					} else {
+						System.err.println("Don't know what to do with "+item);
+					}
+					if( nti != null ) {
+						// Return the (possibly altered) item to the world
+						// TODO: Update to keep its old ID
+						// TODO: Toss to retain old momentum
+						updateContext.addNonTile( new BlargNonTile(0, time, nt.x + 1, nt.y, nt.vx + 0.01, nt.vy, nti) );
+					}
+					break;
+				default: // Don't care
+				}
+			}
+		}
+		
 		world.nonTiles.forEachEntity(EntityRanges.create(nt.getAabb(), BitAddresses.PHYSINTERACT, BitAddressUtil.MAX_ADDRESS), new Visitor<NonTile>() {
 			@Override public void visit(NonTile v) {
 				if( v == nt ) {
 					// It's myself!
 				} else 	if( (v.getBitAddress() & BitAddresses.PICKUP) == BitAddresses.PICKUP ) {
+					// TODO: Pass it up if we just dropped it
+					// to avoid an infinite loop!
 					System.err.println("Found a pickup: "+v);
+					boolean pickItUp = false;
 					// TODO: And we have room for it; otherwise don't bother
-					updateContext.sendMessage(Message.create(v, MessageType.REQUEST_PICKUP, nt.getBitAddress(), null));
+					if( v instanceof BlargNonTile ) {
+						BlargNonTile bnt = (BlargNonTile)v;
+						if( bnt.internals instanceof SubstanceContainerInternals ) {
+							SubstanceContainerInternals sci = (SubstanceContainerInternals)bnt.internals;
+							if( fuelTank.contents.substance.equals(sci.contents.substance) && sci.contents.quantity > 0 ) {
+								pickItUp = true;
+							}
+						}
+					}
+					if( pickItUp ) {
+						updateContext.sendMessage(Message.create(v, MessageType.REQUEST_PICKUP, nt.getBitAddress(), null));
+					}
 				}
 			}
 		});
@@ -150,40 +214,6 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 			return new BlargNonTile(nt.id, time, newX, newY, newVx, newVy, newHeadInternals);
 		}
 		
-		int newThrustDir = thrustDir;
-		for( Message m : messages ) {
-			if( m.isApplicableTo(nt) ) {
-				switch( m.type ) {
-				case INCOMING_PACKET:
-					Object p = m.payload;
-					if( p instanceof Number ) {
-						int _wd = ((Number)p).intValue();
-						if( _wd >= -1 && _wd <= 7 ) {
-							newThrustDir = _wd;
-						}
-					}
-					break;
-				case INCOMING_ITEM:
-					Object item = m.payload;
-					if( item instanceof SubstanceContainerInternals ) {
-						SubstanceContainerInternals sci = (SubstanceContainerInternals)item;
-						if( sci.contents.substance.equals(newFuelTank.contents.substance) ) {
-							// Yay fuel!
-							// TODO: Only fill tank, leaving remaining
-							// TODO: Send happy chat messages back to client
-							double cap = newFuelTank.getCapacity();
-							double delta = Math.min(cap - newFuelTank.contents.quantity, sci.contents.quantity);
-							System.err.println("Got "+delta+sci.contents.substance.unitOfMeasure.abbreviation+" of fuel, woohoo");
-							newFuelTank = newFuelTank.add( delta );
-						}
-					} else {
-						System.err.println("Don't know what to do with "+item);
-					}
-					break;
-				default: // Don't care
-				}
-			}
-		}
 		boolean facingLeft = checkStateFlag(S_FACING_LEFT);
 		boolean goUp = false, goForward =  false;
 		// Change our direction!
