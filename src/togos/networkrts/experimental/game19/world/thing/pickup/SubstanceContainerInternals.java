@@ -68,9 +68,7 @@ public class SubstanceContainerInternals implements NonTileInternals<BlargNonTil
 	}
 	
 	@Override public Icon getIcon() {
-		double contentVolume = contents.substance.unitVolume * contents.quantity;
-		double fullness = type.internalVolume/contentVolume;
-		int iconIdx = (int)Math.round(fullness * (type.icons.length-1));
+		int iconIdx = (int)Math.round(fullness() * (type.icons.length-1));
 		iconIdx = iconIdx < 0 ? 0 : iconIdx >= type.icons.length ? type.icons.length-1 : iconIdx;
 		return type.icons[iconIdx];
 	}
@@ -86,6 +84,10 @@ public class SubstanceContainerInternals implements NonTileInternals<BlargNonTil
 	
 	public SubstanceContainerInternals add(double delta) {
 		return new SubstanceContainerInternals(type, new SubstanceQuantity(contents.substance, contents.quantity + delta));
+	}
+	
+	public double fullness() {
+		return contents.quantity / getCapacity();
 	}
 	
 	public boolean isFull() {
