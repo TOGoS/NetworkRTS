@@ -14,6 +14,8 @@ import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.NonTileInternals;
 import togos.networkrts.experimental.game19.world.World;
+import togos.networkrts.experimental.game19.world.thing.Substances;
+import togos.networkrts.experimental.game19.world.thing.pickup.SubstanceContainerInternals;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.experimental.gameengine1.index.EntityRanges;
 import togos.networkrts.experimental.gameengine1.index.Visitor;
@@ -154,8 +156,19 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 					}
 					break;
 				case INCOMING_ITEM:
-					// TODO: something more interesting
-					System.err.println("Got an item, rad!");
+					Object item = m.payload;
+					if( item instanceof SubstanceContainerInternals ) {
+						SubstanceContainerInternals sci = (SubstanceContainerInternals)item;
+						if( sci.contents.substance == Substances.KEROSENE ) {
+							// Yay fuel!
+							// TODO: Only fill tank, leaving remaining
+							// TODO: Send happy chat messages back to client
+							System.err.println("Got fuel, woohoo");
+							newFuel += (float)sci.contents.quantity;
+						}
+					} else {
+						System.err.println("Don't know what to do with "+item);
+					}
 					break;
 				}
 			}

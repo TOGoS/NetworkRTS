@@ -15,8 +15,8 @@ import togos.networkrts.experimental.gameengine1.index.AABB;
 
 public class SubstanceContainerInternals implements NonTileInternals<BlargNonTile>
 {
-	protected final SubstanceContainerType type;
-	protected final SubstanceQuantity contents;
+	public final SubstanceContainerType type;
+	public final SubstanceQuantity contents;
 	
 	public SubstanceContainerInternals( SubstanceContainerType type, SubstanceQuantity contents ) {
 		this.type = type;
