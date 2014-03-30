@@ -16,6 +16,7 @@ import togos.networkrts.experimental.game19.world.NonTileInternals;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.thing.Substances;
 import togos.networkrts.experimental.game19.world.thing.pickup.SubstanceContainerInternals;
+import togos.networkrts.experimental.game19.world.thing.pickup.SubstanceContainerType;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.experimental.gameengine1.index.EntityRanges;
 import togos.networkrts.experimental.gameengine1.index.Visitor;
@@ -23,6 +24,10 @@ import togos.networkrts.util.BitAddressUtil;
 
 public class JetManInternals implements NonTileInternals<BlargNonTile>
 {
+	protected static final SubstanceContainerInternals DEFAULT_FUEL_TANK = SubstanceContainerInternals.filled(
+		new SubstanceContainerType("Jetman fuel tank", new Icon[]{}, null, 0, 0.2), Substances.KEROSENE
+	);
+	
 	protected static final AABB aabb = new AABB(-3f/16, -7f/16, -3f/16, 3f/16, 8f/16, 3f/16);
 	public static final double GRAVITY = 0.002;
 	
@@ -34,13 +39,15 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 	final int walkFrame;
 	final int thrustDir;
 	final int stateFlags;
-	final float suitHealth, fuel;
+	final float suitHealth;
+	final SubstanceContainerInternals fuelTank;
 	final JetManHeadInternals headInternals;
 	final JetManIcons icons;
 	
 	public JetManInternals(
 		int walkFrame, int thrustDir, int state,
-		float suitHealth, float fuel,
+		float suitHealth,
+		SubstanceContainerInternals fuelTank,
 		JetManHeadInternals headInternals,
 		JetManIcons icons
 	) {
@@ -48,7 +55,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		this.thrustDir = thrustDir;
 		this.stateFlags = state;
 		this.suitHealth = suitHealth;
-		this.fuel = fuel;
+		this.fuelTank = fuelTank;
 		this.headInternals = headInternals;
 		this.icons = icons;
 	}
@@ -60,13 +67,13 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 	public JetManCoreStats getStats() {
 		return new JetManCoreStats(
 			1  , suitHealth,
-			100, fuel,
+			(float)fuelTank.type.getCapacity(fuelTank.contents.substance), (float)fuelTank.contents.quantity,
 			JetManHeadInternals.MAX_HEALTH, headInternals.health,
 			JetManHeadInternals.MAX_BATTERY, headInternals.battery
 		);
 	}
 	public JetManInternals(long clientId, JetManIcons icons) {
-		this(0, -1, 0, 1, 100, new JetManHeadInternals(clientId, false, JetManHeadInternals.MAX_HEALTH, JetManHeadInternals.MAX_BATTERY, icons), icons);
+		this(0, -1, 0, 1, DEFAULT_FUEL_TANK, new JetManHeadInternals(clientId, false, JetManHeadInternals.MAX_HEALTH, JetManHeadInternals.MAX_BATTERY, icons), icons);
 	}
 	
 	public static NonTile createJetMan( long id, long uplinkBitAddress, JetManIcons icons ) {
@@ -82,7 +89,8 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		double newX = nt.x, newY = nt.y;
 		double newVx = nt.vx, newVy = nt.vy;
 		boolean feetOnGround = false;
-		float newSuitHealth = suitHealth, newFuel = fuel;
+		float newSuitHealth = suitHealth;
+		SubstanceContainerInternals newFuelTank = fuelTank;
 		
 		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID);
 		if( c != null ) {
@@ -159,12 +167,14 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 					Object item = m.payload;
 					if( item instanceof SubstanceContainerInternals ) {
 						SubstanceContainerInternals sci = (SubstanceContainerInternals)item;
-						if( sci.contents.substance == Substances.KEROSENE ) {
+						if( sci.contents.substance.equals(newFuelTank.contents.substance) ) {
 							// Yay fuel!
 							// TODO: Only fill tank, leaving remaining
 							// TODO: Send happy chat messages back to client
-							System.err.println("Got fuel, woohoo");
-							newFuel += (float)sci.contents.quantity;
+							double cap = newFuelTank.getCapacity();
+							double delta = Math.min(cap - newFuelTank.contents.quantity, sci.contents.quantity);
+							System.err.println("Got "+delta+sci.contents.substance.unitOfMeasure.abbreviation+" of fuel, woohoo");
+							newFuelTank = newFuelTank.add( delta );
 						}
 					} else {
 						System.err.println("Don't know what to do with "+item);
@@ -212,8 +222,8 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		}
 		
 		boolean jetForward = false, jetUp = false;
-		if( goUp && newFuel >= 0.01 ) {
-			newFuel -= 0.01;
+		if( goUp && newFuelTank.contents.quantity >= 0.01 ) {
+			newFuelTank = newFuelTank.add(-0.01);
 			newVy -= 0.002;
 			jetUp = true;
 		} else {
@@ -229,8 +239,8 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 				newVx *= 0.6;
 			}
 		} else {
-			if( goForward && newFuel >= 0.01 ) {
-				newFuel -= 0.01;
+			if( goForward && newFuelTank.contents.quantity >= 0.01 ) {
+				newFuelTank = newFuelTank.add(-0.01);
 				newVx += 0.003 * (facingLeft ? -1 : 1);
 				jetForward = true;
 			}
@@ -248,7 +258,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 			(feetOnGround ? S_FEET_ON_GROUND     : 0);
 		
 		return nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withInternals(
-			new JetManInternals(newWalkState, newThrustDir, stateFlags, newSuitHealth, newFuel, newHeadInternals, icons)
+			new JetManInternals(newWalkState, newThrustDir, stateFlags, newSuitHealth, newFuelTank, newHeadInternals, icons)
 		);
 	}
 	

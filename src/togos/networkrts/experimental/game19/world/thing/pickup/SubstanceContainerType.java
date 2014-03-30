@@ -1,6 +1,7 @@
 package togos.networkrts.experimental.game19.world.thing.pickup;
 
 import togos.networkrts.experimental.game19.scene.Icon;
+import togos.networkrts.experimental.game19.world.thing.Substance;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 
 public class SubstanceContainerType
@@ -23,5 +24,13 @@ public class SubstanceContainerType
 		this.relativePhysicalAabb = aabb;
 		this.emptyMass = mass;
 		this.internalVolume = volume;
+	}
+	
+	/**
+	 * Return the container's capacity in
+	 * the given substance's default units 
+	 */
+	public double getCapacity( Substance sub ) {
+		return internalVolume / sub.unitVolume;
 	}
 }
