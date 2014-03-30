@@ -1,6 +1,7 @@
 package togos.networkrts.experimental.game19.demo;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Frame;
@@ -96,7 +97,7 @@ public class ServerClientDemo
 			}
 		}
 		
-		int pixelsPerMeter = 16;
+		int pixelsPerMeter = 32;
 		
 		protected final Renderer renderer;
 		public SceneCanvas( ResourceContext resourceContext ) {
@@ -235,6 +236,7 @@ public class ServerClientDemo
 		public void startUi() {
 			final Frame f = new Frame("Game19 Render Demo");
 			f.add(sceneCanvas);
+			f.setExtendedState(f.getExtendedState()|Frame.MAXIMIZED_BOTH);
 			final Thread watchdogThread = new Thread() {
 				@Override public void run() {
 					while( !Thread.interrupted() ) {
