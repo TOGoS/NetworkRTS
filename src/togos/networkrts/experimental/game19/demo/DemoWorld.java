@@ -66,8 +66,7 @@ public class DemoWorld
 			SubstanceContainerType fuelCanType = new SubstanceContainerType(
 				"Fuel can", fuelCanIcons, fuelCanAabb, 1, 0.01
 			);
-			SubstanceQuantity fuelQuantity = Substances.fillVolume(Substances.KEROSENE, fuelCanType.internalVolume); 
-			fuelCanInternals = new SubstanceContainerInternals(fuelCanType, fuelQuantity);
+			fuelCanInternals = SubstanceContainerInternals.filled(fuelCanType, Substances.KEROSENE);
 		}
 		
 		int worldSizePower = 24;
@@ -94,9 +93,6 @@ public class DemoWorld
 		EntitySpatialTreeIndex<NonTile> nonTiles = new EntitySpatialTreeIndex<NonTile>();
 		
 		Random r = new Random();
-		//for( int i=0; i<100; ++i ) {
-		//	n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
-		//}
 		for( int i=0; i<10; ++i ) {
 			double sx = 0, sy = 0, dir = 0, rad = 8;
 			while( rad > 1 ) {
