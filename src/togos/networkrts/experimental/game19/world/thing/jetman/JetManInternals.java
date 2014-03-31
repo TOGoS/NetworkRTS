@@ -146,14 +146,16 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 					if( nti instanceof SubstanceContainerInternals ) {
 						SubstanceContainerInternals sci = (SubstanceContainerInternals)nti;
 						if( sci.contents.substance.equals(newFuelTank.contents.substance) ) {
-							// Yay fuel!
-							// TODO: Only fill tank, leaving remaining
-							// TODO: Send happy chat messages back to client
 							double cap = newFuelTank.getCapacity();
 							double delta = Math.min(cap - newFuelTank.contents.quantity, sci.contents.quantity);
-							headInternals.sendToClient(nt.getBitAddress(), String.format("Got %.2f%s of fuel.", delta, sci.contents.substance.unitOfMeasure.abbreviation), updateContext);
-							newFuelTank = newFuelTank.add( delta );
-							itemNt = itemNt.withInternals(sci.add(-delta));
+							if( delta != 0 ) {
+								headInternals.sendToClient(nt.getBitAddress(), String.format("Got %.2f%s of fuel.", delta, sci.contents.substance.unitOfMeasure.abbreviation), updateContext);
+								newFuelTank = newFuelTank.add( delta );
+								itemNt = itemNt.withInternals(sci.add(-delta));
+							} else {
+								System.err.println("Got 0kg of fuel.  Why were we even trying to pick this up?");
+								System.err.println("This probably indicates a bug somewhere.");
+							}
 						}
 					} else {
 						System.err.println("Don't know what to do with "+itemNt);

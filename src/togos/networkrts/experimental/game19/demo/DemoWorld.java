@@ -21,7 +21,6 @@ import togos.networkrts.experimental.game19.world.RSTUtil;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.beh.NoBehavior;
 import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
-import togos.networkrts.experimental.game19.world.thing.SubstanceQuantity;
 import togos.networkrts.experimental.game19.world.thing.Substances;
 import togos.networkrts.experimental.game19.world.thing.pickup.SubstanceContainerInternals;
 import togos.networkrts.experimental.game19.world.thing.pickup.SubstanceContainerType;
