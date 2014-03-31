@@ -6,17 +6,14 @@ import togos.networkrts.experimental.gameengine1.index.EntityRange;
 public class Messages
 {
 	public static MessageSet subsetApplicableTo(MessageSet s, EntityRange er) {
-		// Save some work for the simple case
-		if( s == MessageSet.EMPTY ) return s;
+		if( s.size() == 0 ) return s;
 		
 		AABB aabb = er.getAabb();
 		return s.subsetApplicableTo(aabb.minX, aabb.minY, aabb.maxX, aabb.maxY, er.getMinBitAddress(), er.getMaxBitAddress());
 	}
 	
 	public static boolean isApplicableTo(MessageSet s, EntityRange er) {
-		// Save some work for the simple case
-		if( s == MessageSet.EMPTY ) return false;
-		for( Message m : s ) {
+		if( s.size() != 0 ) for( Message m : s ) {
 			if( m.isApplicableTo(er) ) return true;
 		}
 		return false;

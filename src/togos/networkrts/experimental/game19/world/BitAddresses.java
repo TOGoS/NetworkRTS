@@ -41,8 +41,8 @@ public class BitAddresses
 	// rather than it being a flag
 	// In theory anything could be picked up if the picker-upper is big enough.
 	public static final long PICKUP       = 0x0004000000000000l; // May be picked up
-	public static final long UPPHASE1     = 0x0008000000000000l;
-	public static final long UPPHASE2     = 0x0008000000000000l;
+	public static final long UPPHASE1     = 0x0010000000000000l;
+	public static final long UPPHASE2     = 0x0020000000000000l;
 	
 	public static final int  TYPE_SHIFT   = 44;
 	public static final long TYPE_MASK    = 0x0000F00000000000l;
@@ -100,5 +100,9 @@ public class BitAddresses
 		case 2: return UPPHASE2;
 		default: throw new RuntimeException("Invalid phase: "+phase);
 		}
+	}
+	
+	public static boolean containsFlag( long address, long flag ) {
+		return (address & flag) == flag;
 	}
 }

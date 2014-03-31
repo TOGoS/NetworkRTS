@@ -77,7 +77,7 @@ public class Simulation implements AutoEventUpdatable2<Message>
 	protected boolean needsUpdate( long time, int phase, EntityAggregation er, MessageSet messages ) {
 		return
 			(phase == 2 && Messages.isApplicableTo(messages, er)) ||
-			(er.getNextAutoUpdateTime() <= time);// && BitAddressUtil.rangeContains(er, BitAddresses.phaseUpdateFlag(phase)));
+			(er.getNextAutoUpdateTime() <= time && BitAddresses.containsFlag(er.getMaxBitAddress(), BitAddresses.phaseUpdateFlag(phase)));
 	}
 	
 	protected EntitySpatialTreeIndex<NonTile> updateNonTiles( final World w, final long time, final MessageSet incomingMessages, final UpdateContext updateContext, final int phase ) {
@@ -117,6 +117,8 @@ public class Simulation implements AutoEventUpdatable2<Message>
 	}
 	
 	protected void update( long time, MessageSet incomingMessages ) {
+		System.err.println("Updating to "+time);
+		
 		assert time < Long.MAX_VALUE;
 		
 		if( needsUpdate(time, 1, world, MessageSet.EMPTY) ) {
@@ -138,8 +140,7 @@ public class Simulation implements AutoEventUpdatable2<Message>
 	}
 	
 	@Override public long getNextAutoUpdateTime() {
-		// TODO: Trust the world!
-		return time+1; //world.getNextAutoUpdateTime();
+		return world.getNextAutoUpdateTime();
 	}
 	
 	@Override public long getCurrentTime() { return time; }

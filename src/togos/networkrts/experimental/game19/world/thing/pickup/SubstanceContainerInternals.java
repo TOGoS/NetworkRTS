@@ -21,16 +21,22 @@ public class SubstanceContainerInternals implements NonTileInternals<BlargNonTil
 {
 	public final SubstanceContainerType type;
 	public final SubstanceQuantity contents;
+	public final long nextAutoUpdateTime;
 	
-	public SubstanceContainerInternals( SubstanceContainerType type, SubstanceQuantity contents ) {
+	protected SubstanceContainerInternals( SubstanceContainerType type, SubstanceQuantity contents, long nextAut ) {
 		this.type = type;
 		this.contents = contents;
+		this.nextAutoUpdateTime = nextAut;
 	}
 	
 	public static SubstanceContainerInternals filled( SubstanceContainerType type, Substance filler ) {
-		return new SubstanceContainerInternals(type, new SubstanceQuantity(filler, type.getCapacity(filler)));
+		return new SubstanceContainerInternals(type, new SubstanceQuantity(filler, type.getCapacity(filler)), 0);
 	}
-
+	
+	protected SubstanceContainerInternals withNextAutoUpdateTime( long aut ) {
+		return aut == this.nextAutoUpdateTime ? this : new SubstanceContainerInternals(type, contents, aut);
+	}
+	
 	@Override public NonTile update(BlargNonTile nt, long time, World world, MessageSet messages, NonTileUpdateContext updateContext) {
 		for( Message m : messages ) {
 			if( nt.isSpecificallyAddressedBy(m) ) {
@@ -45,26 +51,28 @@ public class SubstanceContainerInternals implements NonTileInternals<BlargNonTil
 		
 		double newX = nt.x, newY = nt.y, newVx = nt.vx, newVy = nt.vy;
 		
-		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID);
-		boolean onGround = false;
-		if( c != null ) {
-			if( c.correctionX != 0 && Math.abs(c.correctionX) < Math.abs(c.correctionY) ) {
-				newX += c.correctionX;
-				newVx *= -0.5;
-			} else {
-				newY += c.correctionY;
-				newVy *= -0.5;
-				if( c.correctionY < 0 && Math.abs(newVy) < 0.1 ) {
-					newVy = 0;
-					newVx *= 0.9;
-					if( Math.abs(newVx) < 0.1 ) newVx = 0;
-					onGround = true;
+		if( nextAutoUpdateTime <= time ) {
+			BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID);
+			boolean onGround = false;
+			if( c != null ) {
+				if( c.correctionX != 0 && Math.abs(c.correctionX) < Math.abs(c.correctionY) ) {
+					newX += c.correctionX;
+					newVx *= -0.5;
+				} else {
+					newY += c.correctionY;
+					newVy *= -0.5;
+					if( c.correctionY < 0 && Math.abs(newVy) < 0.1 ) {
+						newVy = 0;
+						newVx *= 0.9;
+						if( Math.abs(newVx) < 0.1 ) newVx = 0;
+						onGround = true;
+					}
 				}
 			}
+			
+			if( !onGround ) newVy += JetManInternals.GRAVITY;
+			nt = nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withInternals(withNextAutoUpdateTime(onGround ? Long.MAX_VALUE : time+1));
 		}
-		
-		if( !onGround ) newVy += JetManInternals.GRAVITY;
-		nt = nt.withPositionAndVelocity(time, newX, newY, newVx, newVy);
 		
 		return nt;
 	}
@@ -76,16 +84,21 @@ public class SubstanceContainerInternals implements NonTileInternals<BlargNonTil
 	}
 	@Override public AABB getRelativePhysicalAabb() { return type.relativePhysicalAabb; }
 	@Override public long getNonTileAddressFlags() {
-		return BitAddresses.PHYSINTERACT|BitAddresses.PICKUP;
+		return
+			BitAddresses.PHYSINTERACT |
+			BitAddresses.PICKUP |
+			BitAddresses.UPPHASE2;
 	}
-	@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }
+	@Override public long getNextAutoUpdateTime() {
+		return nextAutoUpdateTime;
+	}
 	
 	public double getCapacity() {
 		return type.getCapacity(contents.substance);
 	}
 	
 	public SubstanceContainerInternals add(double delta) {
-		return new SubstanceContainerInternals(type, new SubstanceQuantity(contents.substance, contents.quantity + delta));
+		return new SubstanceContainerInternals(type, new SubstanceQuantity(contents.substance, contents.quantity + delta), 0);
 	}
 	
 	public double fullness() {

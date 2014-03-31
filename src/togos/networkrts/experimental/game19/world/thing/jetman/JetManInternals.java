@@ -36,6 +36,8 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 	public static final int S_BACK_THRUSTER_ON = 0x02;
 	public static final int S_BOTTOM_THRUSTER_ON = 0x04;
 	public static final int S_FEET_ON_GROUND = 0x8;
+	public static final int S_STOPPED = 0x10;
+	public static final int S_CONSCIOUS = 0x20;
 	
 	final int walkFrame;
 	final int thrustDir;
@@ -77,7 +79,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		);
 	}
 	public JetManInternals(long clientId, JetManIcons icons) {
-		this(0, -1, 0, 1, DEFAULT_FUEL_TANK, new JetManHeadInternals(clientId, false, JetManHeadInternals.MAX_HEALTH, JetManHeadInternals.MAX_BATTERY, icons), icons, 0);
+		this(0, -1, S_CONSCIOUS, 1, DEFAULT_FUEL_TANK, new JetManHeadInternals(clientId, false, JetManHeadInternals.MAX_HEALTH, JetManHeadInternals.MAX_BATTERY, icons), icons, 0);
 	}
 	
 	public static NonTile createJetMan( long id, long uplinkBitAddress, JetManIcons icons ) {
@@ -89,7 +91,12 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		MessageSet messages, final NonTileUpdateContext updateContext
 	) {
 		if( time < getNextAutoUpdateTime() && messages.size() == 0 ) return nt;
-		headInternals.sendUpdate(nt, time, world, messages, updateContext, getStats());
+		
+		boolean conscious = checkStateFlag(S_CONSCIOUS);
+		
+		if( conscious ) {
+			headInternals.sendUpdate(nt, time, world, messages, updateContext, getStats());
+		}
 		
 		double newX = nt.x, newY = nt.y;
 		double newVx = nt.vx, newVy = nt.vy;
@@ -105,7 +112,11 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 				newX += c.correctionX;
 				newVx *= -0.5;
 			} else {
-				newY += c.correctionY;
+				// For now I'm embedding the dude's feet slightly in the ground
+				// so that next frame he still knows he's standing on it.
+				// An alternative (probably the right way) would be to detect
+				// ground under his feet separately from collision detection.
+				newY += c.correctionY + 1d/2048;
 				newVy *= -0.5;
 				if( c.correctionY < 0 && Math.abs(newVy) < 0.1 ) {
 					newVy = 0;
@@ -135,6 +146,8 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 						if( _wd >= -1 && _wd <= 7 ) {
 							newThrustDir = _wd;
 						}
+					} else if( p instanceof Boolean ) {
+						conscious = ((Boolean)p).booleanValue();
 					}
 					break;
 				case INCOMING_ITEM:
@@ -261,7 +274,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 			newFuelTank = newFuelTank.add(-0.01);
 			newVy -= 0.002;
 			jetUp = true;
-		} else {
+		} else if( !feetOnGround ) {
 			newVy += GRAVITY;
 		}
 		if( feetOnGround ) {
@@ -286,15 +299,24 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 			newWalkState = 0;
 		}
 		
+		System.err.println("JetMan state: v="+newVx+","+newVy+" feet on ground="+feetOnGround+" conscious="+conscious);
+		
 		int stateFlags =
 			(facingLeft   ? S_FACING_LEFT        : 0) |
 			(jetUp        ? S_BOTTOM_THRUSTER_ON : 0) |
 			(jetForward   ? S_BACK_THRUSTER_ON   : 0) |
-			(feetOnGround ? S_FEET_ON_GROUND     : 0);
+			(feetOnGround ? S_FEET_ON_GROUND     : 0) |
+			(newVx == 0 && newVy == 0 && feetOnGround ?
+			                S_STOPPED            : 0) |
+			(conscious    ? S_CONSCIOUS          : 0);
 		
 		return nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withInternals(
 			new JetManInternals(newWalkState, newThrustDir, stateFlags, newSuitHealth, newFuelTank, newHeadInternals, icons, time)
 		);
+	}
+	
+	protected boolean isResting() {
+		return checkStateFlag(S_STOPPED) && !checkStateFlag(S_CONSCIOUS);  
 	}
 	
 	@Override public Icon getIcon() {
@@ -315,10 +337,14 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 	
 	@Override public AABB getRelativePhysicalAabb() { return aabb; }
 	@Override public long getNextAutoUpdateTime() {
-		// TODO: If not moving, set the RESTING flag instead
-		return lastUpdateTime + 1;
+		if( isResting() ) {
+			System.err.println("JetMan is resting!");
+		}
+		return isResting() ? Long.MAX_VALUE : lastUpdateTime + 1;
 	}
 	@Override public long getNonTileAddressFlags() {
-		return BitAddresses.PHYSINTERACT;
+		return
+			BitAddresses.PHYSINTERACT |
+			(isResting() ? BitAddresses.RESTING : BitAddresses.UPPHASE2);
 	}
 }

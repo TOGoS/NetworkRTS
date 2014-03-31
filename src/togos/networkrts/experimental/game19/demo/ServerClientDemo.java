@@ -321,6 +321,12 @@ public class ServerClientDemo
 				switch( kevt.getKeyCode() ) {
 				case KeyEvent.VK_EQUALS: c.sceneCanvas.zoomMore(); break;
 				case KeyEvent.VK_MINUS: c.sceneCanvas.zoomLess(); break;
+				case KeyEvent.VK_C:
+					messageQueue.add(Message.create(playerBa, MessageType.INCOMING_PACKET, clientBa, Boolean.TRUE));
+					break;
+				case KeyEvent.VK_U:
+					messageQueue.add(Message.create(playerBa, MessageType.INCOMING_PACKET, clientBa, Boolean.FALSE));
+					break;
 				}
 			}
 		});

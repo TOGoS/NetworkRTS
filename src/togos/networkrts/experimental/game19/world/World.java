@@ -46,11 +46,11 @@ public class World implements EntityAggregation
 	
 	// Could limit this to union of RST and node trees.
 	@Override public AABB getAabb() { return AABB.BOUNDLESS; }
-
+	
 	@Override public long getMinBitAddress() {
 		return BitAddressUtil.minAddress(rst.getMinBitAddress(), nonTiles.getMinBitAddress());
 	}
-
+	
 	@Override public long getMaxBitAddress() {
 		return BitAddressUtil.maxAddress(rst.getMaxBitAddress(), nonTiles.getMaxBitAddress());
 	}
