@@ -71,14 +71,6 @@ public class Simulation implements AutoEventUpdatable2<Message>
 		return world;
 	}
 	
-	protected NonTile updateNonTile( NonTile nt, long time, World w, MessageSet incomingMessages, NonTileUpdateContext updateContext, int phase ) {
-		switch(phase) {
-		case 1: return nt.withUpdatedPosition(time);
-		case 2: return nt.update( time, w, incomingMessages, updateContext );
-		}
-		throw new RuntimeException("Invalid phase "+phase);
-	}
-	
 	protected EntitySpatialTreeIndex<NonTile> updateNonTiles( final World w, final long time, final MessageSet incomingMessages, final UpdateContext updateContext, final int phase ) {
 		return world.nonTiles.updateEntities(EntityRanges.BOUNDLESS, new EntityUpdater<NonTile>() {
 			// TODO: this is very unoptimized
@@ -89,9 +81,8 @@ public class Simulation implements AutoEventUpdatable2<Message>
 			NNTLNonTileUpdateContext nntlntuc;
 			
 			@Override public NonTile update(NonTile nt, Collection<NonTile> generatedNonTiles) {
-				return updateNonTile(
-					nt, time, w, incomingMessages,
-					NNTLNonTileUpdateContext.get(nntlntuc, updateContext, generatedNonTiles), phase);
+				return nt.update( time, phase, w, incomingMessages,
+					NNTLNonTileUpdateContext.get(nntlntuc, updateContext, generatedNonTiles));
 			}
 		});
 	}

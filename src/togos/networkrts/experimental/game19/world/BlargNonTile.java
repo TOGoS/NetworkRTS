@@ -84,7 +84,7 @@ public class BlargNonTile implements NonTile
 	
 	// This might nt need to be part of the interface, since
 	// withPositionAndVelocity exists
-	@Override public BlargNonTile withUpdatedPosition(long newTime) {
+	protected BlargNonTile withUpdatedPosition(long newTime) {
 		if( newTime == referenceTime || (vx == 0 && vy == 0) ) return this;
 		
 		double interval = newTime-referenceTime;
@@ -92,8 +92,13 @@ public class BlargNonTile implements NonTile
 	}
 	
 	@Override public NonTile update(
-		long time, World w, MessageSet incomingMessages, NonTileUpdateContext updateContext
+		long time, int phase, World w, MessageSet incomingMessages, NonTileUpdateContext updateContext
 	) {
-		return internals.update(this, time, w, incomingMessages, updateContext);
+		switch(phase) {
+		case 1: return withUpdatedPosition(time);
+		case 2: return internals.update(this, time, w, incomingMessages, updateContext);
+		default:
+			throw new RuntimeException("Unsupported update phase: "+phase);
+		}
 	}
 }
