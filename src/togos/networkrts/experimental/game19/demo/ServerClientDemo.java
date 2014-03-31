@@ -375,7 +375,8 @@ public class ServerClientDemo
 				
 				int dir = dir(dirX, dirY);
 				if( dir != oldDir ) {
-					messageQueue.add(Message.create(playerBa, MessageType.INCOMING_PACKET, Integer.valueOf(dir)));
+					Message m = Message.create(playerBa, MessageType.INCOMING_PACKET, Integer.valueOf(dir));
+					messageQueue.add(m);
 					oldDir = dir;
 				}
 			}

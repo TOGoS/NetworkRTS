@@ -1,9 +1,9 @@
 package togos.networkrts.experimental.game19.sim;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import togos.networkrts.experimental.game19.world.ArrayMessageSet;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.MessageSet;
@@ -19,27 +19,6 @@ import togos.networkrts.experimental.gensim.AutoEventUpdatable2;
  */
 public class Simulation implements AutoEventUpdatable2<Message>
 {
-	static class ArrayMessageSet extends ArrayList<Message> implements MessageSet, MessageSender
-	{
-		private static final long serialVersionUID = 1L;
-		
-		public static final MessageSet getMessageSet( Collection<Message> messages ) {
-			return messages.size() == 0 ? MessageSet.EMPTY : new ArrayMessageSet(messages);
-		}
-		
-		public ArrayMessageSet() { super(); }
-		public ArrayMessageSet(Collection<Message> m) { super(m); }
-		
-		@Override public MessageSet subsetApplicableTo( double minX, double minY, double maxX, double maxY, long minBitAddress, long maxBitAddress ) {
-			// TODO?
-			return this;
-		}
-		
-		@Override public synchronized void sendMessage( Message m ) {
-			add(m);
-		}
-	}
-	
 	static class NNTLNonTileUpdateContext implements NonTileUpdateContext {
 		protected final Collection<NonTile> nonTileList;
 		protected final UpdateContext updateContext;

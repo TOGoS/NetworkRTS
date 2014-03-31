@@ -89,6 +89,7 @@ public class BlargNonTile implements NonTile
 	@Override public NonTile update(
 		long time, World w, MessageSet incomingMessages, NonTileUpdateContext updateContext
 	) {
+		incomingMessages = Messages.subsetApplicableTo(incomingMessages, this);
 		return internals.update(this, time, w, incomingMessages, updateContext);
 	}
 }

@@ -33,6 +33,9 @@ public class Message implements BitAddressRange, MessageSet
 		this.type = type;
 		this.sourceAddress = sourceAddress;
 		this.payload = payload;
+		if( (minBa & 0xFFFF000000000000l) == 0x0005000000000000l) {
+			//System.err.println("WAT");
+		}
 	}
 	
 	public static Message create( long minBa, long maxBa, MessageType type, long sourceAddress, Object payload ) {
