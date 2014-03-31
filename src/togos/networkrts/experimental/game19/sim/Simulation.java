@@ -90,23 +90,40 @@ public class Simulation implements AutoEventUpdatable2<Message>
 	protected void update( long time, MessageSet incomingMessages ) {
 		assert time < Long.MAX_VALUE;
 		
-		do {
+		{
 			SimUpdateContext updateContext = new SimUpdateContext();
+			
+			// Phase 1
+			world = new World(
+				world.rst, world.rstSizePower,
+				updateNonTiles(world, time, MessageSet.EMPTY, updateContext, 1),
+				world.background
+			);
+			
+			// Phase 2, iteration 0
 			int rstSize = 1<<world.rstSizePower;
 			world = new World(
 				world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, incomingMessages, updateContext ),
 				world.rstSizePower,
-				updateNonTiles(world, time, MessageSet.EMPTY, updateContext, 1),
-				world.background
-			);
-			world = new World(
-				world.rst, world.rstSizePower,
 				updateNonTiles(world, time, incomingMessages, updateContext, 2),
 				world.background
 			);
 			incomingMessages = updateContext.newMessages;
 			this.time = time;
-		} while( incomingMessages.size() > 0 );
+		}
+		
+		// Repeat phase 2 until internal messages stop 
+		while( incomingMessages.size() > 0 ) {
+			SimUpdateContext updateContext = new SimUpdateContext();
+			int rstSize = 1<<world.rstSizePower;
+			world = new World(
+				world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, incomingMessages, updateContext ),
+				world.rstSizePower,
+				updateNonTiles(world, time, incomingMessages, updateContext, 2),
+				world.background
+			);
+			incomingMessages = updateContext.newMessages;
+		}
 	}
 	
 	public Simulation update( long time, Collection<Message> events ) {
@@ -115,6 +132,7 @@ public class Simulation implements AutoEventUpdatable2<Message>
 	}
 
 	@Override public long getNextAutoUpdateTime() {
+		// TODO: Trust the world!
 		return time+1; //world.getNextAutoUpdateTime();
 	}
 	
