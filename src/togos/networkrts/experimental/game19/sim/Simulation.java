@@ -7,8 +7,11 @@ import togos.networkrts.experimental.game19.world.ArrayMessageSet;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.MessageSet;
+import togos.networkrts.experimental.game19.world.Messages;
 import togos.networkrts.experimental.game19.world.NonTile;
+import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.experimental.game19.world.World;
+import togos.networkrts.experimental.gameengine1.index.EntityAggregation;
 import togos.networkrts.experimental.gameengine1.index.EntityRanges;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
 import togos.networkrts.experimental.gameengine1.index.EntityUpdater;
@@ -71,6 +74,12 @@ public class Simulation implements AutoEventUpdatable2<Message>
 		return world;
 	}
 	
+	protected boolean needsUpdate( long time, int phase, EntityAggregation er, MessageSet messages ) {
+		return
+			(phase == 2 && Messages.isApplicableTo(messages, er)) ||
+			(er.getNextAutoUpdateTime() <= time);// && BitAddressUtil.rangeContains(er, BitAddresses.phaseUpdateFlag(phase)));
+	}
+	
 	protected EntitySpatialTreeIndex<NonTile> updateNonTiles( final World w, final long time, final MessageSet incomingMessages, final UpdateContext updateContext, final int phase ) {
 		return world.nonTiles.updateEntities(EntityRanges.BOUNDLESS, new EntityUpdater<NonTile>() {
 			// TODO: this is very unoptimized
@@ -87,42 +96,39 @@ public class Simulation implements AutoEventUpdatable2<Message>
 		});
 	}
 	
+	protected World update( long time, int phase, World world, MessageSet incomingMessages, SimUpdateContext updateContext ) {
+		// Update RST when phase = 2
+		RSTNode rst;
+		int rstSizePower;
+		if( phase == 2 ) {
+			int rstSize = 1<<world.rstSizePower;
+			rst = world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, incomingMessages, updateContext );
+			rstSizePower = world.rstSizePower;
+		} else {
+			rst = world.rst;
+			rstSizePower = world.rstSizePower;
+		}
+		
+		return new World(
+			rst, rstSizePower,
+			updateNonTiles(world, time, incomingMessages, updateContext, phase),
+			world.background
+		);
+	}
+	
 	protected void update( long time, MessageSet incomingMessages ) {
 		assert time < Long.MAX_VALUE;
 		
-		{
+		if( needsUpdate(time, 1, world, MessageSet.EMPTY) ) {
 			SimUpdateContext updateContext = new SimUpdateContext();
-			
-			// Phase 1
-			world = new World(
-				world.rst, world.rstSizePower,
-				updateNonTiles(world, time, MessageSet.EMPTY, updateContext, 1),
-				world.background
-			);
-			
-			// Phase 2, iteration 0
-			int rstSize = 1<<world.rstSizePower;
-			world = new World(
-				world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, incomingMessages, updateContext ),
-				world.rstSizePower,
-				updateNonTiles(world, time, incomingMessages, updateContext, 2),
-				world.background
-			);
+			world = update(time, 1, world, MessageSet.EMPTY, updateContext);
+			incomingMessages = Messages.union(incomingMessages, updateContext.newMessages);
+		}
+		while( needsUpdate(time, 2, world, incomingMessages) ) {
+			SimUpdateContext updateContext = new SimUpdateContext();
+			world = update(time, 2, world, incomingMessages, updateContext);
 			incomingMessages = updateContext.newMessages;
 			this.time = time;
-		}
-		
-		// Repeat phase 2 until internal messages stop 
-		while( incomingMessages.size() > 0 ) {
-			SimUpdateContext updateContext = new SimUpdateContext();
-			int rstSize = 1<<world.rstSizePower;
-			world = new World(
-				world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, incomingMessages, updateContext ),
-				world.rstSizePower,
-				updateNonTiles(world, time, incomingMessages, updateContext, 2),
-				world.background
-			);
-			incomingMessages = updateContext.newMessages;
 		}
 	}
 	
@@ -130,7 +136,7 @@ public class Simulation implements AutoEventUpdatable2<Message>
 		update( time, ArrayMessageSet.getMessageSet(events) );
 		return this;
 	}
-
+	
 	@Override public long getNextAutoUpdateTime() {
 		// TODO: Trust the world!
 		return time+1; //world.getNextAutoUpdateTime();
