@@ -20,20 +20,20 @@ public class ArrayMessageSet extends ArrayList<Message> implements MessageSet, M
 	
 	@Override public MessageSet subsetApplicableTo( double minX, double minY, double maxX, double maxY, long minBitAddress, long maxBitAddress ) {
 		int total = size();
-		for( int i=0; i<total; ++i ) {
-			Message m = get(i);
+		int applicable = 0;
+		for( Message m : this ) {
 			if( m.targetShape.rectIntersection(minX, minY, maxX, maxY) == RectIntersector.INCLUDES_NONE ) continue;
 			if( !BitAddressUtil.rangesIntersect(m.minBitAddress, m.maxBitAddress, minBitAddress, maxBitAddress) ) continue;
-			
-			ArrayMessageSet newMs = new ArrayMessageSet();
+			++applicable;
+		}
+		if( applicable == 0 ) return MessageSet.EMPTY;
+		if( applicable == total ) return this;
+		
+		ArrayMessageSet newMs = new ArrayMessageSet();
+		for( Message m : this ) {
+			if( m.targetShape.rectIntersection(minX, minY, maxX, maxY) == RectIntersector.INCLUDES_NONE ) continue;
+			if( !BitAddressUtil.rangesIntersect(m.minBitAddress, m.maxBitAddress, minBitAddress, maxBitAddress) ) continue;
 			newMs.add(m);
-			for( int j=i+1; j<total; ++j ) {
-				m = get(j);
-				if( m.targetShape.rectIntersection(minX, minY, maxX, maxY) == RectIntersector.INCLUDES_NONE ) continue;
-				if( m.minBitAddress > maxBitAddress || m.maxBitAddress < minBitAddress ) continue;
-				newMs.add(m);
-			}
-			return newMs;
 		}
 		return MessageSet.EMPTY;
 	}
