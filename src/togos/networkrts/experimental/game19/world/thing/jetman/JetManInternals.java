@@ -44,13 +44,15 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 	final SubstanceContainerInternals fuelTank;
 	final JetManHeadInternals headInternals;
 	final JetManIcons icons;
+	final long lastUpdateTime;
 	
 	public JetManInternals(
 		int walkFrame, int thrustDir, int state,
 		float suitHealth,
 		SubstanceContainerInternals fuelTank,
 		JetManHeadInternals headInternals,
-		JetManIcons icons
+		JetManIcons icons,
+		long lastUpdateTime
 	) {
 		this.walkFrame = walkFrame;
 		this.thrustDir = thrustDir;
@@ -59,6 +61,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		this.fuelTank = fuelTank;
 		this.headInternals = headInternals;
 		this.icons = icons;
+		this.lastUpdateTime = lastUpdateTime;
 	}
 	
 	public boolean checkStateFlag(int flag) {
@@ -74,7 +77,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		);
 	}
 	public JetManInternals(long clientId, JetManIcons icons) {
-		this(0, -1, 0, 1, DEFAULT_FUEL_TANK, new JetManHeadInternals(clientId, false, JetManHeadInternals.MAX_HEALTH, JetManHeadInternals.MAX_BATTERY, icons), icons);
+		this(0, -1, 0, 1, DEFAULT_FUEL_TANK, new JetManHeadInternals(clientId, false, JetManHeadInternals.MAX_HEALTH, JetManHeadInternals.MAX_BATTERY, icons), icons, 0);
 	}
 	
 	public static NonTile createJetMan( long id, long uplinkBitAddress, JetManIcons icons ) {
@@ -85,6 +88,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		final BlargNonTile nt, long time, final World world,
 		MessageSet messages, final NonTileUpdateContext updateContext
 	) {
+		if( time < getNextAutoUpdateTime() && messages.size() == 0 ) return nt;
 		headInternals.sendUpdate(nt, time, world, messages, updateContext, getStats());
 		
 		double newX = nt.x, newY = nt.y;
@@ -122,7 +126,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		
 		int newThrustDir = thrustDir;
 		for( Message m : messages ) {
-			if( m.isApplicableTo(nt) ) {
+			if( nt.isSpecificallyAddressedBy(m) ) {
 				switch( m.type ) {
 				case INCOMING_PACKET:
 					Object p = m.payload;
@@ -289,7 +293,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 			(feetOnGround ? S_FEET_ON_GROUND     : 0);
 		
 		return nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withInternals(
-			new JetManInternals(newWalkState, newThrustDir, stateFlags, newSuitHealth, newFuelTank, newHeadInternals, icons)
+			new JetManInternals(newWalkState, newThrustDir, stateFlags, newSuitHealth, newFuelTank, newHeadInternals, icons, time)
 		);
 	}
 	
@@ -310,7 +314,10 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 	}
 	
 	@Override public AABB getRelativePhysicalAabb() { return aabb; }
-	@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }
+	@Override public long getNextAutoUpdateTime() {
+		// TODO: If not moving, set the RESTING flag instead
+		return lastUpdateTime + 1;
+	}
 	@Override public long getNonTileAddressFlags() {
 		return BitAddresses.PHYSINTERACT;
 	}

@@ -5,9 +5,9 @@ import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.BlargNonTile;
+import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
-import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.NonTileInternals;
@@ -33,11 +33,13 @@ public class SubstanceContainerInternals implements NonTileInternals<BlargNonTil
 
 	@Override public NonTile update(BlargNonTile nt, long time, World world, MessageSet messages, NonTileUpdateContext updateContext) {
 		for( Message m : messages ) {
-			switch( m.type ) {
-			case REQUEST_PICKUP:
-				updateContext.sendMessage(Message.create(m.sourceAddress, MessageType.INCOMING_ITEM, nt));
-				return null;
-			default: // Ignore everything else
+			if( nt.isSpecificallyAddressedBy(m) ) {
+				switch( m.type ) {
+				case REQUEST_PICKUP:
+					updateContext.sendMessage(Message.create(m.sourceAddress, MessageType.INCOMING_ITEM, nt));
+					return null;
+				default: // Ignore everything else
+				}
 			}
 		}
 		

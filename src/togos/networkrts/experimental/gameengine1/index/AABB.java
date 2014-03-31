@@ -77,4 +77,11 @@ public class AABB implements RectIntersector
 			intersects(x, y, minZ, x+w, y+h, maxZ) ? INCLUDES_SOME :
 			INCLUDES_NONE;
 	}
+	
+	public String toString() {
+		return String.format(
+			"AABB (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f)",
+			minX, minY, minZ, maxX, maxY, maxZ
+		);
+	}
 }

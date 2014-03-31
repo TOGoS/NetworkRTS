@@ -326,7 +326,7 @@ public class ServerClientDemo
 		});
 		c.sceneCanvas.addKeyListener(new KeyListener() {
 			boolean[] keysDown = new boolean[8];
-			int oldDir = -2;
+			int oldDir = -2; // Unknown!
 			
 			protected boolean dkd( int dir ) {
 				return keysDown[dir] || keysDown[dir+4];
@@ -373,9 +373,14 @@ public class ServerClientDemo
 					dirY = 0;
 				}
 				
+				// TODO: On Linux, you'll rapidly switch between some key being pressed
+				// and not pressed while it's held down.
+				// keyReleased will often be followed immediately by keyPressed.
+				// Find some way to ignore those.
+				
 				int dir = dir(dirX, dirY);
 				if( dir != oldDir ) {
-					Message m = Message.create(playerBa, MessageType.INCOMING_PACKET, Integer.valueOf(dir));
+					Message m = Message.create(playerBa, MessageType.INCOMING_PACKET, clientBa, Integer.valueOf(dir));
 					messageQueue.add(m);
 					oldDir = dir;
 				}

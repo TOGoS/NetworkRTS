@@ -28,6 +28,13 @@ public class ArrayMessageSet extends ArrayList<Message> implements MessageSet, M
 		}
 		if( applicable == 0 ) return MessageSet.EMPTY;
 		if( applicable == total ) return this;
+		if( applicable == 1 ) {
+			for( Message m : this ) {
+				if( m.targetShape.rectIntersection(minX, minY, maxX, maxY) == RectIntersector.INCLUDES_NONE ) continue;
+				if( !BitAddressUtil.rangesIntersect(m.minBitAddress, m.maxBitAddress, minBitAddress, maxBitAddress) ) continue;
+				return m;
+			}
+		}
 		
 		ArrayMessageSet newMs = new ArrayMessageSet();
 		for( Message m : this ) {

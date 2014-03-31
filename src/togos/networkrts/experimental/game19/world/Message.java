@@ -59,7 +59,7 @@ public class Message implements BitAddressRange, MessageSet
 	}
 	
 	public static Message create( long targetBa, MessageType type, long sourceAddress, Object payload ) {
-		return new Message( targetBa, targetBa, TBoundless.INSTANCE, type, sourceAddress, payload );
+		return new Message( BitAddresses.withMinFlags(targetBa), BitAddresses.withMaxFlags(targetBa), TBoundless.INSTANCE, type, sourceAddress, payload );
 	}
 	
 	public static Message create( NonTile target, MessageType type, long sourceAddress, Object payload ) {
@@ -73,8 +73,9 @@ public class Message implements BitAddressRange, MessageSet
 		double minX, double minY, double maxX,
 		double maxY, long minBitAddress, long maxBitAddress
 	) {
-		// TODO: Check spatial range
-		return BitAddressUtil.rangesIntersect(this, minBitAddress, maxBitAddress);
+		return
+			targetShape.rectIntersection(minX, minY, maxX-minX, maxY-minY) != RectIntersector.INCLUDES_NONE &&
+			BitAddressUtil.rangesIntersect(this, minBitAddress, maxBitAddress);
 	}
 	
 	public boolean isApplicableTo(EntityRange er) {
@@ -91,7 +92,8 @@ public class Message implements BitAddressRange, MessageSet
 	public String toString() {
 		return
 			"Message to "+BitAddresses.toString(minBitAddress)+".."+BitAddresses.toString(maxBitAddress)+
-			" from "+BitAddresses.toString(sourceAddress)+" type "+type+" payload "+(payload == null ? null : payload.toString());
+			" from "+BitAddresses.toString(sourceAddress)+" type "+type+" payload "+(payload == null ? null : payload.toString()) +
+			" target shape "+targetShape;
 	}
 	
 	//// MessageSet implementation

@@ -7,4 +7,6 @@ public class TBoundless implements RectIntersector
 	protected TBoundless() { }
 	
 	@Override public int rectIntersection(double x, double y, double w, double h) { return RectIntersector.INCLUDES_ALL; }
+	
+	public String toString() { return "TBoundless"; }
 }

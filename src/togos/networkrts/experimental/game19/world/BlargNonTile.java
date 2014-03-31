@@ -4,6 +4,7 @@ import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.gameengine1.index.AABB;
+import togos.networkrts.util.BitAddressUtil;
 
 public class BlargNonTile implements NonTile
 {
@@ -77,6 +78,10 @@ public class BlargNonTile implements NonTile
 		return withPositionAndVelocity(referenceTime, x, y, vx, vy);
 	}
 	
+	public boolean isSpecificallyAddressedBy(Message m) {
+		return m.isApplicableTo(this) && BitAddressUtil.rangeContains(m, getBitAddress());
+	}
+	
 	// This might nt need to be part of the interface, since
 	// withPositionAndVelocity exists
 	@Override public BlargNonTile withUpdatedPosition(long newTime) {
@@ -89,7 +94,6 @@ public class BlargNonTile implements NonTile
 	@Override public NonTile update(
 		long time, World w, MessageSet incomingMessages, NonTileUpdateContext updateContext
 	) {
-		incomingMessages = Messages.subsetApplicableTo(incomingMessages, this);
 		return internals.update(this, time, w, incomingMessages, updateContext);
 	}
 }
