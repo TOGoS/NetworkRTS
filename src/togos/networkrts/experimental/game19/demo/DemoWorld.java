@@ -56,6 +56,20 @@ public class DemoWorld
 		final Block tree = new Block(0, 0, treeImage, NoBehavior.instance);
 		final Block spikes = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_SPIKEY, spikeImage, NoBehavior.instance);
 		
+		final SubstanceContainerInternals fuelCanInternals;
+		{
+			Icon[] fuelCanIcons = new Icon[4];
+			for( int i=0; i<fuelCanIcons.length; ++i ) {
+				fuelCanIcons[i] = loadIcon(rc, "tile-images/FuelCan/FuelCan"+i+".png", 0.5f);
+			}
+			AABB fuelCanAabb = new AABB(-0.125, -0.125, -0.125, 0.25, 0.25, 0.25);
+			SubstanceContainerType fuelCanType = new SubstanceContainerType(
+				"Fuel can", fuelCanIcons, fuelCanAabb, 1, 0.01
+			);
+			SubstanceQuantity fuelQuantity = Substances.fillVolume(Substances.KEROSENE, fuelCanType.internalVolume); 
+			fuelCanInternals = new SubstanceContainerInternals(fuelCanType, fuelQuantity);
+		}
+		
 		int worldSizePower = 24;
 		int worldDataOrigin = -(1<<(worldSizePower-1));
 		
@@ -77,6 +91,8 @@ public class DemoWorld
 			}
 		});
 		
+		EntitySpatialTreeIndex<NonTile> nonTiles = new EntitySpatialTreeIndex<NonTile>();
+		
 		Random r = new Random();
 		//for( int i=0; i<100; ++i ) {
 		//	n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( r.nextGaussian()*20, r.nextGaussian()*20, r.nextDouble()*8 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
@@ -90,23 +106,10 @@ public class DemoWorld
 				dir += r.nextGaussian() * 0.1;
 				rad *= (0.996 + r.nextGaussian()*0.02);
 			}
+			nonTiles = nonTiles.with( new BlargNonTile(0, 0, sx, sy, 0, 0, fuelCanInternals) );
 		}
 		
-		EntitySpatialTreeIndex<NonTile> nonTiles = new EntitySpatialTreeIndex<NonTile>();
-		
-		{
-			Icon[] fuelCanIcons = new Icon[4];
-			for( int i=0; i<fuelCanIcons.length; ++i ) {
-				fuelCanIcons[i] = loadIcon(rc, "tile-images/FuelCan/FuelCan"+i+".png", 0.5f);
-			}
-			AABB fuelCanAabb = new AABB(-0.125, -0.125, -0.125, 0.25, 0.25, 0.25);
-			SubstanceContainerType fuelCanType = new SubstanceContainerType(
-				"Fuel can", fuelCanIcons, fuelCanAabb, 1, 0.01
-			);
-			SubstanceQuantity fuelQuantity = Substances.fillVolume(Substances.KEROSENE, fuelCanType.internalVolume); 
-			SubstanceContainerInternals fuelCanInternals = new SubstanceContainerInternals(fuelCanType, fuelQuantity);
-			nonTiles = nonTiles.with( new BlargNonTile(0, 0, -5, 0, 0, 0, fuelCanInternals) );
-		}
+		nonTiles = nonTiles.with( new BlargNonTile(0, 0, -5, 0, 0, 0, fuelCanInternals) );
 		
 		return new World(n, worldSizePower, nonTiles,
 			new LayerLink(true, new SoftResourceHandle<Layer>("urn:sha1:blah"), 0, 0, 0, 0xFF001122)
