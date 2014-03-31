@@ -31,6 +31,50 @@ public interface NonTile extends EntityAggregation, HasPositionAndVelocity
 	
 	//// Behavior-ey stuff
 	
+	/*
+	 * Idea: explicit 2-phase update
+	 * 
+	 * Have a single update method that takes the phase as a parameter.
+	 * 
+	 * Have separate address flags for
+	 * - needs time-based phase 1 update
+	 * - needs time-based phase 2 update
+	 * 
+	 * Incoming messages are passed only to phase 2.
+	 *  
+	 * As an optimization, either phase will only result in update being called if:
+	 *   the object's nextAutoUpdateTime <= upcoming tick AND the appropriate phase bit is set
+	 *   OR
+	 *   there are incoming messages to be handled by this update phase 
+	 */
+	
+	/**
+	 * Phase 1 update.
+	 * 
+	 * Update position based on velocity, ignoring
+	 * the rest of the world.  When applicable,
+	 * this will be called before update(...)
+	 */
 	public NonTile withUpdatedPosition(long time);
+	
+	/**
+	 * Phase 2 update.
+	 * 
+	 * It is the responsibility of the implementor of this method
+	 * (rather than the delivery system)
+	 * to ignore inapplicable messages and (messages aside) repeated
+	 * updates for the same timestamp.
+	 * 
+	 * Ideally, the passage of time and reception of messages
+	 * should be handled separately within this method.
+	 * This will be called after withUpdatedPosision,
+	 * so must use a separate internal timestamp to track 'last update'
+	 * vs 'last position/velocity update'.
+	 * 
+	 * A naive delivery system could call update for every tick, passing all
+	 * incoming messages for the entire system.  It might call update
+	 * several times in one tick, and it might pass messages in in multiple
+	 * batches.
+	 */
 	public NonTile update( long time, World w, MessageSet incomingMessages, NonTileUpdateContext updateContext );
 }
