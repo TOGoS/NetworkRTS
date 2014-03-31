@@ -82,8 +82,8 @@ public class BitAddresses
 	
 	public static String toString( long address ) {
 		long id = address & ID_MASK;
-		int flags = (int)((address & FLAG_MASK) >> FLAG_SHIFT);
-		int type  = (int)((address & TYPE_MASK) >> TYPE_SHIFT);
+		int flags = (int)((address & FLAG_MASK) >>> FLAG_SHIFT);
+		int type  = (int)((address & TYPE_MASK) >>> TYPE_SHIFT);
 		return String.format("%04x-%1x-%011x", flags, type, id);
 	}
 }
