@@ -11,8 +11,11 @@ import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -268,7 +271,7 @@ public class ServerClientDemo
 			final Frame f = new Frame("Game19 Render Demo");
 			f.add(sceneCanvas);
 			f.setExtendedState(f.getExtendedState()|Frame.MAXIMIZED_BOTH);
-			final Thread watchdogThread = new Thread() {
+			final Thread watchdogThread = new Thread("UI Watchdog") {
 				@Override public void run() {
 					while( !Thread.interrupted() ) {
 						pokeWatchdog();
@@ -280,7 +283,7 @@ public class ServerClientDemo
 					}
 				}
 			};
-			final Thread redrawThread = new Thread() {
+			final Thread redrawThread = new Thread("Scene Redrawer") {
 				@Override public void run() {
 					try {
 						sceneCanvas.redrawLoop();
@@ -414,7 +417,7 @@ public class ServerClientDemo
 		}
 		
 		// Maybe the simulator should do this
-		Thread simulatorThread = new Thread("Incoming message enqueuer") {
+		Thread simulatorThread = new Thread("Incoming Message Enqueuer") {
 			@Override public void run() {
 				try {
 					_run();
@@ -435,7 +438,7 @@ public class ServerClientDemo
 		simulatorThread.setDaemon(true);
 		simulatorThread.start();
 		
-		Thread clientUpdateThread = new Thread("Client updater") {
+		Thread clientUpdateThread = new Thread("Client Updater") {
 			public void run() {
 				while(true) {
 					Message m;
@@ -462,5 +465,39 @@ public class ServerClientDemo
 		};
 		clientUpdateThread.setDaemon(true);
 		clientUpdateThread.start();
+		
+		boolean consoleEnabled = true;
+		if( consoleEnabled ) {
+			BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
+			String line;
+			while( (line = consoleReader.readLine()) != null ) {
+				line = line.trim();
+				if( line.length() == 0 || line.startsWith("#") ) {
+				} else if( "dump-threads".equals(line) ) {
+					dumpThreads();
+				} else {
+					System.err.println("Unknown command: "+line);
+				}
+			}
+			System.exit(0);
+		}
+	}
+	
+	protected static Thread[] getAllThreads() {
+		ThreadGroup tg = Thread.currentThread().getThreadGroup();
+		while( tg.getParent() != null ) tg = tg.getParent();
+		Thread[] threads = new Thread[tg.activeCount()];
+		int count;
+		while( (count = tg.enumerate( threads, true )) == threads.length ) {
+		    threads = new Thread[threads.length * 2];
+		}
+		return Arrays.copyOf(threads, count);
+	}
+	
+	protected static void dumpThreads() {
+		for( Thread t : getAllThreads() ) {
+			Thread.State s = t.getState();
+			System.err.println("  "+t.getName()+": "+s+" "+(t.isAlive()?" alive":"")+(t.isDaemon()?" daemon" : ""));
+		}
 	}
 }
