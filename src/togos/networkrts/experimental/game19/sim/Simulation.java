@@ -80,7 +80,7 @@ public class Simulation implements AutoEventUpdatable2<Message>
 			(er.getNextAutoUpdateTime() <= time && BitAddresses.containsFlag(er.getMaxBitAddress(), BitAddresses.phaseUpdateFlag(phase)));
 	}
 	
-	protected EntitySpatialTreeIndex<NonTile> updateNonTiles( final World w, final long time, final MessageSet incomingMessages, final UpdateContext updateContext, final int phase ) {
+	protected EntitySpatialTreeIndex<NonTile> updateNonTiles( final World world, final long time, final MessageSet incomingMessages, final UpdateContext updateContext, final int phase ) {
 		return world.nonTiles.updateEntities(EntityRanges.BOUNDLESS, new EntityUpdater<NonTile>() {
 			// TODO: this is very unoptimized
 			// it doesn't take advantage of the tree structure at all
@@ -90,7 +90,7 @@ public class Simulation implements AutoEventUpdatable2<Message>
 			NNTLNonTileUpdateContext nntlntuc;
 			
 			@Override public NonTile update(NonTile nt, Collection<NonTile> generatedNonTiles) {
-				return nt.update( time, phase, w, incomingMessages,
+				return nt.update( time, phase, world, incomingMessages,
 					NNTLNonTileUpdateContext.get(nntlntuc, updateContext, generatedNonTiles));
 			}
 		});
