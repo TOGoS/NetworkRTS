@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Predicate;
 
 import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
@@ -97,10 +98,22 @@ public class ServerClientDemo
 		public final boolean connected;
 		
 		public UIState( Scene scene, JetManCoreStats stats, List<TextMessage> textMessages, boolean connected ) {
+			assert textMessages != null;
+			
 			this.scene = scene;
 			this.stats = stats;
 			this.textMessages = textMessages;
 			this.connected = connected;
+		}
+		
+		@Override public boolean equals(Object obj) {
+			if( !(obj instanceof UIState) ) return false;
+			
+			UIState o = (UIState)obj;
+			return
+				(scene == o.scene || (scene != null && scene.equals(o.scene))) &&
+				(stats == o.stats || (stats != null && stats.equals(o.stats))) &&
+				textMessages.equals(o.textMessages) && connected == o.connected;
 		}
 	}
 	
@@ -127,6 +140,7 @@ public class ServerClientDemo
 		UIState uiState = new UIState(null, null, Collections.<TextMessage>emptyList(), false);
 		
 		public synchronized void setUiState( UIState s ) {
+			if( s.equals(uiState) ) return; 
 			this.uiState = s;
 			redrawBuffer();
 		}
@@ -161,6 +175,7 @@ public class ServerClientDemo
 				synchronized(this) {
 					while( !needRedraw || uiState == null ) wait();
 					u = uiState;
+					needRedraw = false;
 				}
 				Scene scene = u.scene;
 				int wid, hei;
@@ -474,13 +489,26 @@ public class ServerClientDemo
 				line = line.trim();
 				if( line.length() == 0 || line.startsWith("#") ) {
 				} else if( "dump-threads".equals(line) ) {
-					dumpThreads();
+					dumpThreads( getAllThreads() );
+				} else if( "dump-runnable-threads".equals(line) ) {
+					dumpThreads( filter(getAllThreads(), new Predicate<Thread>() {
+						@Override public boolean test(Thread t) { return t.getState() == Thread.State.RUNNABLE; }
+					}));
 				} else {
 					System.err.println("Unknown command: "+line);
 				}
 			}
 			System.exit(0);
 		}
+	}
+	
+	protected static <T> T[] filter( T[] ts, Predicate<T> p ) {
+		T[] nooz = Arrays.copyOf(ts,ts.length);
+		int j = 0;
+		for( int i=0; i<ts.length; ++i ) {
+			if( p.test(ts[i]) ) nooz[j++] = ts[i];
+		}
+		return j < ts.length ? Arrays.copyOf(nooz,j) : nooz;
 	}
 	
 	protected static Thread[] getAllThreads() {
@@ -494,8 +522,8 @@ public class ServerClientDemo
 		return Arrays.copyOf(threads, count);
 	}
 	
-	protected static void dumpThreads() {
-		for( Thread t : getAllThreads() ) {
+	protected static void dumpThreads( Thread[] threads ) {
+		for( Thread t : threads ) {
 			Thread.State s = t.getState();
 			System.err.println("  "+t.getName()+": "+s+" "+(t.isAlive()?" alive":"")+(t.isDaemon()?" daemon" : ""));
 		}
