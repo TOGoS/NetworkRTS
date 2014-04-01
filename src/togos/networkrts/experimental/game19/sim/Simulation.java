@@ -52,11 +52,11 @@ public class Simulation implements AutoEventUpdatable2<Message>
 		public final ArrayMessageSet newMessages = new ArrayMessageSet();
 		
 		@Override public void sendMessage( Message m ) {
-			if( (m.minBitAddress & BitAddresses.TYPE_EXTERNAL) == 0 ) {
-				newMessages.add(m);
-			}
-			if( (m.maxBitAddress & BitAddresses.TYPE_EXTERNAL) == BitAddresses.TYPE_EXTERNAL ) {
+			long targetType = m.maxBitAddress & BitAddresses.TYPE_MASK;
+			if( targetType == BitAddresses.TYPE_EXTERNAL ) {
 				outgoingMessageQueue.add(m);
+			} else {
+				newMessages.add(m);
 			}
 		}
 		@Override public void startAsyncTask( AsyncTask at ) {
