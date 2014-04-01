@@ -1,4 +1,4 @@
-package java.util.function;
+package togos.networkrts.util;
 
 public interface Predicate<T>
 {

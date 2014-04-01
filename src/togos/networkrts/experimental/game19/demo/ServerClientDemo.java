@@ -21,7 +21,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.function.Predicate;
 
 import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
@@ -38,6 +37,7 @@ import togos.networkrts.experimental.game19.world.thing.jetman.JetManCoreStats;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManIcons;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManInternals;
 import togos.networkrts.ui.ImageCanvas;
+import togos.networkrts.util.Predicate;
 
 public class ServerClientDemo
 {
