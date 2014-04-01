@@ -28,7 +28,7 @@ public final class Timer<PayloadClass> implements Comparable<Timer<?>>
 	}
 
 	@Override
-	public int compareTo( Timer t ) {
+	public int compareTo( Timer<?> t ) {
 		return time < t.time ? -1 : time > t.time ? 1 : order < t.order ? -1 : order > t.order ? 1 : 0;
 	}
 }
