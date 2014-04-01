@@ -5,6 +5,8 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Frame;
 import java.awt.Graphics;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -134,6 +136,9 @@ public class ServerClientDemo
 		protected final Renderer renderer;
 		public SceneCanvas( ResourceContext resourceContext ) {
 			renderer = new Renderer(resourceContext);
+			addComponentListener(new ComponentAdapter() {
+				@Override public void componentResized(ComponentEvent e) { redrawBuffer(); }
+			});
 		}
 		
 		Color sceneBackgroundColor = new Color(0.2f, 0, 0);
@@ -189,6 +194,8 @@ public class ServerClientDemo
 					wid = getWidth();
 					hei = getHeight();
 				}
+				if( wid <= 0 || hei <= 0 ) continue;
+				
 				BufferedImage sb = getSceneBuffer(wid, hei);
 				synchronized( sb ) {
 					Graphics g = sb.getGraphics();
@@ -298,6 +305,7 @@ public class ServerClientDemo
 					}
 				}
 			};
+			watchdogThread.start();
 			final Thread redrawThread = new Thread("Scene Redrawer") {
 				@Override public void run() {
 					try {
@@ -307,18 +315,16 @@ public class ServerClientDemo
 					}
 				}
 			};
+			redrawThread.start();
 			f.addWindowListener(new WindowAdapter() {
 				@Override public void windowClosing(WindowEvent evt) {
 					f.dispose();
 					redrawThread.interrupt();
-					// could shut down server nicely and stuff
-					System.exit(0);
+					watchdogThread.interrupt();
 				}
 			});
 			f.pack();
 			f.setVisible(true);
-			redrawThread.start();
-			watchdogThread.start();
 		}
 	}
 	
@@ -429,6 +435,7 @@ public class ServerClientDemo
 			NonTile playerNonTile = JetManInternals.createJetMan(playerId, clientBa, jetManIcons);
 			World world = DemoWorld.initWorld(resourceContext).withNonTile(playerNonTile);
 			sim = new Simulator( world, 50 );
+			sim.setDaemon(true);
 		}
 		
 		// Maybe the simulator should do this
@@ -494,11 +501,16 @@ public class ServerClientDemo
 					dumpThreads( filter(getAllThreads(), new Predicate<Thread>() {
 						@Override public boolean test(Thread t) { return t.getState() == Thread.State.RUNNABLE; }
 					}));
+				} else if( "dump-non-daemon-threads".equals(line) ) {
+					dumpThreads( filter(getAllThreads(), new Predicate<Thread>() {
+						@Override public boolean test(Thread t) { return !t.isDaemon(); }
+					}));
+				} else if( "eof".equals(line) ) {
+					break;
 				} else {
 					System.err.println("Unknown command: "+line);
 				}
 			}
-			System.exit(0);
 		}
 	}
 	

@@ -71,6 +71,11 @@ public class Simulator
 		looper.start();
 	}
 	
+	public void setDaemon(boolean d) {
+		taskRunner.setDaemon(d);
+		looper.setDaemon(d);
+	}
+	
 	public void halt() {
 		taskRunner.interrupt();
 		looper.interrupt();
