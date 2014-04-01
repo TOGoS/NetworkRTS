@@ -23,7 +23,7 @@ public class RSTUtil
 					fillShape( subNodes[3], x+subSize, y+subSize, subSizePower, shape, filler ),
 				});
 			}
-			// Otherwise fall through
+			// $FALL-THROUGH$ to treat INCLUDES_SOME of a non-quadtree node the same as INCLUDES_ALL 
 		case RectIntersector.INCLUDES_ALL:
 			return filler.update(orig, x, y, sizePower);
 		default:
