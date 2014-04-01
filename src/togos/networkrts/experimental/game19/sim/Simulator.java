@@ -61,8 +61,9 @@ public class Simulator
 	protected EventLooper<Message> looper;
 	protected Simulation simulation;
 	
-	public Simulator( World world, long minStepInterval ) {
+	public Simulator( World world, long minStepInterval, long simId ) {
 		simulation = new Simulation(world, asyncTaskQueue, outgoingMessages);
+		if( simId != 0 ) simulation.simulationBitAddress = BitAddresses.forceType(BitAddresses.TYPE_INTERNAL, simId);
 		looper = new EventLooper<Message>(incomingMessages, simulation, minStepInterval);
 	}
 	

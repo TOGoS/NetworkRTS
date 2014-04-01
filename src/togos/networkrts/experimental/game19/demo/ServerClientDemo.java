@@ -339,6 +339,18 @@ public class ServerClientDemo
 		final long playerBa = BitAddresses.forceType(BitAddresses.TYPE_NONTILE, playerId);
 		final long clientId = idGenerator.newId();
 		final long clientBa = BitAddresses.forceType(BitAddresses.TYPE_EXTERNAL, clientId);
+		final long simId = idGenerator.newId();
+		final long simBa = BitAddresses.forceType(BitAddresses.TYPE_INTERNAL, simId);
+		final World initialWorld;
+		final Simulator sim;
+		{
+			final JetManIcons jetManIcons = JetManIcons.load(resourceContext);
+			final NonTile playerNonTile = JetManInternals.createJetMan(playerId, clientBa, jetManIcons);
+			initialWorld = DemoWorld.initWorld(resourceContext).withNonTile(playerNonTile);
+			sim = new Simulator( initialWorld, 50, simBa );
+			sim.setDaemon(true);
+		}
+		
 		c.startUi();
 		c.sceneCanvas.addKeyListener(new KeyAdapter() {
 			@Override public void keyPressed(KeyEvent kevt) {
@@ -350,6 +362,9 @@ public class ServerClientDemo
 					break;
 				case KeyEvent.VK_U:
 					messageQueue.add(Message.create(playerBa, MessageType.INCOMING_PACKET, clientBa, Boolean.FALSE));
+					break;
+				case KeyEvent.VK_R:
+					messageQueue.add(Message.create(simBa, MessageType.INCOMING_PACKET, clientBa, initialWorld));
 					break;
 				}
 			}
@@ -427,16 +442,6 @@ public class ServerClientDemo
 			@Override public void keyTyped(KeyEvent arg0) {}
 		});
 		c.messageQueue = messageQueue;
-		
-		final JetManIcons jetManIcons = JetManIcons.load(resourceContext);
-		
-		final Simulator sim;
-		{
-			NonTile playerNonTile = JetManInternals.createJetMan(playerId, clientBa, jetManIcons);
-			World world = DemoWorld.initWorld(resourceContext).withNonTile(playerNonTile);
-			sim = new Simulator( world, 50 );
-			sim.setDaemon(true);
-		}
 		
 		// Maybe the simulator should do this
 		Thread simulatorThread = new Thread("Incoming Message Enqueuer") {

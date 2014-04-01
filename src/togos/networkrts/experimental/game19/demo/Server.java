@@ -28,7 +28,7 @@ public class Server
 	
 	Simulator sim;
 	public void init() throws IOException {
-		sim = new Simulator(DemoWorld.initWorld(resourceContext), 50);
+		sim = new Simulator(DemoWorld.initWorld(resourceContext), 50, 0);
 	}
 	
 	public void start() {

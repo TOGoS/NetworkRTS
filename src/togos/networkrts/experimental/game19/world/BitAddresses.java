@@ -50,7 +50,10 @@ public class BitAddresses
 	public static final long TYPE_NODE    = 0x0000100000000000l;
 	public static final long TYPE_BLOCK   = 0x0000200000000000l;
 	public static final long TYPE_NONTILE = 0x0000300000000000l;
-	public static final long TYPE_EXTERNAL= 0x0000400000000000l;
+	// Miscellaneous simulated components
+	public static final long TYPE_INTERNAL= 0x0000400000000000l;
+	// Stuff that lives outside the simulation event loop
+	public static final long TYPE_EXTERNAL= 0x0000500000000000l;
 	
 	public static final long ID_MASK      = 0x00000FFFFFFFFFFFl;
 	
@@ -65,9 +68,9 @@ public class BitAddresses
 		return typeAndId | FLAG_MASK;
 	}
 	
-	public static final long forceType( long type, long flags ) {
-		assert (type & TYPE_MASK) == type;
-		return (flags & ~TYPE_MASK) | type; 
+	public static final long forceType( long type, long rest ) {
+		assert (rest & TYPE_MASK) == type;
+		return (rest & ~TYPE_MASK) | type;
 	}
 	
 	public static final long makeAddress( long flags, long id ) {

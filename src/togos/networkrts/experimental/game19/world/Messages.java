@@ -12,6 +12,14 @@ public class Messages
 		return s.subsetApplicableTo(aabb.minX, aabb.minY, aabb.maxX, aabb.maxY, er.getMinBitAddress(), er.getMaxBitAddress());
 	}
 	
+	public static MessageSet subsetApplicableTo(MessageSet s, long bitAddress) {
+		return s.subsetApplicableTo(
+			Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
+			Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY,
+			BitAddresses.withMinFlags(bitAddress), BitAddresses.withMaxFlags(bitAddress)
+		);
+	}
+	
 	public static boolean isApplicableTo(MessageSet s, EntityRange er) {
 		if( s.size() != 0 ) for( Message m : s ) {
 			if( m.isApplicableTo(er) ) return true;

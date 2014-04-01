@@ -7,13 +7,7 @@ Make content creation possible/fun
 
 Ladders!
 
-Pickups
-- Model as NonTile#pickupProperties that give mass, awkardness, content
-- Whether a character immediately consumes a pickup or not is up to the character
-- Pickups may receive a 'PICKED_UP' message when they are picked up, giving
-  them an opportunity to transform themselves
-  - e.g. a time bomb may start a timer when picked up
-Fuel, suit repair kit pickups
+Suit repair kits
 
 Client-server networking
 

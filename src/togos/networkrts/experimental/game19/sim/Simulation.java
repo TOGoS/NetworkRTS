@@ -42,6 +42,7 @@ public class Simulation implements AutoEventUpdatable2<Message>
 	}
 	
 	protected World world;
+	protected long simulationBitAddress;
 	protected long time = 0;
 	/** Tasks to be done later will be sent here! */
 	protected final LinkedBlockingQueue<AsyncTask> asyncTaskQueue;
@@ -96,21 +97,30 @@ public class Simulation implements AutoEventUpdatable2<Message>
 		});
 	}
 	
+	protected World processSimMessage(World world, Message m) {
+		if( m.payload instanceof World ) {
+			System.err.println("World replaced with "+m.payload);
+			return ((World)m.payload);
+		}
+		return world;
+	}
+	
 	protected World update( long time, int phase, World world, MessageSet incomingMessages, SimUpdateContext updateContext ) {
 		// Update RST when phase = 2
 		RSTNode rst;
-		int rstSizePower;
 		if( phase == 2 ) {
+			for( Message m : Messages.subsetApplicableTo(incomingMessages, simulationBitAddress) ) {
+				world = processSimMessage(world, m);
+			}
+			
 			int rstSize = 1<<world.rstSizePower;
 			rst = world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, incomingMessages, updateContext );
-			rstSizePower = world.rstSizePower;
 		} else {
 			rst = world.rst;
-			rstSizePower = world.rstSizePower;
 		}
 		
 		return new World(
-			rst, rstSizePower,
+			rst, world.rstSizePower,
 			updateNonTiles(world, time, incomingMessages, updateContext, phase),
 			world.background
 		);
