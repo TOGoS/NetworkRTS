@@ -117,8 +117,6 @@ public class Simulation implements AutoEventUpdatable2<Message>
 	}
 	
 	protected void update( long time, MessageSet incomingMessages ) {
-		System.err.println("Updating to "+time);
-		
 		assert time < Long.MAX_VALUE;
 		
 		if( needsUpdate(time, 1, world, MessageSet.EMPTY) ) {

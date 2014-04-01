@@ -299,8 +299,6 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 			newWalkState = 0;
 		}
 		
-		System.err.println("JetMan state: v="+newVx+","+newVy+" feet on ground="+feetOnGround+" conscious="+conscious);
-		
 		int stateFlags =
 			(facingLeft   ? S_FACING_LEFT        : 0) |
 			(jetUp        ? S_BOTTOM_THRUSTER_ON : 0) |
@@ -337,9 +335,6 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 	
 	@Override public AABB getRelativePhysicalAabb() { return aabb; }
 	@Override public long getNextAutoUpdateTime() {
-		if( isResting() ) {
-			System.err.println("JetMan is resting!");
-		}
 		return isResting() ? Long.MAX_VALUE : lastUpdateTime + 1;
 	}
 	@Override public long getNonTileAddressFlags() {
