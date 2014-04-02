@@ -1,6 +1,8 @@
 Game19 to-do list.
 i.e. things to work on when you get sick of working on some other component
 
+Save/load world.
+
 Make content creation possible/fun
 - quadtree editor
 - simple (probably JSON-based) tile format
@@ -10,6 +12,8 @@ Ladders!
 Suit repair kits
 
 Client-server networking
+- Serialize all data
+- Client and server may use a shared hash-addressed datastore
 
 Android client
 - Should probably flesh out client-server protocol
