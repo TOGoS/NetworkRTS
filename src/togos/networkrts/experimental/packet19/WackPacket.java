@@ -26,7 +26,7 @@ public class WackPacket extends BaseDataPacket
 	@SuppressWarnings("unchecked")
 	protected synchronized <T> void setPayload( T payload, Class<T> payloadType, PacketPayloadCodec<? extends T> payloadCodec ) {
 		this.payload = payload;
-		this.payloadClass  = (Class<Object>)payloadClass;
+		this.payloadClass  = (Class<Object>)payloadType;
 		this.payloadCodec = (PacketPayloadCodec<Object>)payloadCodec;
 	}
 	
