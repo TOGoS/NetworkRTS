@@ -7,7 +7,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.util.Arrays;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.Scene;
@@ -30,7 +29,7 @@ public class ServerClientDemo
 {
 	// TODO: Move a lot of the details into Client/Server
 	public static void main( String[] args ) throws Exception {
-		final LinkedBlockingQueue<Message> messageQueue = new LinkedBlockingQueue<Message>(); 
+		final Server server = new Server();
 		
 		IDGenerator idGenerator = new IDGenerator();
 		
@@ -43,13 +42,13 @@ public class ServerClientDemo
 		final long simId = idGenerator.newId();
 		final long simBa = BitAddresses.forceType(BitAddresses.TYPE_INTERNAL, simId);
 		final World initialWorld;
-		final Simulator sim;
 		{
 			final JetManIcons jetManIcons = JetManIcons.load(resourceContext);
 			final NonTile playerNonTile = JetManInternals.createJetMan(playerId, clientBa, jetManIcons);
 			initialWorld = DemoWorld.initWorld(resourceContext).withNonTile(playerNonTile);
-			sim = new Simulator( initialWorld, 50, simBa );
+			Simulator sim = new Simulator( initialWorld, 50, simBa );
 			sim.setDaemon(true);
+			server.init(sim);
 		}
 		
 		c.startUi();
@@ -59,15 +58,15 @@ public class ServerClientDemo
 				case KeyEvent.VK_EQUALS: c.sceneCanvas.zoomMore(); break;
 				case KeyEvent.VK_MINUS: c.sceneCanvas.zoomLess(); break;
 				case KeyEvent.VK_C:
-					messageQueue.add(Message.create(playerBa, MessageType.INCOMING_PACKET, clientBa, Boolean.TRUE));
+					server.incomingMessageQueue.add(Message.create(playerBa, MessageType.INCOMING_PACKET, clientBa, Boolean.TRUE));
 					break;
 				case KeyEvent.VK_U:
-					messageQueue.add(Message.create(playerBa, MessageType.INCOMING_PACKET, clientBa, Boolean.FALSE));
+					server.incomingMessageQueue.add(Message.create(playerBa, MessageType.INCOMING_PACKET, clientBa, Boolean.FALSE));
 					break;
 				case KeyEvent.VK_R:
 					// TODO: ethernet frames, etc etc
 					FakeCoAPMessage fcm = FakeCoAPMessage.request((byte)0, 0, RESTRequest.PUT, "/world", new WackPacket(initialWorld, Object.class, null));
-					messageQueue.add(Message.create(simBa, MessageType.INCOMING_PACKET, clientBa, fcm));
+					server.incomingMessageQueue.add(Message.create(simBa, MessageType.INCOMING_PACKET, clientBa, fcm));
 					break;
 				}
 			}
@@ -129,7 +128,7 @@ public class ServerClientDemo
 				int dir = dir(dirX, dirY);
 				if( dir != oldDir ) {
 					Message m = Message.create(playerBa, MessageType.INCOMING_PACKET, clientBa, Integer.valueOf(dir));
-					messageQueue.add(m);
+					server.incomingMessageQueue.add(m);
 					oldDir = dir;
 				}
 			}
@@ -144,36 +143,19 @@ public class ServerClientDemo
 
 			@Override public void keyTyped(KeyEvent arg0) {}
 		});
-		c.messageQueue = messageQueue;
+		c.messageQueue = server.incomingMessageQueue;
 		
 		// Maybe the simulator should do this
-		Thread simulatorThread = new Thread("Incoming Message Enqueuer") {
-			@Override public void run() {
-				try {
-					_run();
-				} catch( Exception e ) {
-					e.printStackTrace();
-					System.exit(1);
-				}
-			}
-			
-			public void _run() throws Exception {
-				sim.start();
-				
-				while( true ) {
-					sim.enqueueMessage(messageQueue.take());
-				}
-			}
-		};
-		simulatorThread.setDaemon(true);
-		simulatorThread.start();
+
+		server.setDaemon(true);
+		server.start();
 		
 		Thread clientUpdateThread = new Thread("Client Updater") {
 			public void run() {
 				while(true) {
 					Message m;
 					try {
-						m = sim.outgoingMessages.take();
+						m = server.outgoingMessageQueue.take();
 					} catch( InterruptedException e ) {
 						System.err.println(getName()+" interrupted; quitting");
 						e.printStackTrace();
