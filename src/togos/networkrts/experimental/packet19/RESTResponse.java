@@ -1,7 +1,6 @@
 package togos.networkrts.experimental.packet19;
 
-public interface RESTResponse<P>
+public interface RESTResponse extends HasWackPayload
 {
 	public int getStatus();
-	public P getPayload();
 }

@@ -1,16 +1,14 @@
 package togos.networkrts.experimental.packet19;
 
-import togos.blob.ByteChunk;
-
 public class EthernetFrame extends BaseDataPacket
 {
 	protected long src, dest;
-	protected ByteChunk payload;
+	protected WackPacket payload;
 	protected int tag; // Leave 0 for no tag
 	protected short etherType;
 	protected int crc;
 	
-	public EthernetFrame( long dest, long src, int tag, short etherType, ByteChunk payload ) {
+	public EthernetFrame( long dest, long src, int tag, short etherType, WackPacket payload ) {
 		assert tag == 0 || (tag & 0x81000000) == 0x81000000; 
 		
 		this.objectPopulated = true;
@@ -29,5 +27,10 @@ public class EthernetFrame extends BaseDataPacket
 	public long getDestinationAddress() {
 		ensureObjectPopulated();
 		return src;
+	}
+	
+	public WackPacket getPayload() {
+		ensureObjectPopulated();
+		return payload;
 	}
 }

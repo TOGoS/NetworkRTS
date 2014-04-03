@@ -38,6 +38,9 @@ import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManCoreStats;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManIcons;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManInternals;
+import togos.networkrts.experimental.packet19.FakeCoAPMessage;
+import togos.networkrts.experimental.packet19.RESTRequest;
+import togos.networkrts.experimental.packet19.WackPacket;
 import togos.networkrts.ui.ImageCanvas;
 import togos.networkrts.util.Predicate;
 
@@ -364,7 +367,9 @@ public class ServerClientDemo
 					messageQueue.add(Message.create(playerBa, MessageType.INCOMING_PACKET, clientBa, Boolean.FALSE));
 					break;
 				case KeyEvent.VK_R:
-					messageQueue.add(Message.create(simBa, MessageType.INCOMING_PACKET, clientBa, initialWorld));
+					// TODO: ethernet frames, etc etc
+					FakeCoAPMessage fcm = FakeCoAPMessage.request((byte)0, 0, RESTRequest.PUT, "/world", new WackPacket(initialWorld, Object.class, null));
+					messageQueue.add(Message.create(simBa, MessageType.INCOMING_PACKET, clientBa, fcm));
 					break;
 				}
 			}

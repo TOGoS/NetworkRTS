@@ -1,6 +1,6 @@
 package togos.networkrts.experimental.packet19;
 
-public interface RESTRequest<P>
+public interface RESTRequest extends HasWackPayload
 {
 	public static final String GET = "GET";
 	public static final String PUT = "PUT";
@@ -9,5 +9,4 @@ public interface RESTRequest<P>
 	
 	public String getMethod();
 	public String getPath();
-	public P getPayload();
 }

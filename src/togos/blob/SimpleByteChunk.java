@@ -50,8 +50,7 @@ public class SimpleByteChunk implements ByteChunk
 	
 	
 	public String toString() {
-		// Comment out for general use; this is to help debug while
-		// unit-testing when I know these things are all string-able.
+		// TODO: when not valid UTF-8 text, do it different
 		return BlobUtil.string(buffer, offset, size);
 	}
 	

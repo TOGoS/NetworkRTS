@@ -15,13 +15,15 @@ import togos.networkrts.cereal.OpcodeDefinition;
 import togos.networkrts.cereal.SHA1ObjectReference;
 import togos.networkrts.cereal.StandardValueOps;
 import togos.networkrts.experimental.game19.world.QuadRSTNode;
+import togos.networkrts.experimental.packet19.MalformedDataException;
+import togos.networkrts.experimental.packet19.PacketPayloadCodec;
 import togos.networkrts.util.Getter;
 import togos.networkrts.util.HasURI;
 import togos.networkrts.util.HashUtil;
 import togos.networkrts.util.ResourceNotFound;
 import togos.networkrts.util.Storer;
 
-public class CerealWorldIO implements WorldIO, OpcodeBehavior
+public class CerealWorldIO implements WorldIO, OpcodeBehavior, PacketPayloadCodec<Object>
 {
 	static final byte CONSTRUCTOR_OPCODE = 0x61;
 	
@@ -154,5 +156,13 @@ public class CerealWorldIO implements WorldIO, OpcodeBehavior
 			throw new InvalidEncoding("No such constructor as "+constructorNumber);
 		}
 		return decoder.decode(data, offset, ds, context);
+	}
+
+	@Override public void encode(Object obj, OutputStream os) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override public Object decode(byte[] data, int offset, int length) throws MalformedDataException {
+		throw new UnsupportedOperationException();
 	}
 }

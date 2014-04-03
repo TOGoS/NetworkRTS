@@ -3,7 +3,7 @@ package togos.networkrts.experimental.packet19;
 /**
  * Intermediate solution until I get the real CoAP message class working.
  */
-public class FakeCoAPMessage<P> implements RESTMessage<P>
+public class FakeCoAPMessage implements RESTMessage
 {
 	protected final RESTMessageType type;
 	protected final byte tokenLength;
@@ -11,9 +11,9 @@ public class FakeCoAPMessage<P> implements RESTMessage<P>
 	protected final String method;
 	protected final String path;
 	protected final int status;
-	protected final P payload;
+	protected final WackPacket payload;
 	
-	private FakeCoAPMessage( RESTMessageType type, byte tokenLength, long token, String method, String path, int status, P payload ) {
+	private FakeCoAPMessage( RESTMessageType type, byte tokenLength, long token, String method, String path, int status, WackPacket payload ) {
 		assert tokenLength >= 0;
 		assert tokenLength <= 8;
 		
@@ -26,19 +26,19 @@ public class FakeCoAPMessage<P> implements RESTMessage<P>
 		this.payload = payload;
 	}
 	
-	public static <P> FakeCoAPMessage<P> request( byte tokenLength, long token, String method, String path, P payload ) {
-		return new FakeCoAPMessage<P>( RESTMessageType.REQUEST, tokenLength, token, method, path, 0, payload );
+	public static FakeCoAPMessage request( byte tokenLength, long token, String method, String path, WackPacket payload ) {
+		return new FakeCoAPMessage( RESTMessageType.REQUEST, tokenLength, token, method, path, 0, payload );
 	}
 	
-	public static <P> FakeCoAPMessage<P> response( byte tokenLength, long token, int status, P payload ) {
-		return new FakeCoAPMessage<P>( RESTMessageType.RESPONSE, tokenLength, token, null, null, status, payload );
+	public static FakeCoAPMessage response( byte tokenLength, long token, int status, WackPacket payload ) {
+		return new FakeCoAPMessage( RESTMessageType.RESPONSE, tokenLength, token, null, null, status, payload );
 	}
 	
-	@Override public RESTMessageType getMessageType() { return type; }
+	@Override public RESTMessageType getRestMessageType() { return type; }
 	@Override public byte getTokenSignificantBytes() { return tokenLength; }
 	@Override public long getToken() { return token; }
 	@Override public String getMethod() { return method; }
 	@Override public String getPath() { return path; }
 	@Override public int getStatus() { return status; }
-	@Override public P getPayload() { return payload; }
+	@Override public WackPacket getPayload() { return payload; }
 }

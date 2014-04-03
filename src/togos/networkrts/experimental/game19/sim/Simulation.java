@@ -3,9 +3,11 @@ package togos.networkrts.experimental.game19.sim;
 import java.util.Collection;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import togos.networkrts.experimental.game19.io.CerealWorldIO;
 import togos.networkrts.experimental.game19.world.ArrayMessageSet;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Message;
+import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.Messages;
 import togos.networkrts.experimental.game19.world.NonTile;
@@ -16,6 +18,15 @@ import togos.networkrts.experimental.gameengine1.index.EntityRanges;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
 import togos.networkrts.experimental.gameengine1.index.EntityUpdater;
 import togos.networkrts.experimental.gensim.AutoEventUpdatable2;
+import togos.networkrts.experimental.packet19.CoAPMessage;
+import togos.networkrts.experimental.packet19.EthernetFrame;
+import togos.networkrts.experimental.packet19.IP6Address;
+import togos.networkrts.experimental.packet19.IPPacket;
+import togos.networkrts.experimental.packet19.MalformedDataException;
+import togos.networkrts.experimental.packet19.PacketPayloadCodec;
+import togos.networkrts.experimental.packet19.RESTMessage;
+import togos.networkrts.experimental.packet19.RESTRequest;
+import togos.networkrts.experimental.packet19.UDPPacket;
 
 /**
  * The pure-ish, non-threaded part of the simulator
@@ -42,7 +53,10 @@ public class Simulation implements AutoEventUpdatable2<Message>
 	}
 	
 	protected World world;
+	protected CerealWorldIO cerealWorldIo;
 	protected long simulationBitAddress;
+	protected long simulationEthernetAddress;
+	protected IP6Address simulationIpAddress;
 	protected long time = 0;
 	/** Tasks to be done later will be sent here! */
 	protected final LinkedBlockingQueue<AsyncTask> asyncTaskQueue;
@@ -97,10 +111,71 @@ public class Simulation implements AutoEventUpdatable2<Message>
 		});
 	}
 	
-	protected World processSimMessage(World world, Message m) {
-		if( m.payload instanceof World ) {
-			System.err.println("World replaced with "+m.payload);
-			return ((World)m.payload);
+	static class PacketWrapping {
+		public final PacketWrapping parent;
+		public final Object payload;
+		
+		public PacketWrapping( PacketWrapping parent, Object payload ) {
+			this.parent = parent;
+			this.payload = payload;
+		}
+		
+		public PacketWrapping( Object payload ) {
+			this( null, payload );
+		}
+	}
+	
+	protected <T> PacketWrapping wrapToAppLayer( PacketWrapping pw, Class<T> appClass, PacketPayloadCodec<T> appCodec ) throws MalformedDataException {
+		if( pw.payload instanceof Message ) {
+			pw = new PacketWrapping(pw, ((Message)pw.payload).payload );
+		}
+		if( pw.payload instanceof EthernetFrame ) {
+			EthernetFrame f = (EthernetFrame)pw.payload;
+			if( f.getDestinationAddress() != simulationEthernetAddress ) {
+				System.err.println("Got a misaddressed ethernet packet");
+				return null;
+			}
+			pw = new PacketWrapping(pw, f.getPayload().getPayload(IPPacket.class, IPPacket.CODEC));
+		}
+		if( pw.payload instanceof IPPacket ) {
+			IPPacket ip = (IPPacket)pw.parent;
+			if( !ip.getDestinationAddress().equals(simulationIpAddress) ) {
+				System.err.println("Got a misaddressed IP packet");
+				return null;
+			}
+			pw = new PacketWrapping(pw, ip.getPayload());
+		}
+		if( pw.payload instanceof UDPPacket ) {
+			pw = new PacketWrapping(pw, ((UDPPacket)pw.payload).getPayload().getPayload(appClass, appCodec));
+			// Assume a CoAP message?
+		}
+		return pw;
+	}
+	
+	protected World handleSimMessage(World world, PacketWrapping pw, SimUpdateContext updateContext) throws MalformedDataException {
+		pw = wrapToAppLayer(pw, CoAPMessage.class, CoAPMessage.CODEC);
+		if( pw == null ) return world;
+		handleRestRequest: if( pw.payload instanceof RESTMessage ) {
+			RESTMessage rm = (RESTMessage)pw.payload;
+			if( rm.getRestMessageType() != RESTMessage.RESTMessageType.REQUEST ) break handleRestRequest; 
+			
+			if( RESTRequest.PUT.equals(rm.getMethod()) && "/world".equals(rm.getPath()) ) {
+				world = (World)rm.getPayload().getPayload(Object.class, cerealWorldIo);
+				System.err.println("World replaced with "+world);
+			}
+		}
+		return world;
+	}
+	
+	protected World processSimMessage(World world, Message m, SimUpdateContext updateContext) {
+		if( m.type == MessageType.INCOMING_PACKET ) {
+			try {
+				world = handleSimMessage(world, new PacketWrapping(m), updateContext);
+			} catch( MalformedDataException e ) {
+				System.err.println("Incoming message was malformed: "+e.getMessage());
+			}
+		} else {
+			System.err.println("Simulation doesn't know how to handle message type "+m.type);
 		}
 		return world;
 	}
@@ -110,7 +185,7 @@ public class Simulation implements AutoEventUpdatable2<Message>
 		RSTNode rst;
 		if( phase == 2 ) {
 			for( Message m : Messages.subsetApplicableTo(incomingMessages, simulationBitAddress) ) {
-				world = processSimMessage(world, m);
+				world = processSimMessage(world, m, updateContext);
 			}
 			
 			int rstSize = 1<<world.rstSizePower;

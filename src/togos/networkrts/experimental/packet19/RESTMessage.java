@@ -1,13 +1,13 @@
 package togos.networkrts.experimental.packet19;
 
-public interface RESTMessage<P> extends RESTRequest<P>, RESTResponse<P>
+public interface RESTMessage extends RESTRequest, RESTResponse
 {
 	public enum RESTMessageType {
 		REQUEST,
 		RESPONSE
 	}
 	
-	public RESTMessageType getMessageType();
+	public RESTMessageType getRestMessageType();
 	/**
 	 * For CoAP compatibility, responses tokens must have
 	 * the same representation (value and number of bytes)

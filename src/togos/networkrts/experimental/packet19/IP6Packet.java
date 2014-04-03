@@ -1,20 +1,18 @@
 package togos.networkrts.experimental.packet19;
 
-import togos.blob.ByteChunk;
-
 public class IP6Packet extends BaseDataPacket implements IPPacket
 {
 	// TODO: Add other fields
 	
 	protected byte nextHeader;
-	protected ByteChunk sourceAddress;
-	protected ByteChunk destinationAddress;
+	protected IP6Address sourceAddress;
+	protected IP6Address destinationAddress;
 	protected DataPacket payload;
 	
 	public IP6Packet( byte[] data, int offset, int length ) {
 		super(data, offset, length);
 	}
-	private IP6Packet( byte nextHeader, ByteChunk sourceAddress, ByteChunk destAddress, DataPacket payload ) {
+	private IP6Packet( byte nextHeader, IP6Address sourceAddress, IP6Address destAddress, DataPacket payload ) {
 		this.objectPopulated = true;
 		this.nextHeader = nextHeader;
 		this.sourceAddress = sourceAddress;
@@ -22,7 +20,7 @@ public class IP6Packet extends BaseDataPacket implements IPPacket
 		this.payload = payload;
 	}
 	
-	public static IP6Packet create( byte nextHeader, ByteChunk sourceAddress, ByteChunk destAddress, DataPacket payload ) {
+	public static IP6Packet create( byte nextHeader, IP6Address sourceAddress, IP6Address destAddress, DataPacket payload ) {
 		return new IP6Packet( nextHeader, sourceAddress, destAddress, payload );
 	}
 	
@@ -32,12 +30,16 @@ public class IP6Packet extends BaseDataPacket implements IPPacket
 		ensureObjectPopulated();
 		return nextHeader;
 	}
-	public ByteChunk getSourceAddress() {
+	public IP6Address getSourceAddress() {
 		ensureObjectPopulated();
 		return sourceAddress;
 	}
-	protected ByteChunk getDestinationAddress() {
+	public IP6Address getDestinationAddress() {
 		ensureObjectPopulated();
 		return destinationAddress;
+	}
+	@Override public DataPacket getPayload() {
+		ensureObjectPopulated();
+		return payload;
 	}
 }

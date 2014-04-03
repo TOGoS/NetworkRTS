@@ -1,7 +1,13 @@
 package togos.networkrts.experimental.packet19;
 
-public class CoAPMessage extends BaseDataPacket
+public class CoAPMessage extends BaseDataPacket implements RESTMessage
 {
+	public static final PacketPayloadCodec<CoAPMessage> CODEC = new DataPacketPayloadCodec<CoAPMessage>() {
+		@Override public CoAPMessage decode(byte[] data, int offset, int length) throws MalformedDataException {
+			return new CoAPMessage(data, offset, length);
+		}
+	};
+	
 	// TODO: Implement serialization/deserialization
 	
 	enum CoAPMessageType {
@@ -20,12 +26,16 @@ public class CoAPMessage extends BaseDataPacket
 			this.value = value;
 		}
 	}
-	
+
 	private int header;
 	private long token;
 	private CoAPOption[] options;
 	
-	public int getMessageHeader() {
+	public CoAPMessage( byte[] data, int offset, int length ) {
+		super(data, offset, length);
+	}
+	
+	protected int getMessageHeader() {
 		ensureObjectPopulated();
 		return header;
 	}
@@ -46,5 +56,29 @@ public class CoAPMessage extends BaseDataPacket
 	public CoAPOption[] getOptions() {
 		ensureObjectPopulated();
 		return options;
+	}
+	
+	@Override public String getMethod() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override public String getPath() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override public WackPacket getPayload() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override public int getStatus() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override public RESTMessageType getRestMessageType() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override public byte getTokenSignificantBytes() {
+		throw new UnsupportedOperationException();
 	}
 }
