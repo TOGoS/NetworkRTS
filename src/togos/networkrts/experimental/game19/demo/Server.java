@@ -29,16 +29,16 @@ public class Server
 		}
 	};
 	
-	public final LinkedBlockingQueue<Message> incomingMessageQueue = new LinkedBlockingQueue<Message>();
+	protected final LinkedBlockingQueue<Message> incomingMessageQueue = new LinkedBlockingQueue<Message>();
 	// TODO: It may be that this shouldn't be directly exposed
-	public LinkedBlockingQueue<Message> outgoingMessageQueue;
+	protected LinkedBlockingQueue<Message> outgoingMessageQueue;
 	
 	public Server() throws IOException {
 	}
 	
 	public void init(Simulator sim) throws IOException {
 		this.simulator = sim;
-		this.outgoingMessageQueue = simulator.outgoingMessages;
+		this.outgoingMessageQueue = simulator.getOutgoingMessageQueue();
 	}
 	
 	protected void ensureInitialized() {

@@ -63,7 +63,10 @@ public class Simulation implements AutoEventUpdatable2<Message>
 	/** Messages to things outside the simulation go here! */
 	protected final LinkedBlockingQueue<Message> outgoingMessageQueue;
 	
-	class SimUpdateContext implements UpdateContext {
+	/**
+	 * Update context to be used synchronously, within the simulation.
+	 */
+	private class SimUpdateContext implements UpdateContext {
 		public final ArrayMessageSet newMessages = new ArrayMessageSet();
 		
 		@Override public void sendMessage( Message m ) {

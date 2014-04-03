@@ -35,10 +35,10 @@ public class Simulator
 		}
 	}
 	
-	protected QueuelessRealTimeEventSource<Message> incomingMessages = new QueuelessRealTimeEventSource<Message>();
-	public    LinkedBlockingQueue<Message> outgoingMessages = new LinkedBlockingQueue<Message>();
-	protected LinkedBlockingQueue<AsyncTask> asyncTaskQueue = new LinkedBlockingQueue<AsyncTask>();
-	protected TaskRunner taskRunner = new TaskRunner("Async task runner", asyncTaskQueue, new UpdateContext() {
+	protected final QueuelessRealTimeEventSource<Message> incomingMessages = new QueuelessRealTimeEventSource<Message>();
+	protected final LinkedBlockingQueue<Message> outgoingMessages = new LinkedBlockingQueue<Message>();
+	protected final LinkedBlockingQueue<AsyncTask> asyncTaskQueue = new LinkedBlockingQueue<AsyncTask>();
+	protected final TaskRunner taskRunner = new TaskRunner("Async task runner", asyncTaskQueue, new UpdateContext() {
 		@Override public void sendMessage( Message m ) {
 			if( (m.minBitAddress & BitAddresses.TYPE_EXTERNAL) == BitAddresses.TYPE_EXTERNAL ) {
 				outgoingMessages.add(m);
@@ -85,4 +85,7 @@ public class Simulator
 	public void enqueueMessage( Message m ) throws InterruptedException {
 		incomingMessages.post(m);
 	}
+	
+	public QueuelessRealTimeEventSource<Message> getIncomingMessagePoster() { return incomingMessages; }
+	public LinkedBlockingQueue<Message> getOutgoingMessageQueue() { return outgoingMessages; }
 }

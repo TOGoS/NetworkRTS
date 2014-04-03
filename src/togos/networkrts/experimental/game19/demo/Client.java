@@ -7,6 +7,9 @@ import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
@@ -14,13 +17,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 
 import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.Scene;
 import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
 import togos.networkrts.experimental.game19.world.Message;
+import togos.networkrts.experimental.game19.world.Message.MessageType;
+import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManCoreStats;
+import togos.networkrts.experimental.packet19.FakeCoAPMessage;
+import togos.networkrts.experimental.packet19.RESTRequest;
+import togos.networkrts.experimental.packet19.WackPacket;
 import togos.networkrts.ui.ImageCanvas;
 
 class Client {
@@ -193,11 +202,18 @@ class Client {
 	}
 	
 	Client.SceneCanvas sceneCanvas;
-	public Queue<Message> messageQueue;
 	protected Scene scene;
 	protected JetManCoreStats stats;
 	protected List<Client.TextMessage> textMessages = new ArrayList<Client.TextMessage>();
 	public long lastUpdateFromAvatar;
+	
+	// TODO: Replace this stuff with higher-level communication channels;
+	// the client shouldn't need to know anything about Messages or bit addresses
+	// or the initial world.
+	public Queue<Message> outgoingMessageQueue;
+	public BlockingQueue<Message> incomingMessageQueue;
+	public long playerBitAddress, simulationBitAddress, clientBitAddress;
+	public World initialWorld; // Only here so client can reset it
 	
 	public Client( ResourceContext resourceContext ) {
 		sceneCanvas = new SceneCanvas(resourceContext);
@@ -235,6 +251,9 @@ class Client {
 	}
 	
 	public void startUi() {
+		if( incomingMessageQueue == null ) throw new RuntimeException("Incoming message queue not set");
+		if( outgoingMessageQueue == null ) throw new RuntimeException("Outgoing message queue not set");
+		
 		final Frame f = new Frame("Game19 Render Demo");
 		f.add(sceneCanvas);
 		f.setExtendedState(f.getExtendedState()|Frame.MAXIMIZED_BOTH);
@@ -261,13 +280,133 @@ class Client {
 			}
 		};
 		redrawThread.start();
+		final Thread clientUpdateThread = new Thread("Client Updater") {
+			public void run() {
+				while(true) {
+					Message m;
+					try {
+						m = incomingMessageQueue.take();
+					} catch( InterruptedException e ) {
+						System.err.println(getName()+" interrupted; quitting");
+						e.printStackTrace();
+						return;
+					}
+					
+					updateReceived();
+					if( m.payload instanceof Scene ) {
+						setScene((Scene)m.payload);
+					} else if( m.payload instanceof JetManCoreStats ) {
+						setStats((JetManCoreStats)m.payload);
+					} else if( m.payload instanceof String ) {
+						addTextMessage(new Client.TextMessage(System.currentTimeMillis(), (String)m.payload));
+					} else {
+						System.err.println("Unrecognized message payload: "+m.payload.getClass());
+					}
+				}
+			}
+		};
+		clientUpdateThread.setDaemon(true);
+		clientUpdateThread.start();
+		
+		sceneCanvas.addKeyListener(new KeyAdapter() {
+			@Override public void keyPressed(KeyEvent kevt) {
+				switch( kevt.getKeyCode() ) {
+				case KeyEvent.VK_EQUALS: sceneCanvas.zoomMore(); break;
+				case KeyEvent.VK_MINUS: sceneCanvas.zoomLess(); break;
+				case KeyEvent.VK_C:
+					outgoingMessageQueue.add(Message.create(playerBitAddress, MessageType.INCOMING_PACKET, clientBitAddress, Boolean.TRUE));
+					break;
+				case KeyEvent.VK_U:
+					outgoingMessageQueue.add(Message.create(playerBitAddress, MessageType.INCOMING_PACKET, clientBitAddress, Boolean.FALSE));
+					break;
+				case KeyEvent.VK_R:
+					// TODO: ethernet frames, etc etc
+					FakeCoAPMessage fcm = FakeCoAPMessage.request((byte)0, 0, RESTRequest.PUT, "/world", new WackPacket(initialWorld, Object.class, null));
+					outgoingMessageQueue.add(Message.create(simulationBitAddress, MessageType.INCOMING_PACKET, clientBitAddress, fcm));
+					break;
+				}
+			}
+		});
+		sceneCanvas.addKeyListener(new KeyListener() {
+			boolean[] keysDown = new boolean[8];
+			int oldDir = -2; // Unknown!
+			
+			protected boolean dkd( int dir ) {
+				return keysDown[dir] || keysDown[dir+4];
+			}
+			
+			final int[] dirs = new int[] {
+				5,  6, 7,
+				4, -1, 0,
+				3,  2, 1
+			};
+			
+			protected int dir( int dirX, int dirY ) {
+				return dirs[(dirY+1)*3 + dirX+1];
+			}
+			
+			protected void keySomething( int keyCode, boolean state ) {
+				int dkCode;
+				switch( keyCode ) {
+				case KeyEvent.VK_W: dkCode = 3; break;
+				case KeyEvent.VK_A: dkCode = 2; break;
+				case KeyEvent.VK_S: dkCode = 1; break;
+				case KeyEvent.VK_D: dkCode = 0; break;
+				case KeyEvent.VK_UP: dkCode = 7; break;
+				case KeyEvent.VK_LEFT: dkCode = 6; break;
+				case KeyEvent.VK_DOWN: dkCode = 5; break;
+				case KeyEvent.VK_RIGHT: dkCode = 4; break;
+				default: return; // Not a key we care about
+				}
+				
+				keysDown[dkCode] = state;
+				int dirX, dirY;
+				if( dkd(0) && !dkd(2) ) {
+					dirX = 1;
+				} else if( dkd(2) && !dkd(0) ) {
+					dirX = -1;
+				} else {
+					dirX = 0;
+				}
+				if( dkd(1) && !dkd(3) ) {
+					dirY = 1;
+				} else if( dkd(3) && !dkd(1) ) {
+					dirY = -1;
+				} else {
+					dirY = 0;
+				}
+				
+				// TODO: On Linux, you'll rapidly switch between some key being pressed
+				// and not pressed while it's held down.
+				// keyReleased will often be followed immediately by keyPressed.
+				// Find some way to ignore those.
+				
+				int dir = dir(dirX, dirY);
+				if( dir != oldDir ) {
+					Message m = Message.create(playerBitAddress, MessageType.INCOMING_PACKET, clientBitAddress, Integer.valueOf(dir));
+					outgoingMessageQueue.add(m);
+					oldDir = dir;
+				}
+			}
+			
+			@Override public void keyPressed(KeyEvent kevt) {
+				keySomething(kevt.getKeyCode(), true);
+			}
+
+			@Override public void keyReleased(KeyEvent kevt) {
+				keySomething(kevt.getKeyCode(), false);
+			}
+
+			@Override public void keyTyped(KeyEvent arg0) {}
+		});
+		
 		f.addWindowListener(new WindowAdapter() {
 			@Override public void windowClosing(WindowEvent evt) {
 				f.dispose();
 				redrawThread.interrupt();
 				watchdogThread.interrupt();
 			}
-		});
+		});		
 		f.pack();
 		f.setVisible(true);
 	}
