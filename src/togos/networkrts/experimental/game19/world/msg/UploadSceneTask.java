@@ -3,10 +3,10 @@ package togos.networkrts.experimental.game19.world.msg;
 import java.util.ArrayList;
 import java.util.List;
 
-import togos.networkrts.experimental.game19.demo.ServerClientDemo.Scene;
 import togos.networkrts.experimental.game19.scene.Layer;
 import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
 import togos.networkrts.experimental.game19.scene.QuadTreeLayerData;
+import togos.networkrts.experimental.game19.scene.Scene;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.scene.VisibilityChecker;
 import togos.networkrts.experimental.game19.sim.AsyncTask;

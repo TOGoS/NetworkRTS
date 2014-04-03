@@ -6,13 +6,13 @@ import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.image.BufferedImage;
 
-import togos.networkrts.experimental.game19.demo.ServerClientDemo.Scene;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
 import togos.networkrts.experimental.game19.scene.Layer.LayerLink;
 import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
 import togos.networkrts.experimental.game19.scene.QuadTreeLayerData;
+import togos.networkrts.experimental.game19.scene.Scene;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
