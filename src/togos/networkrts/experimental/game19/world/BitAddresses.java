@@ -69,7 +69,7 @@ public class BitAddresses
 	}
 	
 	public static final long forceType( long type, long rest ) {
-		assert (rest & TYPE_MASK) == type;
+		assert (type & TYPE_MASK) == type;
 		return (rest & ~TYPE_MASK) | type;
 	}
 	

@@ -226,6 +226,8 @@ public class Simulation implements AutoEventUpdatable2<Message>
 	}
 	
 	@Override public long getNextAutoUpdateTime() {
+		// TODO: nextAutoUpdateTime interacts with phase flags in weird ways.  Refactor or deal with it. 
+		if( world.getNextAutoUpdateTime() <= time ) return time+1;
 		return world.getNextAutoUpdateTime();
 	}
 	
