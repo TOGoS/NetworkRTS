@@ -14,8 +14,9 @@ public final class EventBuffer<EventClass> {
 	 * (this is why it's important to initialize the buffer with a reasonable time value)
 	 * and maxTime. 
 	 */
-	public final void update( EventClass data, long newTime, long maxTime ) {
+	public final boolean update( EventClass data, long newTime, long maxTime ) {
 		this.payload = data;
 		this.time = newTime < time ? time : newTime > maxTime ? maxTime : newTime;
+		return data != null;
 	}
 }

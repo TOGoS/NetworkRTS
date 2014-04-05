@@ -19,7 +19,7 @@ public class ServerClientDemo
 {
 	// TODO: Move a lot of the details into Client/Server
 	public static void main( String[] args ) throws Exception {
-		final Server server = new Server();
+		final Server server;
 		
 		IDGenerator idGenerator = new IDGenerator();
 		
@@ -38,14 +38,14 @@ public class ServerClientDemo
 			initialWorld = DemoWorld.initWorld(resourceContext).withNonTile(playerNonTile);
 			Simulator sim = new Simulator( initialWorld, 50, simBa );
 			sim.setDaemon(true);
-			server.init(sim);
+			server = new Server(sim);
 		}
 		
 		c.clientBitAddress = clientBa;
 		c.playerBitAddress = playerBa;
 		c.initialWorld = initialWorld;
-		c.outgoingMessageQueue = server.incomingMessageQueue;
-		c.incomingMessageQueue = server.outgoingMessageQueue;
+		c.outgoingMessageQueue = server.simulator.getIncomingMessageQueue();
+		c.incomingMessageQueue = server.simulator.getOutgoingMessageQueue();
 		c.startUi();
 		
 		// Maybe the simulator should do this

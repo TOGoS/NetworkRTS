@@ -18,6 +18,7 @@ public class EventLooper<EventClass> extends Thread
 	final EventBuffer<EventClass> eBuf;
 	
 	protected AutoEventUpdatable2<EventClass> stepper;
+	public boolean reportSlowness;
 	
 	public EventLooper( String name, RealTimeEventSource<EventClass> eventSource, AutoEventUpdatable2<EventClass> ticker, long minStepInterval ) {
 		super(name);
@@ -44,8 +45,7 @@ public class EventLooper<EventClass> extends Thread
 			
 			long nextAutoTickTime = nextAutoTick == Long.MAX_VALUE ? Long.MAX_VALUE : previousTickStartTime + (nextAutoTick - currentTick) * minStepInterval;
 			if( nextAutoTickTime < currentTime+1 ) {
-				// TODO: figure out why this always shows
-				//System.err.println("Simulation running slow!  Tick took "+(currentTime-previousTickStartTime)+" milliseconds");
+				if( reportSlowness ) System.err.println("Simulation running slow!  Tick took "+(currentTime-previousTickStartTime)+" milliseconds");
 				nextAutoTickTime = currentTime + 1;
 			}
 			

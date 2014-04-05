@@ -6,7 +6,7 @@ import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.gensim.EventLooper;
-import togos.networkrts.experimental.gensim.QueuelessRealTimeEventSource;
+import togos.networkrts.experimental.gensim.QueuedRealTimeEventSource;
 
 public class Simulator
 {
@@ -35,7 +35,7 @@ public class Simulator
 		}
 	}
 	
-	protected final QueuelessRealTimeEventSource<Message> incomingMessages = new QueuelessRealTimeEventSource<Message>();
+	protected final QueuedRealTimeEventSource<Message> incomingMessages = new QueuedRealTimeEventSource<Message>();
 	protected final LinkedBlockingQueue<Message> outgoingMessages = new LinkedBlockingQueue<Message>();
 	protected final LinkedBlockingQueue<AsyncTask> asyncTaskQueue = new LinkedBlockingQueue<AsyncTask>();
 	protected final TaskRunner taskRunner = new TaskRunner("Async task runner", asyncTaskQueue, new UpdateContext() {
@@ -46,7 +46,7 @@ public class Simulator
 			if( (m.maxBitAddress & BitAddresses.TYPE_EXTERNAL) == 0 ) {
 				// Put back into incoming message queue!
 				try {
-					incomingMessages.post(m);
+					incomingMessages.eventQueue.put(m);
 				} catch( InterruptedException e ) {
 					System.err.println("Interrupted while posting message to incoming message queue from async task");
 					e.printStackTrace();
@@ -65,6 +65,8 @@ public class Simulator
 		simulation = new Simulation(world, asyncTaskQueue, outgoingMessages);
 		if( simId != 0 ) simulation.simulationBitAddress = BitAddresses.forceType(BitAddresses.TYPE_INTERNAL, simId);
 		looper = new EventLooper<Message>(incomingMessages, simulation, minStepInterval);
+		// TODO: uncomment when it's time to optimize
+		// looper.reportSlowness = true;
 	}
 	
 	public void start() {
@@ -82,10 +84,6 @@ public class Simulator
 		looper.interrupt();
 	}
 	
-	public void enqueueMessage( Message m ) throws InterruptedException {
-		incomingMessages.post(m);
-	}
-	
-	public QueuelessRealTimeEventSource<Message> getIncomingMessagePoster() { return incomingMessages; }
+	public LinkedBlockingQueue<Message> getIncomingMessageQueue() { return incomingMessages.eventQueue; }
 	public LinkedBlockingQueue<Message> getOutgoingMessageQueue() { return outgoingMessages; }
 }
