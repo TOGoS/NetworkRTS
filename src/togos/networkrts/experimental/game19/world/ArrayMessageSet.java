@@ -3,7 +3,7 @@ package togos.networkrts.experimental.game19.world;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import togos.networkrts.experimental.game19.sim.MessageSender;
+import togos.networkrts.experimental.game19.util.MessageSender;
 import togos.networkrts.experimental.shape.RectIntersector;
 import togos.networkrts.util.BitAddressUtil;
 

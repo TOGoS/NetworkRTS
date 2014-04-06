@@ -1,4 +1,6 @@
-package togos.networkrts.experimental.game19.sim;
+package togos.networkrts.experimental.game19.extnet;
+
+import togos.networkrts.experimental.game19.util.MessageSender;
 
 public interface NetworkComponent extends MessageSender
 {

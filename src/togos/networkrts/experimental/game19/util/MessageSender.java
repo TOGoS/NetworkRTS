@@ -1,4 +1,4 @@
-package togos.networkrts.experimental.game19.sim;
+package togos.networkrts.experimental.game19.util;
 
 import togos.networkrts.experimental.game19.world.Message;
 

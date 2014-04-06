@@ -1,9 +1,9 @@
-package togos.networkrts.experimental.game19.util;
+package togos.networkrts.experimental.game19.extnet;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import togos.networkrts.experimental.game19.sim.MessageSender;
+import togos.networkrts.experimental.game19.util.MessageSender;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.packet19.EthernetFrame;
 import togos.networkrts.util.BitAddressUtil;
@@ -17,6 +17,7 @@ public class EthernetSwitch implements MessageSender {
 	protected final MessageSender sender;
 	
 	// Map ethernet addresses to bit addresses
+	// TODO: Use a more efficient table implementation
 	protected final Map<Long,Long> etherToBit = new HashMap<Long,Long>();
 	
 	public EthernetSwitch( long bitAddress, MessageSender sender ) {

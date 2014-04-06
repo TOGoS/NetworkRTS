@@ -1,5 +1,7 @@
 package togos.networkrts.experimental.game19.sim;
 
+import togos.networkrts.experimental.game19.util.MessageSender;
+
 /**
  * Allows objects being updated to do stuff!
  */

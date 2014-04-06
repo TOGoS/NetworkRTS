@@ -1,12 +1,11 @@
-package togos.networkrts.experimental.game19.demo;
+package togos.networkrts.experimental.game19.extnet;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import togos.networkrts.experimental.game19.sim.MessageSender;
-import togos.networkrts.experimental.game19.sim.NetworkComponent;
+import togos.networkrts.experimental.game19.util.MessageSender;
 import togos.networkrts.experimental.game19.world.Message;
 
 public class Network implements MessageSender
