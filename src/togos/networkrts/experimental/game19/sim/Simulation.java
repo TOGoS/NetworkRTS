@@ -27,11 +27,13 @@ import togos.networkrts.experimental.packet19.PacketPayloadCodec;
 import togos.networkrts.experimental.packet19.RESTMessage;
 import togos.networkrts.experimental.packet19.RESTRequest;
 import togos.networkrts.experimental.packet19.UDPPacket;
+import togos.networkrts.util.BitAddressRange;
+import togos.networkrts.util.BitAddressUtil;
 
 /**
  * The pure-ish, non-threaded part of the simulator
  */
-public class Simulation implements AutoEventUpdatable2<Message>
+public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
 {
 	static class NNTLNonTileUpdateContext implements NonTileUpdateContext {
 		protected final Collection<NonTile> nonTileList;
@@ -232,4 +234,12 @@ public class Simulation implements AutoEventUpdatable2<Message>
 	}
 	
 	@Override public long getCurrentTime() { return time; }
+	
+	@Override public final long getMinBitAddress() {
+		return BitAddressUtil.minAddressAI(world.getMinBitAddress(), simulationBitAddress);
+	}
+	
+	@Override public final long getMaxBitAddress() {
+		return BitAddressUtil.maxAddressAI(world.getMaxBitAddress(), simulationBitAddress);
+	}
 }

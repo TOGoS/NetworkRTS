@@ -164,13 +164,13 @@ public class Room implements SimNode
 			if( t.behavior != BoringestThingBehavior.instance ) {
 				anyInterestingTileBehavior = true;
 			}
-			maxId = BitAddressUtil.maxAddress( maxId, t.id );
-			minId = BitAddressUtil.minAddress( minId, t.id );
+			maxId = BitAddressUtil.maxAddressAI( maxId, t.id );
+			minId = BitAddressUtil.minAddressAI( minId, t.id );
 			nextAutoUpdateTime = Math.min(nextAutoUpdateTime, t.getNextAutoUpdateTime() );
 		}
 		for( DynamicThing t : dynamicThings ) {
-			maxId = BitAddressUtil.maxAddress( maxId, t.id );
-			minId = BitAddressUtil.minAddress( minId, t.id );
+			maxId = BitAddressUtil.maxAddressAI( maxId, t.id );
+			minId = BitAddressUtil.minAddressAI( minId, t.id );
 			nextAutoUpdateTime = Math.min(nextAutoUpdateTime, t.getNextAutoUpdateTime() );
 		}
 		

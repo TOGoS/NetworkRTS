@@ -8,6 +8,7 @@ import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.gensim.EventLooper;
 import togos.networkrts.experimental.gensim.QueuedRealTimeEventSource;
+import togos.networkrts.util.BitAddressUtil;
 
 public class Simulator implements NetworkComponent
 {
@@ -72,6 +73,9 @@ public class Simulator implements NetworkComponent
 	}
 	
 	public void sendMessage( Message m ) {
+		// Disregard messages that can't possibly be to anything in the simulation
+		if( !BitAddressUtil.rangesIntersect(m, BitAddresses.SIMULATED_MIN, BitAddresses.SIMULATED_MAX) ) return;
+		
 		incomingMessages.eventQueue.add(m);
 	}
 	

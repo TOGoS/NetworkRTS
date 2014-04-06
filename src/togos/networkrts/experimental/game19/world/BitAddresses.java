@@ -1,5 +1,9 @@
 package togos.networkrts.experimental.game19.world;
 
+import static togos.networkrts.util.BitAddressUtil.MAX_ADDRESS;
+import static togos.networkrts.util.BitAddressUtil.MIN_ADDRESS;
+import togos.networkrts.util.BitAddressRange;
+
 /**
  * Game19 bit addresses are divided into flags, type, and ID.
  * For a given object, flags are assumed to be dynamic, type
@@ -47,13 +51,18 @@ public class BitAddresses
 	public static final int  TYPE_SHIFT   = 44;
 	public static final long TYPE_MASK    = 0x0000F00000000000l;
 	
-	public static final long TYPE_NODE    = 0x0000100000000000l;
-	public static final long TYPE_BLOCK   = 0x0000200000000000l;
-	public static final long TYPE_NONTILE = 0x0000300000000000l;
+	public static final long TYPE_NONTILE = 0x0000100000000000l;
+	public static final long TYPE_NODE    = 0x0000200000000000l;
+	public static final long TYPE_BLOCK   = 0x0000300000000000l;
 	// Miscellaneous simulated components
 	public static final long TYPE_INTERNAL= 0x0000400000000000l;
 	// Stuff that lives outside the simulation event loop
-	public static final long TYPE_EXTERNAL= 0x0000500000000000l;
+	public static final long TYPE_EXTERNAL= 0x0000800000000000l;
+	
+	public static final long SIMULATED_TYPE_MIN = TYPE_NONTILE&TYPE_NODE&TYPE_BLOCK&TYPE_INTERNAL;
+	public static final long SIMULATED_TYPE_MAX = TYPE_NONTILE|TYPE_NODE|TYPE_BLOCK|TYPE_INTERNAL;
+	public static final long SIMULATED_MIN = forceType(SIMULATED_TYPE_MIN, MIN_ADDRESS);
+	public static final long SIMULATED_MAX = forceType(SIMULATED_TYPE_MAX, MAX_ADDRESS);
 	
 	public static final long ID_MASK      = 0x00000FFFFFFFFFFFl;
 	
@@ -90,6 +99,10 @@ public class BitAddresses
 		int flags = (int)((address & FLAG_MASK) >>> FLAG_SHIFT);
 		int type  = (int)((address & TYPE_MASK) >>> TYPE_SHIFT);
 		return String.format("%04x-%1x-%011x", flags, type, id);
+	}
+	
+	public static String toString( BitAddressRange range ) {
+		return toString(range.getMinBitAddress())+".."+toString(range.getMaxBitAddress());
 	}
 	
 	/**

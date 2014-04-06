@@ -37,11 +37,11 @@ public class Block implements BitAddressRange, HasAutoUpdateTime
 	}
 	
 	@Override public long getMinBitAddress() {
-		return BitAddressUtil.minAddress( bitAddress, behavior.getMinBitAddress() );
+		return BitAddressUtil.minAddressAI( behavior.getMinBitAddress(), bitAddress );
 	}
 	
 	@Override public long getMaxBitAddress() {
-		return BitAddressUtil.maxAddress( bitAddress, behavior.getMaxBitAddress() );
+		return BitAddressUtil.maxAddressAI( behavior.getMaxBitAddress(), bitAddress );
 	}
 	
 	@Override public long getNextAutoUpdateTime() {

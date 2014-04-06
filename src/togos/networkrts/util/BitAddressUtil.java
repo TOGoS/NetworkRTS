@@ -72,10 +72,23 @@ public class BitAddressUtil
 		return id == NO_ADDRESS ? MIN_ADDRESS : id;
 	}
 	
-	public static long minAddress( long a, long b ) {
-		return toMinAddress(a) & toMinAddress(b);
+	// AA = aggregate, aggregate
+	// addresses range endpoints of zero are not treated specially
+	
+	public static long minAddress( long min1, long min2 ) {
+		return min1 & min2;
 	}
-	public static long maxAddress( long a, long b ) {
-		return toMaxAddress(a) | toMaxAddress(b);
+	public static long maxAddress( long max1, long max2 ) {
+		return max1 | max2;
+	}
+	
+	// AI = aggregate, internal.
+	// The second address is ignored if it's zero
+	
+	public static long minAddressAI( long min1, long b ) {
+		return min1 & toMinAddress(b);
+	}
+	public static long maxAddressAI( long max1, long b ) {
+		return max1 | toMaxAddress(b);
 	}
 }
