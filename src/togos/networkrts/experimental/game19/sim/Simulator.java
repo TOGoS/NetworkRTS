@@ -1,5 +1,6 @@
 package togos.networkrts.experimental.game19.sim;
 
+import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import togos.networkrts.experimental.game19.world.BitAddresses;
@@ -8,7 +9,7 @@ import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.gensim.EventLooper;
 import togos.networkrts.experimental.gensim.QueuedRealTimeEventSource;
 
-public class Simulator
+public class Simulator implements NetworkComponent
 {
 	static class TaskRunner extends Thread {
 		protected LinkedBlockingQueue<AsyncTask> incomingTasks;
@@ -36,7 +37,7 @@ public class Simulator
 	}
 	
 	protected final QueuedRealTimeEventSource<Message> incomingMessages = new QueuedRealTimeEventSource<Message>();
-	protected final LinkedBlockingQueue<Message> outgoingMessages = new LinkedBlockingQueue<Message>();
+	protected final Queue<Message> outgoingMessages;
 	protected final LinkedBlockingQueue<AsyncTask> asyncTaskQueue = new LinkedBlockingQueue<AsyncTask>();
 	protected final TaskRunner taskRunner = new TaskRunner("Async task runner", asyncTaskQueue, new UpdateContext() {
 		@Override public void sendMessage( Message m ) {
@@ -61,12 +62,17 @@ public class Simulator
 	protected EventLooper<Message> looper;
 	protected Simulation simulation;
 	
-	public Simulator( World world, long minStepInterval, long simId ) {
+	public Simulator( World world, long minStepInterval, long simId, Queue<Message> outgoingMessageQueue ) {
+		outgoingMessages = outgoingMessageQueue;
 		simulation = new Simulation(world, asyncTaskQueue, outgoingMessages);
 		if( simId != 0 ) simulation.simulationBitAddress = BitAddresses.forceType(BitAddresses.TYPE_INTERNAL, simId);
 		looper = new EventLooper<Message>(incomingMessages, simulation, minStepInterval);
 		// TODO: uncomment when it's time to optimize
 		// looper.reportSlowness = true;
+	}
+	
+	public void sendMessage( Message m ) {
+		incomingMessages.eventQueue.add(m);
 	}
 	
 	public void start() {
@@ -83,7 +89,4 @@ public class Simulator
 		taskRunner.interrupt();
 		looper.interrupt();
 	}
-	
-	public LinkedBlockingQueue<Message> getIncomingMessageQueue() { return incomingMessages.eventQueue; }
-	public LinkedBlockingQueue<Message> getOutgoingMessageQueue() { return outgoingMessages; }
 }

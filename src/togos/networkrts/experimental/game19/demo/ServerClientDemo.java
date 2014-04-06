@@ -4,22 +4,26 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.util.Arrays;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import togos.networkrts.experimental.game19.ResourceContext;
+import togos.networkrts.experimental.game19.sim.NetworkComponent;
 import togos.networkrts.experimental.game19.sim.Simulator;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.IDGenerator;
+import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManIcons;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManInternals;
+import togos.networkrts.util.BitAddressUtil;
 import togos.networkrts.util.Predicate;
 
 public class ServerClientDemo
 {
 	// TODO: Move a lot of the details into Client/Server
 	public static void main( String[] args ) throws Exception {
-		final Server server;
+		final Network server;
 		
 		IDGenerator idGenerator = new IDGenerator();
 		
@@ -36,16 +40,30 @@ public class ServerClientDemo
 			final JetManIcons jetManIcons = JetManIcons.load(resourceContext);
 			final NonTile playerNonTile = JetManInternals.createJetMan(playerId, clientBa, jetManIcons);
 			initialWorld = DemoWorld.initWorld(resourceContext).withNonTile(playerNonTile);
-			Simulator sim = new Simulator( initialWorld, 50, simBa );
+			server = new Network();
+			Simulator sim = new Simulator( initialWorld, 50, simBa, server.incomingMessageQueue );
 			sim.setDaemon(true);
-			server = new Server(sim);
+			server.addComponent(sim);
 		}
+		
+		final LinkedBlockingQueue<Message> clientIncomingMessageQueue = new LinkedBlockingQueue<Message>();
+		server.addComponent(new NetworkComponent(){
+			@Override public void sendMessage( Message m ) {
+				if( BitAddressUtil.rangeContains(m, clientBa)) {
+					clientIncomingMessageQueue.add(m);
+				}
+			}
+			
+			@Override public void start() {}
+			@Override public void setDaemon( boolean d ) {}
+			@Override public void halt() {}
+		});
 		
 		c.clientBitAddress = clientBa;
 		c.playerBitAddress = playerBa;
 		c.initialWorld = initialWorld;
-		c.outgoingMessageQueue = server.simulator.getIncomingMessageQueue();
-		c.incomingMessageQueue = server.simulator.getOutgoingMessageQueue();
+		c.outgoingMessageQueue = server.incomingMessageQueue;
+		c.incomingMessageQueue = clientIncomingMessageQueue;
 		c.startUi();
 		
 		// Maybe the simulator should do this
