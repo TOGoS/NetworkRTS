@@ -1,7 +1,7 @@
 package togos.networkrts.experimental.game19.sim;
 
 import java.util.Collection;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.Queue;
 
 import togos.networkrts.experimental.game19.io.CerealWorldIO;
 import togos.networkrts.experimental.game19.world.ArrayMessageSet;
@@ -59,9 +59,9 @@ public class Simulation implements AutoEventUpdatable2<Message>
 	protected IP6Address simulationIpAddress;
 	protected long time = 0;
 	/** Tasks to be done later will be sent here! */
-	protected final LinkedBlockingQueue<AsyncTask> asyncTaskQueue;
+	protected final Queue<AsyncTask> asyncTaskQueue;
 	/** Messages to things outside the simulation go here! */
-	protected final LinkedBlockingQueue<Message> outgoingMessageQueue;
+	protected final Queue<Message> outgoingMessageQueue;
 	
 	/**
 	 * Update context to be used synchronously, within the simulation.
@@ -82,7 +82,7 @@ public class Simulation implements AutoEventUpdatable2<Message>
 		}
 	}
 	
-	public Simulation(World world, LinkedBlockingQueue<AsyncTask> asyncTaskQueue, LinkedBlockingQueue<Message> outgoingMessageQueue ) {
+	public Simulation(World world, Queue<AsyncTask> asyncTaskQueue, Queue<Message> outgoingMessageQueue ) {
 		this.world = world;
 		this.asyncTaskQueue = asyncTaskQueue;
 		this.outgoingMessageQueue = outgoingMessageQueue;
