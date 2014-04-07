@@ -24,6 +24,7 @@ import togos.networkrts.experimental.packet19.IP6Address;
 import togos.networkrts.experimental.packet19.IPPacket;
 import togos.networkrts.experimental.packet19.MalformedDataException;
 import togos.networkrts.experimental.packet19.PacketPayloadCodec;
+import togos.networkrts.experimental.packet19.PacketWrapping;
 import togos.networkrts.experimental.packet19.RESTMessage;
 import togos.networkrts.experimental.packet19.RESTRequest;
 import togos.networkrts.experimental.packet19.UDPPacket;
@@ -114,20 +115,6 @@ public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
 					NNTLNonTileUpdateContext.get(nntlntuc, updateContext, generatedNonTiles));
 			}
 		});
-	}
-	
-	static class PacketWrapping {
-		public final PacketWrapping parent;
-		public final Object payload;
-		
-		public PacketWrapping( PacketWrapping parent, Object payload ) {
-			this.parent = parent;
-			this.payload = payload;
-		}
-		
-		public PacketWrapping( Object payload ) {
-			this( null, payload );
-		}
 	}
 	
 	protected <T> PacketWrapping wrapToAppLayer( PacketWrapping pw, Class<T> appClass, PacketPayloadCodec<T> appCodec ) throws MalformedDataException {
