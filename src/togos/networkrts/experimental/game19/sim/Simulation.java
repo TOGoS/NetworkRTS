@@ -117,9 +117,9 @@ public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
 		});
 	}
 	
-	protected <T> PacketWrapping wrapToAppLayer( PacketWrapping pw, Class<T> appClass, PacketPayloadCodec<T> appCodec ) throws MalformedDataException {
+	protected <T> PacketWrapping<?> wrapToAppLayer( PacketWrapping<?> pw, Class<T> appClass, PacketPayloadCodec<T> appCodec ) throws MalformedDataException {
 		if( pw.payload instanceof Message ) {
-			pw = new PacketWrapping(pw, ((Message)pw.payload).payload );
+			pw = new PacketWrapping<Object>(pw, ((Message)pw.payload).payload );
 		}
 		if( pw.payload instanceof EthernetFrame ) {
 			EthernetFrame f = (EthernetFrame)pw.payload;
@@ -127,7 +127,7 @@ public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
 				System.err.println("Got a misaddressed ethernet packet");
 				return null;
 			}
-			pw = new PacketWrapping(pw, f.getPayload().getPayload(IPPacket.class, IPPacket.CODEC));
+			pw = new PacketWrapping<IPPacket>(pw, f.getPayload().getPayload(IPPacket.class, IPPacket.CODEC));
 		}
 		if( pw.payload instanceof IPPacket ) {
 			IPPacket ip = (IPPacket)pw.parent;
@@ -135,16 +135,16 @@ public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
 				System.err.println("Got a misaddressed IP packet");
 				return null;
 			}
-			pw = new PacketWrapping(pw, ip.getPayload());
+			pw = new PacketWrapping<Object>(pw, ip.getPayload());
 		}
 		if( pw.payload instanceof UDPPacket ) {
-			pw = new PacketWrapping(pw, ((UDPPacket)pw.payload).getPayload().getPayload(appClass, appCodec));
+			pw = new PacketWrapping<Object>(pw, ((UDPPacket)pw.payload).getPayload().getPayload(appClass, appCodec));
 			// Assume a CoAP message?
 		}
 		return pw;
 	}
 	
-	protected World handleSimMessage(World world, PacketWrapping pw, SimUpdateContext updateContext) throws MalformedDataException {
+	protected World handleSimMessage(World world, PacketWrapping<?> pw, SimUpdateContext updateContext) throws MalformedDataException {
 		pw = wrapToAppLayer(pw, CoAPMessage.class, CoAPMessage.CODEC);
 		if( pw == null ) return world;
 		handleRestRequest: if( pw.payload instanceof RESTMessage ) {
@@ -162,7 +162,7 @@ public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
 	protected World processSimMessage(World world, Message m, SimUpdateContext updateContext) {
 		if( m.type == MessageType.INCOMING_PACKET ) {
 			try {
-				world = handleSimMessage(world, new PacketWrapping(m), updateContext);
+				world = handleSimMessage(world, new PacketWrapping<Message>(m), updateContext);
 			} catch( MalformedDataException e ) {
 				System.err.println("Incoming message was malformed: "+e.getMessage());
 			}
