@@ -1,11 +1,10 @@
-package togos.networkrts.experimental.game19.demo;
+package togos.networkrts.experimental.game19.extnet;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
 
-import togos.networkrts.experimental.game19.extnet.NetworkComponent;
 import togos.networkrts.experimental.game19.util.MessageSender;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
@@ -13,6 +12,10 @@ import togos.networkrts.experimental.packet19.MalformedDataException;
 import togos.networkrts.experimental.packet19.PacketPayloadCodec;
 import togos.networkrts.util.BitAddressUtil;
 
+/**
+ * Bridge between X-over-UDP and X-over-Message networks
+ * X usually = Ethernet, but 'codec' makes the decision. 
+ */
 public class UDPTransport extends Thread implements NetworkComponent
 {
 	// IP network I <-> UDPTransport <-> Message network M
