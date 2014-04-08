@@ -1,6 +1,5 @@
 package togos.networkrts.experimental.game19.extnet;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -8,7 +7,28 @@ import java.util.concurrent.LinkedBlockingQueue;
 import togos.networkrts.experimental.game19.util.MessageSender;
 import togos.networkrts.experimental.game19.world.Message;
 
-public class Network implements MessageSender
+/**
+ * A collection of network components.
+ * Also provides synchronous message delivery via sendMessage
+ * (which should be thread-safe),
+ * and asynchronous via incomingMessageQueue.
+ *
+ * What's the point of the network layer?
+ * Why not just have components implement Pushable<EthernetFrame> and link them directly together?
+ * 
+ * - Messages have a return address;
+ *   otherwise return pushers would have to be pushed around
+ * - Components can be removed from the network
+ *   without having to be unhooked from all their
+ *   connections
+ * - Components can be addressed e.g. for interactive debugging purposes
+ * - Network provides a central place to plug things into
+ *   and start/stop everything in the system.
+ * 
+ * On the other hand, the network *does* add a layer of complexity
+ * and run-time cost.  For the moment I feel it's worth it.
+ */
+public class Network implements NetworkComponent
 {
 	static class Deliverator extends Thread {
 		protected final BlockingQueue<Message> messageQueue;
