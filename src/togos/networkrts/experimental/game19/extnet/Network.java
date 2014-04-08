@@ -44,7 +44,7 @@ public class Network implements MessageSender
 		for( NetworkComponent c : components ) c.sendMessage(m);
 	}
 	
-	public Network() throws IOException { }
+	public Network() { }
 	
 	public synchronized void start() {
 		assert !started;
