@@ -2,14 +2,16 @@ package togos.networkrts.experimental.game19.extnet;
 
 import java.util.HashMap;
 
+import togos.networkrts.experimental.game19.util.MessageSender;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.packet19.DataPacket;
 import togos.networkrts.experimental.packet19.EthernetFrame;
-import togos.networkrts.experimental.packet19.IP6Address;
+import togos.networkrts.experimental.packet19.IPAddress;
 import togos.networkrts.experimental.packet19.IPPacket;
 import togos.networkrts.experimental.packet19.MalformedDataException;
 import togos.networkrts.experimental.packet19.PacketWrapping;
 import togos.networkrts.experimental.packet19.UDPPacket;
+import togos.networkrts.util.BitAddressUtil;
 
 public class BaseNetDevice implements NetworkComponent
 {
@@ -17,8 +19,15 @@ public class BaseNetDevice implements NetworkComponent
 		public void handleUdp( PacketWrapping<UDPPacket> pw );
 	}
 	
+	protected final long bitAddress;
+	protected final MessageSender network;
 	protected long ethernetAddress;
-	protected IP6Address ipAddress;
+	protected IPAddress ipAddress;
+	
+	protected BaseNetDevice( long bitAddress, MessageSender network ) {
+		this.bitAddress = bitAddress;
+		this.network = network;
+	}
 	
 	protected final HashMap<Short,UDPHandler> udpHandlers = new HashMap<Short,UDPHandler>();
 	
@@ -55,6 +64,8 @@ public class BaseNetDevice implements NetworkComponent
 	}
 	
 	@Override public void sendMessage(Message m) {
+		if( !BitAddressUtil.rangeContains(m, bitAddress) ) return;
+		
 		switch( m.type ) {
 		case INCOMING_PACKET:
 			if( m.payload instanceof EthernetFrame ) {

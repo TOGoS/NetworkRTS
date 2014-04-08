@@ -1,6 +1,6 @@
 package togos.networkrts.experimental.packet19;
 
-public class MalformedDataException extends Exception
+public class MalformedDataException extends RuntimeException
 {
 	private static final long serialVersionUID = 1L;
 	

@@ -11,8 +11,8 @@ public interface IPPacket extends DataPacket
 		}
 	};
 	
-	public byte getIpVersion();
-	public ByteChunk getSourceAddress();
-	public ByteChunk getDestinationAddress();
-	public DataPacket getPayload();
+	public byte getIpVersion() throws MalformedDataException;
+	public ByteChunk getSourceAddress() throws MalformedDataException;
+	public ByteChunk getDestinationAddress() throws MalformedDataException;
+	public DataPacket getPayload() throws MalformedDataException;
 }

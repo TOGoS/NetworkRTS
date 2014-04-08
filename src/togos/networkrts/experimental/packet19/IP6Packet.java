@@ -26,19 +26,19 @@ public class IP6Packet extends BaseDataPacket implements IPPacket
 	
 	@Override public byte getIpVersion() { return 6; }
 	
-	public byte getNextHeader() {
+	public byte getNextHeader() throws MalformedDataException {
 		ensureObjectPopulated();
 		return nextHeader;
 	}
-	public IP6Address getSourceAddress() {
+	public IP6Address getSourceAddress() throws MalformedDataException {
 		ensureObjectPopulated();
 		return sourceAddress;
 	}
-	public IP6Address getDestinationAddress() {
+	public IP6Address getDestinationAddress() throws MalformedDataException {
 		ensureObjectPopulated();
 		return destinationAddress;
 	}
-	@Override public DataPacket getPayload() {
+	@Override public DataPacket getPayload() throws MalformedDataException {
 		ensureObjectPopulated();
 		return payload;
 	}

@@ -46,10 +46,10 @@ public abstract class BaseDataPacket implements DataPacket
 	}
 	
 	protected void populateObject() {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("Decoding undefined for "+getClass().getName());
 	}
 	
-	protected synchronized void ensureObjectPopulated() {
+	protected synchronized void ensureObjectPopulated() throws MalformedDataException {
 		if( !objectPopulated ) populateObject();
 		objectPopulated = true;
 	}

@@ -1,8 +1,6 @@
 package togos.networkrts.experimental.packet19;
 
-import togos.blob.SimpleByteChunk;
-
-public class IP6Address extends SimpleByteChunk
+public class IP6Address extends IPAddress
 {
 	private static final byte[] assertLongEnough( byte[] data, int offset ) {
 		assert data.length >= offset+16;

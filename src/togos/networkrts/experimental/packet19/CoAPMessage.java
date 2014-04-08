@@ -35,7 +35,7 @@ public class CoAPMessage extends BaseDataPacket implements RESTMessage
 		super(data, offset, length);
 	}
 	
-	protected int getMessageHeader() {
+	protected int getMessageHeader() throws MalformedDataException {
 		ensureObjectPopulated();
 		return header;
 	}
