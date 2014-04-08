@@ -45,6 +45,16 @@ public abstract class BaseDataPacket implements DataPacket
 		return dataSize;
 	}
 	
+	protected String toAtomicString() {
+		String s = toString().trim();
+		if( s.contains("\n") ) {
+			s = "(\n"+s.replace("\n","\n\t")+"\n)";
+		} else if( s.contains(" ") ) {
+			s = "(" + s + ")";
+		}
+		return s;
+	}
+	
 	protected void populateObject() {
 		throw new UnsupportedOperationException("Decoding undefined for "+getClass().getName());
 	}

@@ -25,7 +25,8 @@ public class PingableNetDeviceDemo
 		}
 		
 		@Override protected void handleEthernetFrame(PacketWrapping<EthernetFrame> pw) {
-			System.err.println("Got ethernet frame!");
+			pw.payload.getPayload();
+			System.err.println("Got "+pw.payload);
 			super.handleEthernetFrame(pw);
 		}
 		

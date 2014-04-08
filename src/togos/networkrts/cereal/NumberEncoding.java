@@ -7,6 +7,9 @@ import togos.networkrts.util.Float16;
 
 public class NumberEncoding
 {
+	// Note: A lot of this is duplicate of stuff in ByteUtil.
+	// May want to consolidate.
+	
 	public static float readFloat16( byte[] data, int offset ) {
 		return Float16.shortBitsToFloat(readInt16(data, offset));
 	}
