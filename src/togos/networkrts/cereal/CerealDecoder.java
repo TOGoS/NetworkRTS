@@ -20,7 +20,7 @@ public class CerealDecoder implements Getter<Object>
 		private boolean frozen = false;
 		
 		public DecodeState( OpcodeBehavior[] opcodes, List<Object> stack ) {
-			assert opcodes.length == 255;
+			assert opcodes.length == 256;
 			
 			this.opcodeBehaviors = Arrays.copyOf(opcodes, opcodes.length);
 			this.stack = new ArrayList<Object>(stack);
