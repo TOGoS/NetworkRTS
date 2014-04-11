@@ -112,6 +112,16 @@ public class EthernetFrame extends BaseDataPacket
 		return src;
 	}
 	
+	public short getTag() {
+		ensureObjectPopulated();
+		return tag;
+	}
+	
+	public short getEtherType() {
+		ensureObjectPopulated();
+		return etherType;
+	}
+	
 	public WackPacket getPayload() {
 		ensureObjectPopulated();
 		return payload;

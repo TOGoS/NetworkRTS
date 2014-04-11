@@ -5,6 +5,7 @@ import java.util.HashMap;
 import togos.networkrts.experimental.game19.util.MessageSender;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.packet19.DataPacket;
+import togos.networkrts.experimental.packet19.EtherTypes;
 import togos.networkrts.experimental.packet19.EthernetFrame;
 import togos.networkrts.experimental.packet19.IPAddress;
 import togos.networkrts.experimental.packet19.IPPacket;
@@ -47,20 +48,39 @@ public class BaseNetDevice implements NetworkComponent
 		}
 	}
 	
+	protected boolean isEthernetDest( long addy ) {
+		if( addy == ethernetAddress ) return true;
+		if( (addy & 0xFFFFFF000000L) == 0x3333ff000000L ) {
+			byte[] b = ipAddress.getBuffer();
+			int l = ipAddress.getOffset()+ipAddress.getSize()-3;
+			int lower24 = 0xFF000000 | ((b[l]&0xFF) << 16) | ((b[l+1]&0xFF) << 8) | (b[l+2]&0xFF);
+			if( lower24 == (int)addy ) return true;
+		}
+		return false;
+	}
+	
 	protected void handleEthernetFrame( PacketWrapping<EthernetFrame> pw ) {
 		final EthernetFrame ef = pw.payload;
-		if( ef.getDestinationAddress() != ethernetAddress ) return;
-		
-		IPPacket ipp;
-		try {
-			ipp = ef.getPayload().getPayload(IPPacket.class, IPPacket.CODEC);
-		} catch( MalformedDataException e ) {
-			System.err.println("Received ethernet frame with invalid IP packet");
-			e.printStackTrace();
-			return;
+		if( isEthernetDest(ef.getDestinationAddress()) ) return;
+		switch( ef.getEtherType() ) {
+		// By default, assume IP
+		case EtherTypes.IP6: case EtherTypes.IP4: case 0:
+			IPPacket ipp;
+			try {
+				ipp = ef.getPayload().getPayload(IPPacket.class, IPPacket.CODEC);
+			} catch( MalformedDataException e ) {
+				System.err.println("Received ethernet frame with invalid IP packet");
+				e.printStackTrace();
+				return;
+			}
+			handleIpPacket(new PacketWrapping<IPPacket>(pw, ipp));
+			break;
+		default:
+			System.err.println(String.format(
+				"Ignoring frame with unsupported EtherType 0x%04x",
+				(ef.getEtherType()&0xFF)));
+			// Ignore!
 		}
-		
-		handleIpPacket(new PacketWrapping<IPPacket>(pw, ipp));
 	}
 	
 	@Override public void sendMessage(Message m) {
