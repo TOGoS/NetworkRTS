@@ -15,9 +15,9 @@ public abstract class EthernetFrameHandler implements PacketHandler
 			handleInvalidPacket(data, offset, length);
 		} else {
 			handlePacket(
-				ByteUtil.decodeInt48(data, offset),
-				ByteUtil.decodeInt48(data, offset+6),
-				ByteUtil.decodeInt16(data, offset+12),
+				ByteUtil.decodeUInt48(data, offset),
+				ByteUtil.decodeUInt48(data, offset+6),
+				ByteUtil.decodeUInt16(data, offset+12),
 				data, offset + 14, length - 14
 			);
 		}

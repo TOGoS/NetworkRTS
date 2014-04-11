@@ -23,7 +23,7 @@ public class ByteUtil {
 		dest[destOffset++] = (byte)(value >>  0);
 	}
 	
-	public static long decodeInt48( byte[] buffer, int offset ) {
+	public static long decodeUInt48( byte[] buffer, int offset ) {
 		return
 			((long)(buffer[offset + 0]&0xFF) << 40) |
 			((long)(buffer[offset + 1]&0xFF) << 32) |
@@ -53,7 +53,7 @@ public class ByteUtil {
 		buffer[offset+1] = (byte)(value >> 0);
 	}
 	
-	public static int decodeInt16( byte[] buffer, int offset ) {
+	public static int decodeUInt16( byte[] buffer, int offset ) {
 		return
 			((buffer[offset + 0]&0xFF) << 8) |
 			((buffer[offset + 1]&0xFF) << 0);

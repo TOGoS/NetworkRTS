@@ -15,7 +15,7 @@ public class PacketUtil {
 	public static final int ICMP_HEADER_SIZE = 8;
 	
 	public static int getIp6PayloadLength( byte[] packet, int packetOffset ) {
-		return ByteUtil.decodeInt16( packet, packetOffset + 4 );
+		return ByteUtil.decodeUInt16( packet, packetOffset + 4 );
 	}
 	
 	public static int getValidatedIp6PayloadLength( byte[] packet, int packetOffset, int packetSize ) {
@@ -58,7 +58,7 @@ public class PacketUtil {
 		
 		ps.println( "    ICMP message type: "+(icmpMessage[offset]&0xFF) );
 		ps.println( "    ICMP code: "+(icmpMessage[offset+1]&0xFF) );
-		ps.println( "    ICMP checksum: "+ByteUtil.decodeInt16( icmpMessage, offset+2 ) );
+		ps.println( "    ICMP checksum: "+ByteUtil.decodeUInt16( icmpMessage, offset+2 ) );
 	}
 	
 	protected static void dumpIp6Packet( byte[] packet, int offset, int size, PrintStream ps ) {
@@ -68,7 +68,7 @@ public class PacketUtil {
 		ps.println("  from: "+AddressUtil.formatIp6Address(packet, 8));
 		ps.println("  to:   "+AddressUtil.formatIp6Address(packet, 24));
 		ps.println("  hoplimit: "+(packet[offset+7] & 0xFF));
-		ps.println("  payload length: " + ByteUtil.decodeInt16(packet, offset+4) );
+		ps.println("  payload length: " + ByteUtil.decodeUInt16(packet, offset+4) );
 		ps.println("  traffic class: " + getIp6TrafficClass(packet, offset) );
 		ps.println("  protocol number: " + getIp6ProtocolNumber(packet, offset) );
 		

@@ -68,16 +68,16 @@ public class EthernetFrame extends BaseDataPacket
 	@Override protected void populateObject() {
 		ensureMinDataSize(18, "");
 		
-		dest = ByteUtil.decodeInt48(data, dataOffset);
-		src  = ByteUtil.decodeInt48(data, dataOffset+6);
-		int code = ByteUtil.decodeInt16(data, dataOffset+12) & 0xFFFF;
+		dest = ByteUtil.decodeUInt48(data, dataOffset);
+		src  = ByteUtil.decodeUInt48(data, dataOffset+6);
+		int code = ByteUtil.decodeUInt16(data, dataOffset+12) & 0xFFFF;
 		final int payloadOffset;
 		if( code == 0x8100 ) {
 			ensureMinDataSize(18, "to contain 802.1Q tag");
 			// 802.1Q tag!
-			tag = (short)ByteUtil.decodeInt16(data, dataOffset+14);
+			tag = (short)ByteUtil.decodeUInt16(data, dataOffset+14);
 			payloadOffset = dataOffset+18;
-			code = ByteUtil.decodeInt16(data, dataOffset+16);
+			code = ByteUtil.decodeUInt16(data, dataOffset+16);
 		} else {
 			payloadOffset = dataOffset+14;
 			tag = 0;
