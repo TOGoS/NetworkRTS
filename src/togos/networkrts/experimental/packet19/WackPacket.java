@@ -12,29 +12,28 @@ package togos.networkrts.experimental.packet19;
 public class WackPacket extends BaseDataPacket
 {
 	protected Object payload;
-	protected Class<Object> payloadClass;
-	protected PacketPayloadCodec<Object> payloadCodec;
+	protected Class<?> payloadClass;
+	protected PacketPayloadCodec<?> payloadCodec;
 	
 	public WackPacket( byte[] data, int offset, int length ) {
 		super(data, offset, length);
 	}
 	
-	public <T> WackPacket( T payload, Class<T> payloadClass, PacketPayloadCodec<? extends T> payloadCodec ) {
+	public <T> WackPacket( T payload, Class<T> payloadClass, PacketPayloadCodec<T> payloadCodec ) {
 		setPayload(payload, payloadClass, payloadCodec);
 	}
 	
-	@SuppressWarnings("unchecked")
-	protected synchronized <T> void setPayload( T payload, Class<T> payloadType, PacketPayloadCodec<? extends T> payloadCodec ) {
+	protected synchronized <T> void setPayload( T payload, Class<T> payloadType, PacketPayloadCodec<T> payloadCodec ) {
 		this.payload = payload;
-		this.payloadClass  = (Class<Object>)payloadType;
-		this.payloadCodec = (PacketPayloadCodec<Object>)payloadCodec;
+		this.payloadClass  = payloadType;
+		this.payloadCodec = payloadCodec;
 	}
 	
 	protected synchronized <T> T maybeGetPayload( Class<T> asClass ) {
 		return asClass == payloadClass ? asClass.cast(payload) : null;
 	}
 	
-	public <T> T getPayload( Class<T> asClass, PacketPayloadCodec<? extends T> codec )
+	public <T> T getPayload( Class<T> asClass, PacketPayloadCodec<T> codec )
 		throws MalformedDataException
 	{
 		T thang = maybeGetPayload(asClass);
@@ -42,12 +41,16 @@ public class WackPacket extends BaseDataPacket
 		
 		ensureDataPopulated();
 		thang = codec.decode(data, dataOffset, dataSize);
-		setPayload( thang, payloadClass, codec );
+		setPayload( thang, asClass, codec );
 		return thang;
 	}
 	
 	@Override public String toString() {
-		// TODO Auto-generated method stub
-		return super.toString();
+		if( payloadClass == null ) {
+			return "WackPacket payload not populated";
+		} else {
+			return "WackPacket payload "+
+				(payload instanceof DataPacket ? ((DataPacket)payload).toAtomicString() : payload.toString()); 
+		}
 	}
 }
