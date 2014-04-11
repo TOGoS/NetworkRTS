@@ -39,6 +39,8 @@ public class EthernetFrame extends BaseDataPacket
 	 */
 	
 	protected long src, dest;
+	// TODO: EtherType indicates what class the payload will be,
+	// so this doesn't have to be a WackPacket.
 	protected WackPacket payload;
 	/** 802.1Q TCI field. Leave 0 for none. */
 	protected short tag;
@@ -89,10 +91,11 @@ public class EthernetFrame extends BaseDataPacket
 			payloadSize = code;
 		} else {
 			etherType = (short)code;
-			payloadSize = dataOffset+dataSize - payloadOffset - 4;
+			// Payload is remainder of frame.
+			payloadSize = dataSize+dataOffset - payloadOffset;
 		}
 		
-		if( dataOffset+dataSize < payloadOffset+payloadSize+4 ) {
+		if( payloadOffset+payloadSize > dataOffset+dataSize  ) {
 			throw new MalformedDataException(
 				"EthernetFrame data is too short ("+dataSize+")"+
 				" to contain supposed payload of "+payloadSize+
