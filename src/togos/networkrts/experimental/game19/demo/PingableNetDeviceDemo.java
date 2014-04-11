@@ -32,7 +32,8 @@ public class PingableNetDeviceDemo
 		}
 		
 		@Override protected void handleIpPacket(PacketWrapping<IPPacket> pw) {
-			System.err.println("Got IP packet!");
+			pw.payload.getPayload();
+			System.err.println("Got "+pw.payload);
 			super.handleIpPacket(pw);
 		}
 	}
@@ -57,6 +58,7 @@ public class PingableNetDeviceDemo
 		
 		net.addComponent(new UDPTransport<EthernetFrame>("UDP Transport 0", transport0Id, dgSock, EthernetFrame.CODEC, net, pingableId) {
 			@Override protected void packetReceived(DatagramPacket dgPack) {
+				/*
 				System.err.println("Received packet, length = "+dgPack.getLength());
 				byte[] data = dgPack.getData();
 				for( int i=0; i<dgPack.getLength(); ++i ) {
@@ -64,6 +66,7 @@ public class PingableNetDeviceDemo
 					if( (i+1) % 18 == 0 ) System.err.println();
 				}
 				System.err.println();
+				*/
 				
 				super.packetReceived(dgPack);
 			}

@@ -127,7 +127,12 @@ public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
 				System.err.println("Got a misaddressed ethernet packet");
 				return null;
 			}
-			pw = new PacketWrapping<IPPacket>(pw, f.getPayload().getPayload(IPPacket.class, IPPacket.CODEC));
+			if( f.getPayload() instanceof IPPacket ) {
+				pw = new PacketWrapping<IPPacket>(pw, (IPPacket)f.getPayload());
+			} else {
+				System.err.println("Not an IP packet!");
+				return null;
+			}
 		}
 		if( pw.payload instanceof IPPacket ) {
 			IPPacket ip = (IPPacket)pw.parent;

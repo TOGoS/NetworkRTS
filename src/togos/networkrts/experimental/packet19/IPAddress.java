@@ -10,4 +10,6 @@ public abstract class IPAddress extends SimpleByteChunk
 	public IPAddress( byte[] data ) {
 		super(data);
 	}
+	
+	public abstract boolean matches( IPAddress other );
 }

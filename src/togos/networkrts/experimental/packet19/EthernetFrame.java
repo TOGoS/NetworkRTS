@@ -2,7 +2,7 @@ package togos.networkrts.experimental.packet19;
 
 import togos.networkrts.util.ByteUtil;
 
-public class EthernetFrame extends BaseDataPacket
+public class EthernetFrame extends ContainerDataPacket<DataPacket>
 {
 	public static final DataPacketPayloadCodec<EthernetFrame> CODEC = new DataPacketPayloadCodec<EthernetFrame>() {
 		@Override public EthernetFrame decode(byte[] data, int offset, int length) throws MalformedDataException {
@@ -39,12 +39,11 @@ public class EthernetFrame extends BaseDataPacket
 	 */
 	
 	protected long src, dest;
-	// TODO: EtherType indicates what class the payload will be,
-	// so this doesn't have to be a WackPacket.
-	protected WackPacket payload;
 	/** 802.1Q TCI field. Leave 0 for none. */
 	protected short tag;
 	protected short etherType;
+	
+	protected int payloadOffset, payloadSize;
 	
 	public EthernetFrame( byte[] data, int offset, int length ) {
 		super( data, offset, length );
@@ -54,6 +53,7 @@ public class EthernetFrame extends BaseDataPacket
 		assert tag == 0 || (tag & 0x81000000) == 0x81000000; 
 		
 		this.objectPopulated = true;
+		this.payloadPopulated = true;
 		this.dest = dest;
 		this.src = src;
 		this.tag = tag;
@@ -73,7 +73,6 @@ public class EthernetFrame extends BaseDataPacket
 		dest = ByteUtil.decodeUInt48(data, dataOffset);
 		src  = ByteUtil.decodeUInt48(data, dataOffset+6);
 		int code = ByteUtil.decodeUInt16(data, dataOffset+12) & 0xFFFF;
-		final int payloadOffset;
 		if( code == 0x8100 ) {
 			ensureMinDataSize(18, "to contain 802.1Q tag");
 			// 802.1Q tag!
@@ -85,7 +84,6 @@ public class EthernetFrame extends BaseDataPacket
 			tag = 0;
 			etherType = (short)code;
 		}
-		final int payloadSize;
 		if( code <= 1500 ) {
 			etherType = 0;
 			payloadSize = code;
@@ -101,8 +99,6 @@ public class EthernetFrame extends BaseDataPacket
 				" to contain supposed payload of "+payloadSize+
 				" bytes at offset "+(payloadOffset-dataOffset));
 		}
-		
-		payload = new WackPacket(data, payloadOffset, payloadSize);
 	}
 	
 	public long getSourceAddress() {
@@ -125,9 +121,19 @@ public class EthernetFrame extends BaseDataPacket
 		return etherType;
 	}
 	
-	public WackPacket getPayload() {
+	@Override public void populatePayload() {
 		ensureObjectPopulated();
-		return payload;
+		switch( etherType ) {
+		case EtherTypes.IP6: case EtherTypes.IP4:
+			assert payloadOffset >= dataOffset + 14;
+			payload = IPPacket.CODEC.decode(data, payloadOffset, payloadSize);
+			break;
+		default:
+			System.err.println(String.format(
+				"Frame contains unsupported EtherType 0x%04x; payload will be wack",
+				(etherType&0xFFFF)));
+			payload = new WackPacket(data, payloadOffset, payloadSize);
+		}
 	}
 	
 	public static final String format( long addy ) {

@@ -1,7 +1,5 @@
 package togos.networkrts.experimental.packet19;
 
-import togos.blob.ByteChunk;
-
 public interface IPPacket extends DataPacket
 {
 	public static final PacketPayloadCodec<IPPacket> CODEC = new DataPacketPayloadCodec<IPPacket>() {
@@ -12,7 +10,7 @@ public interface IPPacket extends DataPacket
 	};
 	
 	public byte getIpVersion() throws MalformedDataException;
-	public ByteChunk getSourceAddress() throws MalformedDataException;
-	public ByteChunk getDestinationAddress() throws MalformedDataException;
+	public IPAddress getSourceAddress() throws MalformedDataException;
+	public IPAddress getDestinationAddress() throws MalformedDataException;
 	public DataPacket getPayload() throws MalformedDataException;
 }

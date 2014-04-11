@@ -5,11 +5,9 @@ import java.util.HashMap;
 import togos.networkrts.experimental.game19.util.MessageSender;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.packet19.DataPacket;
-import togos.networkrts.experimental.packet19.EtherTypes;
 import togos.networkrts.experimental.packet19.EthernetFrame;
 import togos.networkrts.experimental.packet19.IPAddress;
 import togos.networkrts.experimental.packet19.IPPacket;
-import togos.networkrts.experimental.packet19.MalformedDataException;
 import togos.networkrts.experimental.packet19.PacketWrapping;
 import togos.networkrts.experimental.packet19.UDPPacket;
 import togos.networkrts.util.BitAddressUtil;
@@ -40,7 +38,7 @@ public class BaseNetDevice implements NetworkComponent
 	
 	protected void handleIpPacket( PacketWrapping<IPPacket> pw ) {
 		final IPPacket ipp = pw.payload;
-		if( !ipp.getDestinationAddress().equals(ipAddress) ) return;
+		if( !ipp.getDestinationAddress().matches(ipAddress) ) return;
 		
 		DataPacket ipPayload = ipp.getPayload();
 		if( ipPayload instanceof UDPPacket ) {
@@ -62,24 +60,10 @@ public class BaseNetDevice implements NetworkComponent
 	protected void handleEthernetFrame( PacketWrapping<EthernetFrame> pw ) {
 		final EthernetFrame ef = pw.payload;
 		if( isEthernetDest(ef.getDestinationAddress()) ) return;
-		switch( ef.getEtherType() ) {
-		// By default, assume IP
-		case EtherTypes.IP6: case EtherTypes.IP4: case 0:
-			IPPacket ipp;
-			try {
-				ipp = ef.getPayload().getPayload(IPPacket.class, IPPacket.CODEC);
-			} catch( MalformedDataException e ) {
-				System.err.println("Received ethernet frame with invalid IP packet");
-				e.printStackTrace();
-				return;
-			}
-			handleIpPacket(new PacketWrapping<IPPacket>(pw, ipp));
-			break;
-		default:
-			System.err.println(String.format(
-				"Ignoring frame with unsupported EtherType 0x%04x",
-				(ef.getEtherType()&0xFF)));
-			// Ignore!
+		
+		DataPacket dp = ef.getPayload();
+		if( dp instanceof IPPacket ) {
+			handleIpPacket( new PacketWrapping<IPPacket>(pw, (IPPacket)dp) );
 		}
 	}
 	

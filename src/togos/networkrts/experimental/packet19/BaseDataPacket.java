@@ -45,7 +45,7 @@ public abstract class BaseDataPacket implements DataPacket
 		return dataSize;
 	}
 	
-	protected String toAtomicString() {
+	@Override public String toAtomicString() {
 		String s = toString().trim();
 		if( s.contains("\n") ) {
 			s = "(\n"+s.replace("\n","\n\t")+"\n)";

@@ -4,4 +4,5 @@ import togos.blob.ByteChunk;
 
 public interface DataPacket extends ByteChunk
 {
+	public String toAtomicString();
 }

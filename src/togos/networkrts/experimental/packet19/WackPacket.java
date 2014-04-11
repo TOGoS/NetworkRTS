@@ -45,4 +45,9 @@ public class WackPacket extends BaseDataPacket
 		setPayload( thang, payloadClass, codec );
 		return thang;
 	}
+	
+	@Override public String toString() {
+		// TODO Auto-generated method stub
+		return super.toString();
+	}
 }

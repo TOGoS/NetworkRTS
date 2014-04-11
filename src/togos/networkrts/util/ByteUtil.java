@@ -14,6 +14,18 @@ public class ByteUtil {
 		copy( source.getBuffer(), source.getOffset(), dest, destOffset, source.getSize() );
 	}
 	
+	public static long decodeInt64( byte[] buffer, int offset ) {
+		return
+			((long)(buffer[offset + 0]&0xFF) << 56) |
+			((long)(buffer[offset + 1]&0xFF) << 48) |
+			((long)(buffer[offset + 2]&0xFF) << 40) |
+			((long)(buffer[offset + 3]&0xFF) << 32) |
+			((long)(buffer[offset + 4]&0xFF) << 24) |
+			((long)(buffer[offset + 5]&0xFF) << 16) |
+			((long)(buffer[offset + 6]&0xFF) <<  8) |
+			((long)(buffer[offset + 7]&0xFF) <<  0);
+	}
+	
 	public static final void encodeInt48( int value, byte[] dest, int destOffset ) {
 		dest[destOffset++] = (byte)(value >> 40);
 		dest[destOffset++] = (byte)(value >> 32);
