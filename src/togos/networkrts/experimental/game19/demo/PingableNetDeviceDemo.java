@@ -35,7 +35,6 @@ public class PingableNetDeviceDemo
 			System.err.println("Got IP packet!");
 			super.handleIpPacket(pw);
 		}
-
 	}
 	
 	public static void main( String[] args ) throws SocketException {
@@ -49,7 +48,6 @@ public class PingableNetDeviceDemo
 			0x20, 0x01, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05
 		});
-
 		
 		Network net = new Network();
 		
@@ -63,7 +61,7 @@ public class PingableNetDeviceDemo
 				byte[] data = dgPack.getData();
 				for( int i=0; i<dgPack.getLength(); ++i ) {
 					System.err.print(String.format("%02x ", data[i]));
-					if( i % 18 == 0 ) System.err.println();
+					if( (i+1) % 18 == 0 ) System.err.println();
 				}
 				System.err.println();
 				
