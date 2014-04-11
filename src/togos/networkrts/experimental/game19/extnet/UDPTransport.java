@@ -39,26 +39,30 @@ public class UDPTransport<F> extends Thread implements NetworkComponent
 		this.messageDestBitAddress = mdBa;
 	}
 	
+	protected void packetReceived( DatagramPacket dgPack ) {
+		if( autoInetAddress ) {
+			inetDestSocketAddress = dgPack.getSocketAddress();
+		}
+		try {
+			Object data = codec.decode(dgPack.getData(), 0, dgPack.getLength());
+			Message m = Message.create(messageDestBitAddress, MessageType.INCOMING_PACKET, data);
+			messageSender.sendMessage(m);
+		} catch( MalformedDataException e ) {
+			System.err.println("Received malformed data in UDP packet");
+			e.printStackTrace();
+		} catch( Exception e ) {
+			System.err.println("Exception while handling UDP packet");
+			e.printStackTrace();
+		}
+	}
+	
 	public void _run() throws IOException {
 		byte[] buffer = new byte[2048];
 		DatagramPacket dgPack = new DatagramPacket(buffer, buffer.length);
 		while( !interrupted() ) {
 			dgPack.setData(buffer);
 			datagramSocket.receive(dgPack);
-			if( autoInetAddress ) {
-				inetDestSocketAddress = dgPack.getSocketAddress();
-			}
-			try {
-				Object data = codec.decode(buffer, 0, dgPack.getLength());
-				Message m = Message.create(messageDestBitAddress, MessageType.INCOMING_PACKET, data);
-				messageSender.sendMessage(m);
-			} catch( MalformedDataException e ) {
-				System.err.println("Received malformed data in UDP packet");
-				e.printStackTrace();
-			} catch( Exception e ) {
-				System.err.println("Exception while handling UDP packet");
-				e.printStackTrace();
-			}
+			packetReceived( dgPack );
 		}
 	}
 	

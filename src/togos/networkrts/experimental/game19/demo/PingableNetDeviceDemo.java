@@ -1,5 +1,6 @@
 package togos.networkrts.experimental.game19.demo;
 
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 
@@ -56,7 +57,19 @@ public class PingableNetDeviceDemo
 		
 		PingableNetDevice pingable = new PingableNetDevice(pingableId, pingableEthAddy, pingableIpAddress, net);
 		
-		net.addComponent(new UDPTransport<EthernetFrame>("UDP Transport 0", transport0Id, dgSock, EthernetFrame.CODEC, net, pingableId));
+		net.addComponent(new UDPTransport<EthernetFrame>("UDP Transport 0", transport0Id, dgSock, EthernetFrame.CODEC, net, pingableId) {
+			@Override protected void packetReceived(DatagramPacket dgPack) {
+				System.err.println("Received packet, length = "+dgPack.getLength());
+				byte[] data = dgPack.getData();
+				for( int i=0; i<dgPack.getLength(); ++i ) {
+					System.err.print(String.format("%02x ", data[i]));
+					if( i % 18 == 0 ) System.err.println();
+				}
+				System.err.println();
+				
+				super.packetReceived(dgPack);
+			}
+		});
 		net.addComponent(pingable);
 		net.start();
 	}

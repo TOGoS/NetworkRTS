@@ -1,7 +1,5 @@
 package togos.networkrts.experimental.packet19;
 
-import java.util.zip.CRC32;
-
 import togos.networkrts.util.ByteUtil;
 
 public class EthernetFrame extends BaseDataPacket
@@ -12,13 +10,39 @@ public class EthernetFrame extends BaseDataPacket
 		}
 	};
 	
+	/*
+	 * Based on experience and backed up by discussios like
+	 * http://www.tinc-vpn.org/pipermail/tinc/2013-January/003163.html
+	 * it seems that ethernet frames from TAP devices don't
+	 * include a frame check sequence (FCS) CRC.
+	 * 
+	 * Which may help explain why there's no good documentation about how to
+	 * calculate the FCS.  Unless you're bit-banging the ethernet frame down
+	 * the wire, the hardware takes care of it.
+	 * 
+	 * The structure we receive from the TAP interface
+	 * (Wireshark calls it an "Ethernet II" frame) is:
+	 * 
+	 *  6 bytes - destination MAC address
+	 *  6 bytes - source MAC address
+	 *  2 bytes - ethertype
+	 *  
+	 * I expect that 802.1Q tag would be encoded properly, but I haven't tested.
+	 * 
+	 * The payload length is not encoded;
+	 * the payload simply takes up the rest of the frame.
+	 * 
+	 * There is no CRC/FCS.
+	 * 
+	 * This also jives with the assumptions of my earlier ethernet frame parsing
+	 * attempts, e.g. togos.networkrts.experimental.tcp1.EthernetFrameHandler.
+	 */
+	
 	protected long src, dest;
 	protected WackPacket payload;
 	/** 802.1Q TCI field. Leave 0 for none. */
 	protected short tag;
 	protected short etherType;
-	protected int crc; // CRC actually present in the frame
-	protected int calculatedCrc; // CRC calculated by us
 	
 	public EthernetFrame( byte[] data, int offset, int length ) {
 		super( data, offset, length );
@@ -76,11 +100,6 @@ public class EthernetFrame extends BaseDataPacket
 		}
 		
 		payload = new WackPacket(data, payloadOffset, payloadSize);
-		// TODO: Check the CRC at this point?
-		crc = ByteUtil.decodeInt32(data, payloadOffset+payloadSize);
-		
-		System.err.println("Data size = "+dataSize+", payload size = "+payloadSize);
-		calculatedCrc = calculateFcs(data, dataOffset, dataSize, false, true);
 	}
 	
 	public long getSourceAddress() {
@@ -111,50 +130,9 @@ public class EthernetFrame extends BaseDataPacket
 	
 	public String toString() {
 		if( objectPopulated ) {
-			return "EthernetFrame to "+format(dest)+" from "+format(src)+" payload "+payload+" CRC "+crc+" calculated CRC "+calculatedCrc;
+			return "EthernetFrame to "+format(dest)+" from "+format(src)+" payload "+payload;
 		} else {
 			return "EthernetFrame (unparsed) length "+dataSize;
-		}
-	}
-	
-	protected static int reverseBytes( int v0 ) {
-		return
-			((v0>>24)&0xFF) | ((v0>>8)&0xFF00) |
-			((v0<<8)&0xFF0000) | ((v0<<24)&0xFF000000);
-	}
-	
-	protected static int calculateFcs( byte[] data, int offset, int length, boolean addPadding, boolean reverseBytes ) {
-		CRC32 c = new CRC32();
-		c.update(data, offset, length);
-		if( addPadding ) c.update(new byte[]{0,0,0,0});
-		int v = (int)c.getValue();
-		return reverseBytes ? reverseBytes( v ) : v;
-	}
-	
-	/** My best guess as to the 'correct' way to calculate the FCS */
-	protected static int calculateFcs( byte[] data, int offset, int length ) {
-		return calculateFcs( data, offset, length, true, true );
-	}
-	
-	protected static byte[] fromHex( String s ) {
-		byte[] data = new byte[s.length()/2];
-		for( int i=0; i<data.length; ++i ) {
-			data[i] = (byte)Integer.parseInt(s.substring(i*2, i*2+2), 16);
-		}
-		return data;
-	}
-	
-	static boolean[] TF = new boolean[]{true,false};
-	
-	public static void main( String[] args ) {
-		// http://forums.xilinx.com/t5/Spartan-Family-FPGAs/CRC32-and-Packets-from-Ethenet/td-p/41305
-		String hexPacket = "FFFFFFFFFFFF0020ED1C149B080600010800060400010020ED1C149BC804079C000000000000C8040783000000000000000000000000000000000000";
-		byte[] packet = fromHex(hexPacket);
-		for( boolean addPadding : TF ) {
-			for( boolean reverseBytes : TF ) {
-				int v = calculateFcs(packet, 0, packet.length, addPadding, reverseBytes);
-				System.out.println(String.format("%08x%s%s", v, addPadding ? " (padded)" : "", reverseBytes ? " (output bytes reversed)" : ""));
-			}
 		}
 	}
 }
