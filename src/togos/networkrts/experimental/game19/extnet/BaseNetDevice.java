@@ -29,6 +29,8 @@ public class BaseNetDevice implements NetworkComponent
 	protected long ethernetAddress;
 	protected IPAddress ipAddress;
 	
+	public boolean debug = false;
+	
 	protected BaseNetDevice( long bitAddress, MessageSender network ) {
 		this.bitAddress = bitAddress;
 		this.network = network;
@@ -67,7 +69,9 @@ public class BaseNetDevice implements NetworkComponent
 	
 	protected void outsendEthernet( byte[] data, int offset, int size, long destBitAddress, String desc ) {
 		EthernetFrame outgoingEf = new EthernetFrame( data, 0, data.length );
-		System.err.println("Sending Ethernet frame containing "+desc+" to "+destBitAddress);
+		if( debug ) {
+			System.err.println("Sending Ethernet frame containing "+desc+" to "+destBitAddress);
+		}
 		network.sendMessage(Message.create(destBitAddress, MessageType.INCOMING_PACKET, bitAddress, outgoingEf));
 	}
 	
@@ -108,11 +112,12 @@ public class BaseNetDevice implements NetworkComponent
 			int off = 0;
 			off = encodeIcmp6ResponseHeaders( pw, icmp6Packet.getSize(), response, off );
 			off = ICMP6Packet.encodePong(ip6Address, sourceAddress, icmp6Packet, response, off);
-			System.err.println("Received ping!");
 			outsendEthernet( response, 0, response.length, sourceBitAddress, "ICMPv6 echo response" );
 			break;
 		} default:
-			System.err.println(String.format("Ignoring unsupported ICMPv6 packet type: %02x", icmp6Type));
+			if( debug ) {
+				System.err.println(String.format("Ignoring unsupported ICMPv6 packet type: %02x", icmp6Type));
+			}
 		}
 	}
 	

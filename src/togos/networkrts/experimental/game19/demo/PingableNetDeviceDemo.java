@@ -18,7 +18,9 @@ import togos.networkrts.experimental.packet19.PacketWrapping;
 
 public class PingableNetDeviceDemo
 {
-	static class PingableNetDevice extends BaseNetDevice {
+	public boolean debug = false;
+	
+	class PingableNetDevice extends BaseNetDevice {
 		public PingableNetDevice( long bitAddress, long ethAddy, IPAddress ipAddy, MessageSender network ) {
 			super( bitAddress, network );
 			this.ethernetAddress = ethAddy;
@@ -27,18 +29,18 @@ public class PingableNetDeviceDemo
 		
 		@Override protected void handleEthernetFrame(PacketWrapping<EthernetFrame> pw) {
 			pw.payload.getPayload();
-			System.err.println("Got "+pw.payload);
+			if( debug ) System.err.println("Got "+pw.payload);
 			super.handleEthernetFrame(pw);
 		}
 		
 		@Override protected void handleIpPacket(PacketWrapping<IPPacket> pw) {
 			pw.payload.getPayload();
-			System.err.println("Got "+pw.payload);
+			if( debug ) System.err.println("Got "+pw.payload);
 			super.handleIpPacket(pw);
 		}
 	}
 	
-	public static void main( String[] args ) throws SocketException {
+	public void run() throws SocketException {
 		IDGenerator idGen = new IDGenerator(BitAddresses.TYPE_EXTERNAL+1);
 		
 		long transport0Id = idGen.newId();
@@ -56,23 +58,29 @@ public class PingableNetDeviceDemo
 		DatagramSocket dgSock = new DatagramSocket(11388);
 		
 		PingableNetDevice pingable = new PingableNetDevice(pingableId, pingableEthAddy, pingableIpAddress, net);
+		pingable.debug = debug;
 		
 		net.addComponent(new UDPTransport<EthernetFrame>("UDP Transport 0", transport0Id, dgSock, EthernetFrame.CODEC, net, pingableId) {
 			@Override protected void packetReceived(DatagramPacket dgPack) {
-				/*
-				System.err.println("Received packet, length = "+dgPack.getLength());
-				byte[] data = dgPack.getData();
-				for( int i=0; i<dgPack.getLength(); ++i ) {
-					System.err.print(String.format("%02x ", data[i]));
-					if( (i+1) % 18 == 0 ) System.err.println();
+				if( debug ) {
+					System.err.println("Received packet, length = "+dgPack.getLength());
+					byte[] data = dgPack.getData();
+					for( int i=0; i<dgPack.getLength(); ++i ) {
+						System.err.print(String.format("%02x ", data[i]));
+						if( (i+1) % 18 == 0 ) System.err.println();
+					}
+					System.err.println();
 				}
-				System.err.println();
-				*/
 				
 				super.packetReceived(dgPack);
 			}
 		});
 		net.addComponent(pingable);
 		net.start();
+	}
+	
+	public static void main( String[] args ) throws SocketException {
+		PingableNetDeviceDemo pndd = new PingableNetDeviceDemo();
+		pndd.run();
 	}
 }
