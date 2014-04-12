@@ -65,6 +65,12 @@ public class BaseNetDevice implements NetworkComponent
 		return off;
 	}
 	
+	protected void outsendEthernet( byte[] data, int offset, int size, long destBitAddress, String desc ) {
+		EthernetFrame outgoingEf = new EthernetFrame( data, 0, data.length );
+		System.err.println("Sending Ethernet frame containing "+desc+" to "+destBitAddress);
+		network.sendMessage(Message.create(destBitAddress, MessageType.INCOMING_PACKET, bitAddress, outgoingEf));
+	}
+	
 	protected void handleIcmp6Packet( PacketWrapping<ICMP6Packet> pw ) {
 		if( !(ipAddress instanceof IP6Address) ) return;
 		IP6Address ip6Address = (IP6Address)ipAddress;
@@ -90,22 +96,20 @@ public class BaseNetDevice implements NetworkComponent
 			
 			byte[] response = new byte[ethernetIp6HeaderSize+icmpLength];
 			int off = 0;
-			//off = EthernetFrame.encodeHeader(ef.getSourceAddress(), ethernetAddress, EtherTypes.IP6, response, off);
-			// Apparently hopcount must be 255 for this to be received and processed!
-			//off = IP6Packet.encodeHeader((byte)0, 0, icmpLength, IPProtocols.ICMP6, (byte)255, ip6Address, sourceAddress, response, off);
 			off = encodeIcmp6ResponseHeaders( pw, icmpLength, response, off );
 			off = ICMP6Packet.encodeNeighborAdvertisement(ip6Address, sourceAddress, ip6Address, isRouter(), true, false, ethernetAddress, response, off);
-			EthernetFrame outgoingEf = new EthernetFrame( response, 0, response.length );
-			System.err.println("Sending message with EthernetFrame back to "+sourceBitAddress);
-			network.sendMessage(Message.create(sourceBitAddress, MessageType.INCOMING_PACKET, bitAddress, outgoingEf));
+			outsendEthernet( response, 0, response.length, sourceBitAddress, "ICMPv6 neighbor advertisement" );
 			break;
 		} case ICMP6Packet.PING6: {
 			// See RFC 4443: http://tools.ietf.org/html/rfc4443#page-13
 			// Identifier and sequence are arbitrary, so for echo response
 			// purposes we'll just treat them as part of the data.
-			
-			//byte[] response = new byte[ethernetIp6HeaderSize+icmp6Packet.getSize()];
+			byte[] response = new byte[ethernetIp6HeaderSize+icmp6Packet.getSize()];
+			int off = 0;
+			off = encodeIcmp6ResponseHeaders( pw, icmp6Packet.getSize(), response, off );
+			off = ICMP6Packet.encodePong(ip6Address, sourceAddress, icmp6Packet, response, off);
 			System.err.println("Received ping!");
+			outsendEthernet( response, 0, response.length, sourceBitAddress, "ICMPv6 echo response" );
 			break;
 		} default:
 			System.err.println(String.format("Ignoring unsupported ICMPv6 packet type: %02x", icmp6Type));

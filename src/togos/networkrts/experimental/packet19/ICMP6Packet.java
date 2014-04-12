@@ -125,4 +125,20 @@ public class ICMP6Packet extends BaseDataPacket
 		ByteUtil.encodeInt16(crc, data, offset+2);
 		return offset + icmp6Length;
 	}
+
+	public static int encodePong(
+		IP6Address sourceAddress, IP6Address destAddress, ICMP6Packet ping,
+		byte[] data, int offset
+	) {
+		int size = ping.getSize();
+		data[offset  ] = PONG6;
+		data[offset+1] = 0;
+		data[offset+2] = 0; // Zeroed-out checksum
+		data[offset+3] = 0; // Zeroed-out checksum
+		ByteUtil.copy(ping.getBuffer(), ping.getOffset()+4, data, offset+4, ping.getSize()-4);
+		
+		short crc = calcCrc(sourceAddress, destAddress, data, offset, size);
+		ByteUtil.encodeInt16(crc, data, offset+2);
+		return offset+size;
+	}
 }
