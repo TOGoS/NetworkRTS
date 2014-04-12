@@ -65,6 +65,10 @@ public class ByteUtil {
 		buffer[offset+1] = (byte)(value >> 0);
 	}
 	
+	public static short decodeInt16( byte[] buffer, int offset ) {
+		return (short)decodeUInt16(buffer, offset);
+	}
+	
 	public static int decodeUInt16( byte[] buffer, int offset ) {
 		return
 			((buffer[offset + 0]&0xFF) << 8) |

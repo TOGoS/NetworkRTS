@@ -46,13 +46,7 @@ public abstract class BaseDataPacket implements DataPacket
 	}
 	
 	@Override public String toAtomicString() {
-		String s = toString().trim();
-		if( s.contains("\n") ) {
-			s = "(\n"+s.replace("\n","\n\t")+"\n)";
-		} else if( s.contains(" ") ) {
-			s = "(" + s + ")";
-		}
-		return s;
+		return "(\n\t"+toString().replace("\n","\n\t")+"\n)";
 	}
 	
 	protected void populateObject() {

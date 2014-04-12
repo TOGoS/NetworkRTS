@@ -49,6 +49,9 @@ public class IP6Packet extends ContainerDataPacket<DataPacket> implements IPPack
 		case IPProtocols.UDP:
 			payload = new UDPPacket(this, data, dataOffset+40, payloadSize);
 			break;
+		case IPProtocols.ICMP6:
+			payload = new ICMP6Packet(this, data, dataOffset+40, payloadSize);
+			break;
 		default:
 			System.err.println(String.format(
 				"IP Packet contains unsupported IP protocol 0x%02x; payload will be wack", nextHeader));
