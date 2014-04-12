@@ -26,7 +26,7 @@ public class ByteUtil {
 			((long)(buffer[offset + 7]&0xFF) <<  0);
 	}
 	
-	public static final void encodeInt48( int value, byte[] dest, int destOffset ) {
+	public static final void encodeInt48( long value, byte[] dest, int destOffset ) {
 		dest[destOffset++] = (byte)(value >> 40);
 		dest[destOffset++] = (byte)(value >> 32);
 		dest[destOffset++] = (byte)(value >> 24);
