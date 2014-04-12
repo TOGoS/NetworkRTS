@@ -46,38 +46,69 @@ public class BaseNetDevice implements NetworkComponent
 		return false;
 	}
 	
+	protected IP6Address getIp6Address() {
+		if( !(ipAddress instanceof IP6Address) ) throw new UnsupportedOperationException("Our address is not IPv6!");
+		return (IP6Address)ipAddress;
+	}
+	
+	/**
+	 * Encodes the Ethernet and IPv6 headers
+	 */
+	protected int encodeIcmp6ResponseHeaders( PacketWrapping<ICMP6Packet> pw, int icmpLength, byte[] response, int off ) {
+		final ICMP6Packet icmp6Packet = pw.payload;
+		final IP6Address sourceAddress = icmp6Packet.ip6Packet.getSourceAddress();
+		final EthernetFrame ef = (EthernetFrame)pw.parent.parent.payload;
+		
+		off = EthernetFrame.encodeHeader(ef.getSourceAddress(), ethernetAddress, EtherTypes.IP6, response, off);
+		// Apparently hopcount must be 255 for this to be received and processed!
+		off = IP6Packet.encodeHeader((byte)0, 0, icmpLength, IPProtocols.ICMP6, (byte)255, getIp6Address(), sourceAddress, response, off);
+		return off;
+	}
+	
 	protected void handleIcmp6Packet( PacketWrapping<ICMP6Packet> pw ) {
 		if( !(ipAddress instanceof IP6Address) ) return;
 		IP6Address ip6Address = (IP6Address)ipAddress;
 		
 		final ICMP6Packet icmp6Packet = pw.payload;
 		final IP6Address sourceAddress = icmp6Packet.ip6Packet.getSourceAddress();
-		final EthernetFrame ef = (EthernetFrame)pw.parent.parent.payload;
-		final Message m = (Message)pw.parent.parent.parent.payload;
+		final long sourceBitAddress = ((Message)pw.parent.parent.parent.payload).sourceAddress;
 		
-		switch( icmp6Packet.getType() ) {
-		case ICMP6Packet.NEIGHBOR_SOLICITATION:
+		final int ethernetIp6HeaderSize = 14+40;
+		final byte icmp6Type = icmp6Packet.getType();
+		
+		switch( icmp6Type ) {
+		case ICMP6Packet.NEIGHBOR_SOLICITATION: {
 			if( !icmp6Packet.checkNeighborSolicitationTargetAddress(ip6Address) ) return;
 			// Otherwise we gotta respond!!!
 			
-			// FINDINGS
+			// FINDINGS (based on pinging from an Ubuntu 12.04 machine
+			// and watching the packets go by in Wireshark)
 			// ttyl = 64 DOES NOT WORK, even if everything else is right.  255 works.
 			// router can be zero, override can be zero.
 			
 			int icmpLength = ICMP6Packet.NEIGHBOR_ADVERTISEMENT_SIZE;
 			
-			byte[] response = new byte[14+40+icmpLength];
+			byte[] response = new byte[ethernetIp6HeaderSize+icmpLength];
 			int off = 0;
-			off = EthernetFrame.encodeHeader(ef.getSourceAddress(), ethernetAddress, EtherTypes.IP6, response, off);
+			//off = EthernetFrame.encodeHeader(ef.getSourceAddress(), ethernetAddress, EtherTypes.IP6, response, off);
 			// Apparently hopcount must be 255 for this to be received and processed!
-			off = IP6Packet.encodeHeader((byte)0, 0, icmpLength, IPProtocols.ICMP6, (byte)255, ip6Address, sourceAddress, response, off);
+			//off = IP6Packet.encodeHeader((byte)0, 0, icmpLength, IPProtocols.ICMP6, (byte)255, ip6Address, sourceAddress, response, off);
+			off = encodeIcmp6ResponseHeaders( pw, icmpLength, response, off );
 			off = ICMP6Packet.encodeNeighborAdvertisement(ip6Address, sourceAddress, ip6Address, isRouter(), true, false, ethernetAddress, response, off);
 			EthernetFrame outgoingEf = new EthernetFrame( response, 0, response.length );
-			System.err.println("Sending message with EthernetFrame back to "+m.sourceAddress);
-			network.sendMessage(Message.create(m.sourceAddress, MessageType.INCOMING_PACKET, bitAddress, outgoingEf));
+			System.err.println("Sending message with EthernetFrame back to "+sourceBitAddress);
+			network.sendMessage(Message.create(sourceBitAddress, MessageType.INCOMING_PACKET, bitAddress, outgoingEf));
 			break;
-		case ICMP6Packet.PING6:
+		} case ICMP6Packet.PING6: {
+			// See RFC 4443: http://tools.ietf.org/html/rfc4443#page-13
+			// Identifier and sequence are arbitrary, so for echo response
+			// purposes we'll just treat them as part of the data.
 			
+			//byte[] response = new byte[ethernetIp6HeaderSize+icmp6Packet.getSize()];
+			System.err.println("Received ping!");
+			break;
+		} default:
+			System.err.println(String.format("Ignoring unsupported ICMPv6 packet type: %02x", icmp6Type));
 		}
 	}
 	
