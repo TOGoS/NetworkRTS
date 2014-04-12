@@ -4,10 +4,16 @@ import java.util.HashMap;
 
 import togos.networkrts.experimental.game19.util.MessageSender;
 import togos.networkrts.experimental.game19.world.Message;
+import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.packet19.DataPacket;
+import togos.networkrts.experimental.packet19.EtherTypes;
 import togos.networkrts.experimental.packet19.EthernetFrame;
+import togos.networkrts.experimental.packet19.ICMP6Packet;
+import togos.networkrts.experimental.packet19.IP6Address;
+import togos.networkrts.experimental.packet19.IP6Packet;
 import togos.networkrts.experimental.packet19.IPAddress;
 import togos.networkrts.experimental.packet19.IPPacket;
+import togos.networkrts.experimental.packet19.IPProtocols;
 import togos.networkrts.experimental.packet19.PacketWrapping;
 import togos.networkrts.experimental.packet19.UDPPacket;
 import togos.networkrts.util.BitAddressUtil;
@@ -36,6 +42,45 @@ public class BaseNetDevice implements NetworkComponent
 		if( h != null ) h.handleUdp(pw);
 	}
 	
+	protected boolean isRouter() {
+		return false;
+	}
+	
+	protected void handleIcmp6Packet( PacketWrapping<ICMP6Packet> pw ) {
+		if( !(ipAddress instanceof IP6Address) ) return;
+		IP6Address ip6Address = (IP6Address)ipAddress;
+		
+		final ICMP6Packet icmp6Packet = pw.payload;
+		final IP6Address sourceAddress = icmp6Packet.ip6Packet.getSourceAddress();
+		final EthernetFrame ef = (EthernetFrame)pw.parent.parent.payload;
+		final Message m = (Message)pw.parent.parent.parent.payload;
+		
+		switch( icmp6Packet.getType() ) {
+		case ICMP6Packet.NEIGHBOR_SOLICITATION:
+			if( !icmp6Packet.checkNeighborSolicitationTargetAddress(ip6Address) ) return;
+			// Otherwise we gotta respond!!!
+			
+			// FINDINGS
+			// ttyl = 64 DOES NOT WORK, even if everything else is right.  255 works.
+			// router can be zero, override can be zero.
+			
+			int icmpLength = ICMP6Packet.NEIGHBOR_ADVERTISEMENT_SIZE;
+			
+			byte[] response = new byte[14+40+icmpLength];
+			int off = 0;
+			off = EthernetFrame.encodeHeader(ef.getSourceAddress(), ethernetAddress, EtherTypes.IP6, response, off);
+			// Apparently hopcount must be 255 for this to be received and processed!
+			off = IP6Packet.encodeHeader((byte)0, 0, icmpLength, IPProtocols.ICMP6, (byte)255, ip6Address, sourceAddress, response, off);
+			off = ICMP6Packet.encodeNeighborAdvertisement(ip6Address, sourceAddress, ip6Address, isRouter(), true, false, ethernetAddress, response, off);
+			EthernetFrame outgoingEf = new EthernetFrame( response, 0, response.length );
+			System.err.println("Sending message with EthernetFrame back to "+m.sourceAddress);
+			network.sendMessage(Message.create(m.sourceAddress, MessageType.INCOMING_PACKET, bitAddress, outgoingEf));
+			break;
+		case ICMP6Packet.PING6:
+			
+		}
+	}
+	
 	protected void handleIpPacket( PacketWrapping<IPPacket> pw ) {
 		final IPPacket ipp = pw.payload;
 		if( !ipp.getDestinationAddress().matches(ipAddress) ) return;
@@ -43,6 +88,8 @@ public class BaseNetDevice implements NetworkComponent
 		DataPacket ipPayload = ipp.getPayload();
 		if( ipPayload instanceof UDPPacket ) {
 			handleUdpPacket( new PacketWrapping<UDPPacket>( pw, (UDPPacket)ipPayload ));
+		} else if( ipPayload instanceof ICMP6Packet ) {
+			handleIcmp6Packet( new PacketWrapping<ICMP6Packet>( pw, ((ICMP6Packet)ipPayload) ));
 		}
 	}
 	

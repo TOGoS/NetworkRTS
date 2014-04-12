@@ -47,7 +47,7 @@ public class PacketUtil {
 		byte[] data = new byte[40+payloadLength];
 		ByteUtil.copy( packet, offset+8,  data,  0, 16 ); // Source address
 		ByteUtil.copy( packet, offset+24, data, 16, 16 ); // Destination address
-		ByteUtil.encodeInt32(             payloadLength, data, 32 );
+		ByteUtil.encodeInt32(                          payloadLength, data, 32 );
 		ByteUtil.encodeInt32( getIp6ProtocolNumber( packet, offset ), data, 36 );
 		ByteUtil.copy( packet, getIp6PayloadOffset(offset), data, 40, payloadLength );
 		return InternetChecksum.checksum( data );

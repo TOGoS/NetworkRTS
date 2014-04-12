@@ -44,10 +44,11 @@ public class PingableNetDeviceDemo
 		long transport0Id = idGen.newId();
 		// TODO: Put a ethernet switch between
 		long pingableId = idGen.newId();
-		long pingableEthAddy = 0x0000123456789abcl;
+		//long pingableEthAddy = 0x0000563456789abcl;
+		long pingableEthAddy = 0x0000F613DE79334Bl;
 		IP6Address pingableIpAddress = new IP6Address(new byte[]{
 			0x20, 0x01, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06
 		});
 		
 		Network net = new Network();

@@ -89,4 +89,13 @@ public class ByteUtil {
 			throw new IndexOutOfBoundsException( "Cannot read/write "+role+" ("+valueSize+" bytes at "+valueOffset+") because it is outside of allocated memory ("+bufferSize+" bytes)" );
 		}
 	}
+	
+	public static boolean equals( byte[] a, int offA, byte[] b, int offB, int len ) {
+		for( int i=0; i<len; ++i ) if(a[offA+i] != b[offB+i]) return false;
+		return true;
+	}
+	
+	public static boolean equals( ByteChunk c, byte[] data, int i ) {
+		return equals(c.getBuffer(), c.getOffset(), data, i, c.getSize());
+	}
 }

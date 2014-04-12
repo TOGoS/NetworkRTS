@@ -45,7 +45,7 @@ public class UDPTransport<F> extends Thread implements NetworkComponent
 		}
 		try {
 			Object data = codec.decode(dgPack.getData(), 0, dgPack.getLength());
-			Message m = Message.create(messageDestBitAddress, MessageType.INCOMING_PACKET, data);
+			Message m = Message.create(messageDestBitAddress, MessageType.INCOMING_PACKET, transportBitAddress, data);
 			messageSender.sendMessage(m);
 		} catch( MalformedDataException e ) {
 			System.err.println("Received malformed data in UDP packet");

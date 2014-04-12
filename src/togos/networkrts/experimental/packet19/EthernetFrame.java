@@ -154,4 +154,14 @@ public class EthernetFrame extends ContainerDataPacket<DataPacket>
 			return "EthernetFrame (unparsed) length "+dataSize;
 		}
 	}
+
+	public static int encodeHeader(
+		long destAddress, long sourceAddress, short etherType,
+		byte[] dest, int offset
+	) {
+		ByteUtil.encodeInt48(destAddress  , dest, offset+ 0);
+		ByteUtil.encodeInt48(sourceAddress, dest, offset+ 6);
+		ByteUtil.encodeInt16(etherType    , dest, offset+12);
+		return 14;
+	}
 }
