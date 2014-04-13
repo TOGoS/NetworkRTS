@@ -7,9 +7,11 @@ import java.net.SocketException;
 import togos.networkrts.experimental.game19.extnet.BaseNetDevice;
 import togos.networkrts.experimental.game19.extnet.Network;
 import togos.networkrts.experimental.game19.extnet.UDPTransport;
+import togos.networkrts.experimental.game19.sim.UpdateContext;
 import togos.networkrts.experimental.game19.util.MessageSender;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.IDGenerator;
+import togos.networkrts.experimental.game19.world.beh.BasePacketHandler;
 import togos.networkrts.experimental.packet19.EthernetFrame;
 import togos.networkrts.experimental.packet19.IP6Address;
 import togos.networkrts.experimental.packet19.IPAddress;
@@ -22,21 +24,19 @@ public class PingableNetDeviceDemo
 	
 	class PingableNetDevice extends BaseNetDevice {
 		public PingableNetDevice( long bitAddress, long ethAddy, IPAddress ipAddy, MessageSender network ) {
-			super( bitAddress, network );
-			this.ethernetAddress = ethAddy;
-			this.ipAddress = ipAddy;
-		}
-		
-		@Override protected void handleEthernetFrame(PacketWrapping<EthernetFrame> pw) {
-			pw.payload.getPayload();
-			if( debug ) System.err.println("Got "+pw.payload);
-			super.handleEthernetFrame(pw);
-		}
-		
-		@Override protected void handleIpPacket(PacketWrapping<IPPacket> pw) {
-			pw.payload.getPayload();
-			if( debug ) System.err.println("Got "+pw.payload);
-			super.handleIpPacket(pw);
+			super( new BasePacketHandler(bitAddress, ethAddy, ipAddy) {
+				@Override protected BasePacketHandler handleEthernetFrame(PacketWrapping<EthernetFrame> pw, UpdateContext ctx) {
+					pw.payload.getPayload();
+					if( debug ) System.err.println("Got "+pw.payload);
+					return super.handleEthernetFrame(pw, ctx);
+				}
+				
+				@Override protected BasePacketHandler handleIpPacket(PacketWrapping<IPPacket> pw, UpdateContext ctx) {
+					pw.payload.getPayload();
+					if( debug ) System.err.println("Got "+pw.payload);
+					return super.handleIpPacket(pw, ctx);
+				}
+			}, network );
 		}
 	}
 	
