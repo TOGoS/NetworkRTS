@@ -9,6 +9,16 @@ Make content creation possible/fun
 - quadtree editor
 - simple (probably JSON-based) tile format
 
+Entity/entity collisions
+- Use to make some moving platforms or something
+- Can also make doors that way
+
+Old people that talk to you.
+
+Network-controllable bridge or door made of blocks.
+
+Spikes should only hurt you when you fall on the spikey side.
+
 Ladders!
 
 Suit repair kits
