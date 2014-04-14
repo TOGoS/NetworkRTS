@@ -328,6 +328,9 @@ class Client {
 				case KeyEvent.VK_U:
 					outgoingMessageQueue.add(Message.create(playerBitAddress, MessageType.INCOMING_PACKET, clientBitAddress, Boolean.FALSE));
 					break;
+				case KeyEvent.VK_P:
+					outgoingMessageQueue.add(Message.create(playerBitAddress, MessageType.INCOMING_PACKET, clientBitAddress, "spew"));
+					break;
 				case KeyEvent.VK_R:
 					// TODO: ethernet frames, etc etc
 					FakeCoAPMessage fcm = FakeCoAPMessage.request((byte)0, 0, RESTRequest.PUT, "/world", new WackPacket(initialWorld, Object.class, null));
