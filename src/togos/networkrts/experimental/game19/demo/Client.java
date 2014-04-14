@@ -87,6 +87,7 @@ class Client {
 		}
 		
 		int pixelsPerMeter = 32;
+		int minPixelSize = 1;
 		
 		protected final Renderer renderer;
 		public SceneCanvas( ResourceContext resourceContext ) {
@@ -143,8 +144,8 @@ class Client {
 					VisibilityClip vc = scene.visibilityClip;
 					int vcWidth  = roundEven(pixelsPerMeter*(vc.maxX-vc.minX));
 					int vcHeight = roundEven(pixelsPerMeter*(vc.maxY-vc.minY));
-					wid = Math.min(vcWidth, getWidth());
-					hei = Math.min(vcHeight,getHeight());
+					wid = Math.min(vcWidth, getWidth()/minPixelSize);
+					hei = Math.min(vcHeight,getHeight()/minPixelSize);
 				} else {
 					wid = getWidth();
 					hei = getHeight();
@@ -313,6 +314,14 @@ class Client {
 				switch( kevt.getKeyCode() ) {
 				case KeyEvent.VK_EQUALS: sceneCanvas.zoomMore(); break;
 				case KeyEvent.VK_MINUS: sceneCanvas.zoomLess(); break;
+				case KeyEvent.VK_G:
+					if( kevt.isShiftDown() ) {
+						++sceneCanvas.minPixelSize;
+					} else {
+						if( sceneCanvas.minPixelSize > 1 ) --sceneCanvas.minPixelSize;
+					}
+					sceneCanvas.redrawBuffer();
+					break;
 				case KeyEvent.VK_C:
 					outgoingMessageQueue.add(Message.create(playerBitAddress, MessageType.INCOMING_PACKET, clientBitAddress, Boolean.TRUE));
 					break;
