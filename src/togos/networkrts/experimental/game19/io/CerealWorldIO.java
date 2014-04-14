@@ -162,6 +162,9 @@ public class CerealWorldIO implements WorldIO, OpcodeBehavior, PacketPayloadCode
 	@Override public void encode(Object obj, OutputStream os) throws IOException {
 		@SuppressWarnings("unchecked")
 		WorldObjectCCCodec<Object> codec = (WorldObjectCCCodec<Object>)classEncoders.get(obj.getClass());
+		if( codec == null ) {
+			throw new UnsupportedOperationException("No encoder registered for instances of "+obj.getClass());
+		}
 		byte[] prefix = encoderPrefixes.get(codec);
 		codec.encode(obj, prefix, os, this);
 	}
