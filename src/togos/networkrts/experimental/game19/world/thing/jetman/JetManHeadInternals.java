@@ -22,18 +22,20 @@ public class JetManHeadInternals implements NonTileInternals<BlargNonTile>
 	public static final float MAX_BATTERY = 1;
 	protected static final AABB aabb = new AABB(-3f/16, -2.5f/16, -3f/16, 3f/16, 2.5f/16, 3f/16);
 	
+	final long lastUpdateTime;
 	final long uplinkBitAddress;
 	final boolean facingLeft;
 	final float health;
 	final float battery;
 	final JetManIcons icons;
 	
-	public JetManHeadInternals(long uplinkBitAddress, boolean facingLeft, float health, float battery, JetManIcons icons) {
+	public JetManHeadInternals(long uplinkBitAddress, boolean facingLeft, float health, float battery, JetManIcons icons, long lastUpdateTime) {
 		this.uplinkBitAddress = uplinkBitAddress;
 		this.facingLeft = facingLeft;
 		this.health = health;
 		this.battery = battery;
 		this.icons = icons;
+		this.lastUpdateTime = lastUpdateTime;
 	}
 	
 	public void sendUpdate(
@@ -92,7 +94,7 @@ public class JetManHeadInternals implements NonTileInternals<BlargNonTile>
 		}
 		
 		return nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withInternals(
-			new JetManHeadInternals(uplinkBitAddress, facingLeft, newSuitHealth, newBattery, icons)
+			new JetManHeadInternals(uplinkBitAddress, facingLeft, newSuitHealth, newBattery, icons, time)
 		);
 	}
 	
@@ -107,13 +109,20 @@ public class JetManHeadInternals implements NonTileInternals<BlargNonTile>
 
 	@Override public Icon getIcon() { return facingLeft ? JetManIcons.flipped(icons.head) : icons.head; }
 	@Override public AABB getRelativePhysicalAabb() { return aabb; }
-	@Override public long getNextAutoUpdateTime() { return Long.MAX_VALUE; }
+	
+	protected boolean isResting() {
+		return false;  
+	}
+	
+	@Override public long getNextAutoUpdateTime() {
+		return isResting() ? Long.MAX_VALUE : lastUpdateTime+1;
+	}
 	@Override public long getNonTileAddressFlags() {
-		return BitAddresses.PHYSINTERACT|BitAddresses.PICKUP;
+		return BitAddresses.PHYSINTERACT|BitAddresses.PICKUP|BitAddresses.UPPHASE2;
 	}
 	
 	protected JetManHeadInternals batteryDrained(float amount) {
-		return new JetManHeadInternals(uplinkBitAddress, facingLeft, health, battery-amount, icons);
+		return new JetManHeadInternals(uplinkBitAddress, facingLeft, health, battery-amount, icons, lastUpdateTime);
 	}
 	
 	public JetManHeadInternals sendToClient(long myAddress, Object payload, UpdateContext ctx) {

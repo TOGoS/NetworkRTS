@@ -31,6 +31,10 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 	protected static final AABB aabb = new AABB(-3f/16, -7f/16, -3f/16, 3f/16, 8f/16, 3f/16);
 	// TODO: Replace with a gravitational field function on world or something
 	public static final double GRAVITY = 0.002;
+
+	// TODO: Control flags (as opposed to actual physical state tracking flags)
+	// should probably all belong in the head.
+	// Especially isConscious
 	
 	public static final int S_FACING_LEFT = 0x01;
 	public static final int S_BACK_THRUSTER_ON = 0x02;
@@ -79,7 +83,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		);
 	}
 	public JetManInternals(long clientId, JetManIcons icons) {
-		this(0, -1, S_CONSCIOUS, 1, DEFAULT_FUEL_TANK, new JetManHeadInternals(clientId, false, JetManHeadInternals.MAX_HEALTH, JetManHeadInternals.MAX_BATTERY, icons), icons, 0);
+		this(0, -1, S_CONSCIOUS, 1, DEFAULT_FUEL_TANK, new JetManHeadInternals(clientId, false, JetManHeadInternals.MAX_HEALTH, JetManHeadInternals.MAX_BATTERY, icons, 0), icons, 0);
 	}
 	
 	public static NonTile createJetMan( long id, long uplinkBitAddress, JetManIcons icons ) {
