@@ -29,6 +29,7 @@ public class CerealWorldIO implements WorldIO, OpcodeBehavior, PacketPayloadCode
 	
 	/** 24-bit-prefix opcodes */
 	static final WorldObjectCCCodec<?>[] decoders = new WorldObjectCCCodec<?>[65536];
+	/** Object constructor prefixes (opcode + base128-encoded constructor number), keyed by the codec that will interpret them */
 	static final HashMap<WorldObjectCCCodec<?>,byte[]> encoderPrefixes = new HashMap<WorldObjectCCCodec<?>,byte[]>(); 
 	static final HashMap<Class<?>,WorldObjectCCCodec<?>> classEncoders = new HashMap<Class<?>,WorldObjectCCCodec<?>>(); 
 	
@@ -157,11 +158,14 @@ public class CerealWorldIO implements WorldIO, OpcodeBehavior, PacketPayloadCode
 		}
 		return decoder.decode(data, offset, ds, context);
 	}
-
+	
 	@Override public void encode(Object obj, OutputStream os) throws IOException {
-		throw new UnsupportedOperationException();
+		@SuppressWarnings("unchecked")
+		WorldObjectCCCodec<Object> codec = (WorldObjectCCCodec<Object>)classEncoders.get(obj.getClass());
+		byte[] prefix = encoderPrefixes.get(codec);
+		codec.encode(obj, prefix, os, this);
 	}
-
+	
 	@Override public Object decode(byte[] data, int offset, int length) throws MalformedDataException {
 		throw new UnsupportedOperationException();
 	}
