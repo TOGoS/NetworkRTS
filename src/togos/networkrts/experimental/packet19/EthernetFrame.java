@@ -36,6 +36,10 @@ public class EthernetFrame extends ContainerDataPacket<DataPacket>
 	 * 
 	 * This also jives with the assumptions of my earlier ethernet frame parsing
 	 * attempts, e.g. togos.networkrts.experimental.tcp1.EthernetFrameHandler.
+	 * 
+	 * If there are extra bytes after a payload (based on the payload's internal
+	 * size, e.g. an IP packet's 'total length'), wireshark will treat those
+	 * as an FCS.
 	 */
 	
 	protected long src, dest;
