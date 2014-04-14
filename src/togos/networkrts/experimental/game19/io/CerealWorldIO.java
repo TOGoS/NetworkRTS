@@ -15,15 +15,13 @@ import togos.networkrts.cereal.OpcodeDefinition;
 import togos.networkrts.cereal.SHA1ObjectReference;
 import togos.networkrts.cereal.StandardValueOps;
 import togos.networkrts.experimental.game19.world.QuadRSTNode;
-import togos.networkrts.experimental.packet19.MalformedDataException;
-import togos.networkrts.experimental.packet19.PacketPayloadCodec;
 import togos.networkrts.util.Getter;
 import togos.networkrts.util.HasURI;
 import togos.networkrts.util.HashUtil;
 import togos.networkrts.util.ResourceNotFound;
 import togos.networkrts.util.Storer;
 
-public class CerealWorldIO implements WorldIO, OpcodeBehavior, PacketPayloadCodec<Object>
+public class CerealWorldIO implements WorldIO, OpcodeBehavior
 {
 	static final byte CONSTRUCTOR_OPCODE = 0x61;
 	
@@ -135,13 +133,19 @@ public class CerealWorldIO implements WorldIO, OpcodeBehavior, PacketPayloadCode
 		codec.encode(o, encoderPrefixes.get(codec), os, this);
 	}
 	
-	public <T> void writeObjectInline(T o, OutputStream os) throws IOException {
-		writeObjectInline(o, getDefaultEncoder(o), os);
+	public <T> void writeObjectInline(T obj, OutputStream os) throws IOException {
+		WorldObjectCCCodec<? super T> codec = getDefaultEncoder(obj);
+		if( codec == null ) {
+			throw new UnsupportedOperationException("No encoder registered for instances of "+obj.getClass());
+		}
+		writeObjectInline(obj, codec, os);
 	}
 	
 	public void writeObjectReference(Object o, OutputStream os) throws IOException {
 		StandardValueOps.writeSha1ObjectReference(storeObject(o), os);
 	}
+	
+	//// Decode opcode implementation
 	
 	@Override public int apply(
 		byte[] data, int offset, DecodeState ds, CerealDecoder context
@@ -157,19 +161,5 @@ public class CerealWorldIO implements WorldIO, OpcodeBehavior, PacketPayloadCode
 			throw new InvalidEncoding("No such constructor as "+constructorNumber);
 		}
 		return decoder.decode(data, offset, ds, context);
-	}
-	
-	@Override public void encode(Object obj, OutputStream os) throws IOException {
-		@SuppressWarnings("unchecked")
-		WorldObjectCCCodec<Object> codec = (WorldObjectCCCodec<Object>)classEncoders.get(obj.getClass());
-		if( codec == null ) {
-			throw new UnsupportedOperationException("No encoder registered for instances of "+obj.getClass());
-		}
-		byte[] prefix = encoderPrefixes.get(codec);
-		codec.encode(obj, prefix, os, this);
-	}
-	
-	@Override public Object decode(byte[] data, int offset, int length) throws MalformedDataException {
-		throw new UnsupportedOperationException();
 	}
 }

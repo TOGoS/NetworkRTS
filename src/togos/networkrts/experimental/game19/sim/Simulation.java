@@ -3,7 +3,6 @@ package togos.networkrts.experimental.game19.sim;
 import java.util.Collection;
 import java.util.Queue;
 
-import togos.networkrts.experimental.game19.io.CerealWorldIO;
 import togos.networkrts.experimental.game19.world.ArrayMessageSet;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Message;
@@ -56,7 +55,7 @@ public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
 	}
 	
 	protected World world;
-	protected CerealWorldIO cerealWorldIo;
+	protected PacketPayloadCodec<Object> cerealWorldPacketPayloadCodec;
 	protected long simulationBitAddress;
 	protected long simulationEthernetAddress;
 	protected IP6Address simulationIpAddress;
@@ -157,7 +156,7 @@ public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
 			if( rm.getRestMessageType() != RESTMessage.RESTMessageType.REQUEST ) break handleRestRequest; 
 			
 			if( RESTRequest.PUT.equals(rm.getMethod()) && "/world".equals(rm.getPath()) ) {
-				world = (World)rm.getPayload().getPayload(Object.class, cerealWorldIo);
+				world = (World)rm.getPayload().getPayload(Object.class, cerealWorldPacketPayloadCodec);
 				System.err.println("World replaced with "+world);
 			}
 		}
