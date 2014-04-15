@@ -1,6 +1,5 @@
 package togos.networkrts.experimental.game19.scene;
 
-
 public class Icon
 {
 	public static final Float DEFAULT_NONTILE_FRONT_Z = 0.1f;

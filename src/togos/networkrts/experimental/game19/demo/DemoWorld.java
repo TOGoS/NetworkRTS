@@ -19,7 +19,7 @@ import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.experimental.game19.world.RSTNodeUpdater;
 import togos.networkrts.experimental.game19.world.RSTUtil;
 import togos.networkrts.experimental.game19.world.World;
-import togos.networkrts.experimental.game19.world.beh.NoBehavior;
+import togos.networkrts.experimental.game19.world.beh.BoringBlockInternals;
 import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
 import togos.networkrts.experimental.game19.world.thing.Substances;
 import togos.networkrts.experimental.game19.world.thing.pickup.SubstanceContainerInternals;
@@ -49,11 +49,11 @@ public class DemoWorld
 		Icon treeImage = loadBlockIcon(rc, "tile-images/tree0.png", -0.4f);
 		Icon spikeImage = loadBlockIcon(rc, "tile-images/spikes0.png", 0.5f);
 		
-		final Block bricks = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, brickImage, NoBehavior.instance);
-		final Block dirt = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, dirtImage, NoBehavior.instance);
-		final Block grass = new Block(0, 0, grassImage, NoBehavior.instance);
-		final Block tree = new Block(0, 0, treeImage, NoBehavior.instance);
-		final Block spikes = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_SPIKEY, spikeImage, NoBehavior.instance);
+		final Block bricks = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, brickImage, BoringBlockInternals.INSTANCE);
+		final Block dirt = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, dirtImage, BoringBlockInternals.INSTANCE);
+		final Block grass = new Block(0, 0, grassImage, BoringBlockInternals.INSTANCE);
+		final Block tree = new Block(0, 0, treeImage, BoringBlockInternals.INSTANCE);
+		final Block spikes = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_SPIKEY, spikeImage, BoringBlockInternals.INSTANCE);
 		
 		final SubstanceContainerInternals fuelCanInternals;
 		{

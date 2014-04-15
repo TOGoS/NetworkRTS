@@ -12,6 +12,8 @@ import togos.networkrts.experimental.game19.world.NonTileInternals;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 
+//TODO: Rename to JetManPieceInternals
+// or replace with generic debris chunk internals class
 public class JetManPieceBehavior implements NonTileInternals<BlargNonTile>
 {
 	protected final Icon icon;

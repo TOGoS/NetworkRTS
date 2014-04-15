@@ -104,7 +104,7 @@ public class BlockStackRSTNode extends BaseRSTNode
 		Block[] newBlocks = new Block[blocks.length];
 		boolean anyBlocksUpdated = false;
 		for( int i=0; i<blocks.length; ++i ) {
-			newBlocks[i] = blocks[i].behavior.update( blocks[i], x, y, sizePower, time, messages, updateContext );
+			newBlocks[i] = blocks[i].internals.update( blocks[i], x, y, sizePower, time, messages, updateContext );
 			if( newBlocks[i] != blocks[i] ) anyBlocksUpdated = true;
 		}
 		return anyBlocksUpdated ? BlockStackRSTNode.create(newBlocks) : this;

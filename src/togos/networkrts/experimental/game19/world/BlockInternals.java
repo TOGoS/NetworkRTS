@@ -8,7 +8,7 @@ import togos.networkrts.util.BitAddressRange;
  * the block's address.  Its purpose is to allow the behavior to
  * catch messages other than the ones directed to the block.
  */
-public interface BlockBehavior extends BitAddressRange, HasAutoUpdateTime
+public interface BlockInternals extends BitAddressRange, HasAutoUpdateTime
 {
 	// TODO: Replace action list with message list
 	// TODO: May want to update parameter types to be more specific:
