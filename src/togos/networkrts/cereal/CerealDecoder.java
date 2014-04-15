@@ -13,6 +13,8 @@ import togos.networkrts.util.ResourceHandlePool;
 import togos.networkrts.util.ResourceNotFound;
 import togos.networkrts.util.SoftResourceHandle;
 
+import static togos.networkrts.cereal.SHA1ObjectReference.SUBJECT_OF_PREFIX;
+
 public class CerealDecoder implements Getter<Object>
 {
 	public static class DecodeState {
@@ -136,6 +138,10 @@ public class CerealDecoder implements Getter<Object>
 	protected Getter<DecodeState> decodeStateGetter = new Getter<DecodeState>() {
 		@Override public DecodeState get( String uri ) throws ResourceNotFound {
 			try {
+				// The subject-of: prefix is implied.  We'll ignore it.
+				if( uri.startsWith(SUBJECT_OF_PREFIX) ) {
+					uri = uri.substring(SUBJECT_OF_PREFIX.length());
+				}
 				return decodeToDecodeState( chunkSource.get(uri) );
 			} catch( InvalidEncoding e ) {
 				throw new ResourceNotFound( uri, e );

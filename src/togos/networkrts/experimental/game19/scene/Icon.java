@@ -10,6 +10,7 @@ import togos.networkrts.cereal.SHA1ObjectReference;
 import togos.networkrts.cereal.StandardValueOps;
 import togos.networkrts.experimental.game19.io.CerealWorldIO;
 import togos.networkrts.experimental.game19.io.WorldObjectCCCodec;
+import togos.networkrts.util.HasURI;
 import togos.networkrts.util.ResourceNotFound;
 
 public class Icon
@@ -39,19 +40,16 @@ public class Icon
 		@Override public int decode(
 			byte[] data, int offset, DecodeState ds, CerealDecoder context
 		) throws InvalidEncoding, ResourceNotFound {
-			/*
 			float h = context.removeStackItem(ds, -1, Number.class).floatValue();
 			float w = context.removeStackItem(ds, -1, Number.class).floatValue();
 			float z = context.removeStackItem(ds, -1, Number.class).floatValue();
 			float y = context.removeStackItem(ds, -1, Number.class).floatValue();
 			float x = context.removeStackItem(ds, -1, Number.class).floatValue();
 			HasURI imageRef = context.removeStackItem(ds, -1, HasURI.class);
-			*/
-			throw new UnsupportedOperationException(
-				"Can't instantiate icon because of the way the image handle class is architected.");
+			ds.pushStackItem(new Icon(imageRef.getUri(), x, y, z, w, h));
+			return offset;
 		}
 	};
-
 	
 	public static final Float DEFAULT_NONTILE_FRONT_Z = 0.1f;
 	public static final Float DEFAULT_BLOCK_FRONT_Z = 0.5f;

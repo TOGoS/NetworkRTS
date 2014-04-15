@@ -110,7 +110,7 @@ public class BitprintFileRepository
 	}
 	
 	static final Pattern BITPRINT_PATTERN = Pattern.compile("urn:bitprint:([A-Z0-9]{32})\\.([A-Z0-9]{39})");
-	static final Pattern SHA1_PATTERN = Pattern.compile("sha1:([A-Z0-9]{32})");
+	static final Pattern SHA1_PATTERN = Pattern.compile("urn:sha1:([A-Z0-9]{32})");
 	
 	public File get(String urn) {
 		Matcher m;

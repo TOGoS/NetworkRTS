@@ -11,9 +11,19 @@ public class WorldSaveDemo
 {
 	public static void main(String[] args) throws Exception {
 		ResourceContext rc = new ResourceContext(new File(".ccouch"));
-		CerealWorldIO worldIo = new CerealWorldIO(rc.getByteArrayRepository());
-		World w = DemoWorld.initWorld(rc);
-		HasURI worldRef = worldIo.storeObject(w);
-		System.err.println("World: "+worldRef);
+		HasURI worldRef;
+		{
+			CerealWorldIO worldIo = new CerealWorldIO(rc.getByteArrayRepository());
+			World w = DemoWorld.initWorld(rc);
+			worldRef = worldIo.storeObject(w);
+			System.err.println("Saved: "+worldRef);
+		}
+		
+		{
+			// Now let's try to load it again!
+			CerealWorldIO worldLoader = new CerealWorldIO(rc.getByteArrayRepository());
+			World w = worldLoader.getObject(worldRef, World.class);
+			System.err.println("Loaded: "+w);
+		}
 	}
 }
