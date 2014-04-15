@@ -1,12 +1,58 @@
 package togos.networkrts.experimental.game19.world;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import togos.networkrts.cereal.CerealDecoder;
+import togos.networkrts.cereal.CerealDecoder.DecodeState;
+import togos.networkrts.cereal.InvalidEncoding;
+import togos.networkrts.cereal.NumberEncoding;
+import togos.networkrts.experimental.game19.io.CerealWorldIO;
+import togos.networkrts.experimental.game19.io.WorldObjectCCCodec;
 import togos.networkrts.experimental.game19.sim.UpdateContext;
+import togos.networkrts.util.ResourceNotFound;
 
 public class BlockStackRSTNode extends BaseRSTNode
 {
+	public static final WorldObjectCCCodec<BlockStackRSTNode> CCC = new WorldObjectCCCodec<BlockStackRSTNode>() {
+		@Override public Class<BlockStackRSTNode> getEncodableClass() { return BlockStackRSTNode.class; }
+
+		@Override public void encode(
+			BlockStackRSTNode bs, byte[] constructorPrefix, OutputStream os, CerealWorldIO cwio
+		) throws IOException {
+			if( bs.blocks.length == 1 ) {
+				// Then that block can represent the stack
+				cwio.writeObjectInline(bs.blocks[0], os);
+			} else {
+				for( Block b : bs.blocks ) {
+					cwio.writeObjectReference(b, os);
+				}
+				os.write(constructorPrefix);
+				NumberEncoding.writeUnsignedBase128(bs.blocks.length, os);
+			}
+		}
+
+		@Override public int decode(
+			byte[] data, int offset, DecodeState ds, CerealDecoder context
+		) throws InvalidEncoding, ResourceNotFound {
+			long blockCountDecodeResult = NumberEncoding.readUnsignedBase128(data, offset); 
+			long blockCount = NumberEncoding.base128Value(blockCountDecodeResult);
+			offset += NumberEncoding.base128Skip(blockCountDecodeResult);
+			
+			if( blockCount < 0 ) throw new InvalidEncoding("Block stack has < 0 blocks (base128 decoder bug!)");
+			if( blockCount > 1024 ) throw new InvalidEncoding("Block stack has way too many blocks");
+			Block[] blocks = new Block[(int)blockCount];
+			for( int j=blocks.length-1; j>=0; --j ) {
+				context.removeStackItem(ds, -1, Block.class);
+			}
+			ds.pushStackItem(BlockStackRSTNode.create(blocks));
+			
+			return offset;
+		}
+	};
+	
 	protected static final Comparator<Block> BLOCK_ICON_Z_COMPARATOR = new Comparator<Block>() {
 		@Override public int compare(Block a, Block b) {
 			float za = a.icon.imageZ, zb = b.icon.imageZ;

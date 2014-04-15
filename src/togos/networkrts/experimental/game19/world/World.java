@@ -32,15 +32,16 @@ public class World implements EntityAggregation
 			cwio.writeObjectReference(world.rst, os);
 			StandardValueOps.writeNumberCompact(world.rstSizePower, os);
 			os.write(constructorPrefix);
-			NumberEncoding.writeInt32(PROP_RST_SIZE_POWER|PROP_RST, os);
+			NumberEncoding.writeUnsignedBase128(PROP_RST_SIZE_POWER|PROP_RST, os);
 		}
 
-		@Override
-		public int decode(
+		@Override public int decode(
 			byte[] data, int offset, DecodeState ds, CerealDecoder context
 		) throws InvalidEncoding, ResourceNotFound {
-			int props = NumberEncoding.readInt32(data, offset);
-			offset += 4;
+			long propDecodeResult = NumberEncoding.readUnsignedBase128(data, offset); 
+			long props = NumberEncoding.base128Value(propDecodeResult); 
+			offset += NumberEncoding.base128Skip(propDecodeResult);
+			
 			if( (props | KNOWN_PROP_MASK) != KNOWN_PROP_MASK ) {
 				throw new InvalidEncoding(String.format("Unknown world properties encoded: %x", props));
 			}

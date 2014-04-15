@@ -15,9 +15,7 @@ import togos.networkrts.util.ResourceNotFound;
 public class QuadRSTNode extends BaseRSTNode
 {
 	public static final WorldObjectCCCodec<QuadRSTNode> CCC = new WorldObjectCCCodec<QuadRSTNode>() {
-		@Override public Class<QuadRSTNode> getEncodableClass() {
-			return QuadRSTNode.class;
-		}
+		@Override public Class<QuadRSTNode> getEncodableClass() { return QuadRSTNode.class; }
 		
 		@Override public void encode(
 			QuadRSTNode node, byte[] constructorPrefix, OutputStream os, CerealWorldIO cwio
@@ -30,20 +28,24 @@ public class QuadRSTNode extends BaseRSTNode
 			os.write(constructorPrefix);
 		}
 		
-		@Override
-		public int decode(
+		@Override public int decode(
 			byte[] data, int offset, DecodeState ds, CerealDecoder context
 		) throws InvalidEncoding, ResourceNotFound {
 			// Can't load lazily because we lack metadata
 			// which is dependent on all subnodes, which this codec
 			// doesn't store.
 			RSTNode[] subNodes = new RSTNode[4];
-			for( int i=3; i>=0; ++i ) {
+			for( int i=3; i>=0; --i ) {
 				Object obj = ds.removeStackItem(-1);
 				if( obj instanceof HasURI ) {
-					subNodes[i] = (RSTNode)context.get(((HasURI)obj).getUri());
+					obj = context.get(((HasURI)obj).getUri());
+				}
+				if( obj instanceof Block ) {
+					obj = ((Block)obj).stack;
+				} else if( obj instanceof RSTNode ) {
+					subNodes[i] = (RSTNode)obj;
 				} else {
-					throw new InvalidEncoding("Unexpected "+obj.getClass());
+					throw new InvalidEncoding("Expected an RSTNode or Block, found a "+obj.getClass());
 				}
 			}
 			ds.pushStackItem( QuadRSTNode.create(subNodes) );

@@ -15,6 +15,7 @@ import togos.networkrts.cereal.OpcodeBehavior;
 import togos.networkrts.cereal.OpcodeDefinition;
 import togos.networkrts.cereal.SHA1ObjectReference;
 import togos.networkrts.cereal.StandardValueOps;
+import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
 import togos.networkrts.experimental.game19.world.QuadRSTNode;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.util.Getter;
@@ -52,6 +53,7 @@ public class CerealWorldIO implements WorldIO, OpcodeBehavior
 	
 	static {
 		addConstructor( 0x0001, QuadRSTNode.CCC );
+		addConstructor( 0x0002, BlockStackRSTNode.CCC );
 		addConstructor( 0x1000, World.CCC1 );
 	}
 	
@@ -161,8 +163,8 @@ public class CerealWorldIO implements WorldIO, OpcodeBehavior
 		byte[] data, int offset, DecodeState ds, CerealDecoder context
 	) throws InvalidEncoding, ResourceNotFound {
 		final long numberDecodeResult = NumberEncoding.readUnsignedBase128(data, offset+1);
-		offset += (numberDecodeResult >> 56);
-		final long constructorNumber = numberDecodeResult & NumberEncoding.BASE128_VALUE_MASK;
+		offset += NumberEncoding.base128Skip(numberDecodeResult);
+		final long constructorNumber = NumberEncoding.base128Value(numberDecodeResult);
 		if( constructorNumber < 0 || constructorNumber > decoders.length ) {
 			throw new InvalidEncoding("No such constructor as "+constructorNumber);
 		}

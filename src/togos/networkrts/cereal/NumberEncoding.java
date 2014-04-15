@@ -93,6 +93,13 @@ public class NumberEncoding
 		return ((long)read << 56) | (value & 0x00FFFFFFFFFFFFFFl);
 	}
 	
+	public static final int base128Skip( long v ) {
+		return (int)((v >> 56) & 0xFF);
+	}
+	public static final long base128Value( long v ) {
+		return v & BASE128_VALUE_MASK;
+	}
+	
 	public static void writeInt16( long v, OutputStream os ) throws IOException {
 		byte[] buf = new byte[2];
 		buf[0] = (byte)(v>> 8);
