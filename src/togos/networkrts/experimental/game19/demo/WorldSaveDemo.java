@@ -7,7 +7,7 @@ import togos.networkrts.experimental.game19.io.CerealWorldIO;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.util.HasURI;
 
-public class WorlSaveDemo
+public class WorldSaveDemo
 {
 	public static void main(String[] args) throws Exception {
 		ResourceContext rc = new ResourceContext(new File(".ccouch"));
