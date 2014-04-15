@@ -13,7 +13,7 @@ public class WorldSaveDemo
 		ResourceContext rc = new ResourceContext(new File(".ccouch"));
 		CerealWorldIO worldIo = new CerealWorldIO(rc.getByteArrayRepository());
 		World w = DemoWorld.initWorld(rc);
-		HasURI uri = worldIo.storeObject(w);
-		System.err.println("World URI: "+uri);
+		HasURI worldRef = worldIo.storeObject(w);
+		System.err.println("World: "+worldRef);
 	}
 }
