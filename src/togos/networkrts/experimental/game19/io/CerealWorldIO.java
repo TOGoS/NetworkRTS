@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.WeakHashMap;
 
 import togos.networkrts.cereal.CerealDecoder;
 import togos.networkrts.cereal.CerealDecoder.DecodeState;
@@ -108,7 +109,12 @@ public class CerealWorldIO implements WorldIO, OpcodeBehavior
 		return expectedClass.cast(getObject(ref));
 	}
 	
+	WeakHashMap<Object,SHA1ObjectReference> savedObjects = new WeakHashMap<Object,SHA1ObjectReference>();
+	
 	@Override public SHA1ObjectReference storeObject(Object o) {
+		SHA1ObjectReference ref = savedObjects.get(o);
+		if( ref != null ) return ref;
+		
 		// TODO: Look up in a WeakHashMap to see f it's already been saved
 		
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -118,7 +124,9 @@ public class CerealWorldIO implements WorldIO, OpcodeBehavior
 		} catch( IOException e ) {
 			throw new RuntimeException(e);
 		}
-		return storeEncodedObject(baos.toByteArray());
+		ref = storeEncodedObject(baos.toByteArray());
+		savedObjects.put(o, ref);
+		return ref;
 	}
 	
 	protected SHA1ObjectReference storeEncodedObject( byte[] chunk ) {
