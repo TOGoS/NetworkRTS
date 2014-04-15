@@ -8,11 +8,11 @@ import java.io.ObjectOutputStream;
 
 import javax.imageio.ImageIO;
 
-import togos.networkrts.repo.BlobRepository;
+import togos.networkrts.repo.BitprintFileRepository;
 
 public class StorageUtil
 {
-	public static String storeSerialized( BlobRepository br, Object obj ) throws IOException {
+	public static String storeSerialized( BitprintFileRepository br, Object obj ) throws IOException {
 		File temp = br.tempFile();
 		FileOutputStream fos = new FileOutputStream(temp);
 		try {
@@ -25,7 +25,7 @@ public class StorageUtil
 		return br.store(temp, true);
 	}
 	
-	public static String storeImage( BlobRepository br, BufferedImage img ) throws IOException {
+	public static String storeImage( BitprintFileRepository br, BufferedImage img ) throws IOException {
 		File temp = br.tempFile();
 		ImageIO.write(img, "png", temp);
 		return br.store(temp, true);

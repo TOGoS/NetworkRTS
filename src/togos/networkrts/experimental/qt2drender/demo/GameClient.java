@@ -14,7 +14,7 @@ import togos.networkrts.experimental.qt2drender.demo.NetRenderDemo.RenderContext
 import togos.networkrts.experimental.qt2drender.demo.NetRenderDemo.VizStateCanvas;
 import togos.networkrts.experimental.rocopro.RCMessage;
 import togos.networkrts.experimental.rocopro.RCMessage.MessageType;
-import togos.networkrts.repo.BlobRepository;
+import togos.networkrts.repo.BitprintFileRepository;
 
 public class GameClient
 {
@@ -46,7 +46,7 @@ public class GameClient
 	public static void main(String[] args)
 		throws Exception
 	{
-		BlobRepository br = new BlobRepository(new File(".ccouch"));
+		BitprintFileRepository br = new BitprintFileRepository(new File(".ccouch"));
 		
 		final JFrame f = new JFrame("NetRenderDemo");
 		final VizStateCanvas vsc = new VizStateCanvas(new RenderContext(br.toBlobGetter()));

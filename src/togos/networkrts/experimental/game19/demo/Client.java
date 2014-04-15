@@ -21,8 +21,8 @@ import java.util.concurrent.BlockingQueue;
 
 import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
-import togos.networkrts.experimental.game19.scene.Scene;
 import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
+import togos.networkrts.experimental.game19.scene.Scene;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.World;

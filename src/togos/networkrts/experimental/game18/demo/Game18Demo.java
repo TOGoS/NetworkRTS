@@ -18,7 +18,7 @@ import togos.networkrts.experimental.game18.sim.Simulation;
 import togos.networkrts.experimental.qt2drender.VizState;
 import togos.networkrts.experimental.qt2drender.demo.NetRenderDemo.RenderContext;
 import togos.networkrts.experimental.qt2drender.demo.NetRenderDemo.VizStateCanvas;
-import togos.networkrts.repo.BlobRepository;
+import togos.networkrts.repo.BitprintFileRepository;
 import togos.networkrts.util.BitAddressUtil;
 
 public class Game18Demo
@@ -46,7 +46,7 @@ public class Game18Demo
 	}
 	
 	public static void mainxxx( String[] args ) {
-		BlobRepository blobRepo = new BlobRepository(new File(".ccouch"));
+		BitprintFileRepository blobRepo = new BitprintFileRepository(new File(".ccouch"));
 		final JFrame f = new JFrame("Game18Demo");
 		final VizStateCanvas vsc = new VizStateCanvas(new RenderContext(blobRepo.toBlobGetter()));
 		vsc.setPreferredSize(new Dimension(800,600));

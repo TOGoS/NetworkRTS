@@ -72,7 +72,7 @@ public class CerealWorldIO implements WorldIO, OpcodeBehavior
 		this.chunkStorer = storer;
 		this.cerealDecoder = new CerealDecoder(getter);
 	}
-	protected <R extends Getter<byte[]> & Storer<byte[]>> CerealWorldIO( R storage ) {
+	public <R extends Getter<byte[]> & Storer<byte[]>> CerealWorldIO( R storage ) {
 		this( storage, storage );
 	}
 	

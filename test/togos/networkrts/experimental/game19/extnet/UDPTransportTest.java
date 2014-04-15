@@ -12,7 +12,6 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 
 import junit.framework.TestCase;
-
 import togos.networkrts.experimental.game19.util.MessageSender;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.IDGenerator;

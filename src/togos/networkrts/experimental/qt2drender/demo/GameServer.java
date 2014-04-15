@@ -10,7 +10,7 @@ import togos.networkrts.experimental.qt2drender.CrappyCodec;
 import togos.networkrts.experimental.qt2drender.VizState;
 import togos.networkrts.experimental.rocopro.RCMessage;
 import togos.networkrts.experimental.rocopro.RCMessage.MessageType;
-import togos.networkrts.repo.BlobRepository;
+import togos.networkrts.repo.BitprintFileRepository;
 import togos.networkrts.util.ResourceNotFound;
 
 public class GameServer
@@ -19,7 +19,7 @@ public class GameServer
 	DatagramPacket pack = new DatagramPacket(new byte[2048], 2048);
 	SocketAddress clientAddress;
 	
-	BlobRepository blobRepo = new BlobRepository(new File(".ccouch"));
+	BitprintFileRepository blobRepo = new BitprintFileRepository(new File(".ccouch"));
 	
 	public VizState getVizState() throws ResourceNotFound {
 		try {

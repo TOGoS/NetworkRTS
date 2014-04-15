@@ -24,7 +24,7 @@ import togos.networkrts.experimental.qt2drender.QTRenderNode;
 import togos.networkrts.experimental.qt2drender.Renderer;
 import togos.networkrts.experimental.qt2drender.Sprite;
 import togos.networkrts.experimental.qt2drender.VizState;
-import togos.networkrts.repo.BlobRepository;
+import togos.networkrts.repo.BitprintFileRepository;
 import togos.networkrts.util.Getter;
 import togos.networkrts.util.ResourceHandle;
 import togos.networkrts.util.ResourceNotFound;
@@ -175,7 +175,7 @@ public class NetRenderDemo
 		}
 	}
 	
-	public static VizState makeVizState( BlobRepository br, long ts )
+	public static VizState makeVizState( BitprintFileRepository br, long ts )
 		throws IOException, ResourceNotFound
 	{
 		int size = 5;

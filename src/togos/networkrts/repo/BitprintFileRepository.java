@@ -11,13 +11,13 @@ import java.util.regex.Pattern;
 import togos.blob.FileInputStreamable;
 import togos.blob.InputStreamable;
 import togos.networkrts.util.Getter;
+import togos.networkrts.util.Repository;
 import togos.networkrts.util.ResourceNotFound;
-import togos.networkrts.util.Storer;
 
-public class BlobRepository
+public class BitprintFileRepository
 {
 	protected File repoDir;
-	public BlobRepository( File repoDir ) {
+	public BitprintFileRepository( File repoDir ) {
 		this.repoDir = repoDir;
 	}
 	
@@ -133,29 +133,58 @@ public class BlobRepository
 		return null;
 	}
 	
+	class ByteArrayRepository implements Repository<byte[]> {
+		@Override public String store(byte[] v) {
+			try {
+				return BitprintFileRepository.this.store(v, 0, v.length);
+			} catch( IOException e ) {
+				// TODO: could emit a warning and return calculated ID anyway
+				// System.err.println("Warning: failed to store a chunk due to "+e.getMessage());
+				throw new RuntimeException(e);
+			}
+		}
+		
+		@Override public byte[] get( String uri ) throws ResourceNotFound {
+			File f = BitprintFileRepository.this.get(uri);
+			if( f == null ) throw new ResourceNotFound(uri);
+			long fileLen = f.length();
+			if( fileLen > (2<<24) ) {
+				// It was found; we just can't load it!
+				throw new RuntimeException(f+" cannot be read into a byte array because it is way too big!");
+			}
+			byte[] buffer = new byte[(int)fileLen];
+			try {
+				FileInputStream fis = new FileInputStream(f);
+				int i = 0;
+				while( i < buffer.length ) {
+					int r = fis.read(buffer, i, buffer.length-i);
+					if( r == -1 ) {
+						throw new ResourceNotFound(
+							"Failed to read as many bytes as expected from "+f+" while loading "+uri+".\n"+
+							"maybe it changed size while we were reading?");
+					}
+					i += r;
+				}
+			} catch( IOException e ) {
+				throw new ResourceNotFound("Could not load resource '"+uri+"' due to I/O error while reading "+f, e);
+			}
+			return buffer;
+		}
+	};
+	
+	protected final ByteArrayRepository byteArrayRepo = new ByteArrayRepository();
+	
 	// TODO: replace with things that implement both getter and storer 
+	
+	public Repository<byte[]> toByteArrayRepository() { return byteArrayRepo; }
 	
 	public Getter<InputStreamable> toBlobGetter() {
 		return new Getter<InputStreamable>() {
 			@Override
 			public InputStreamable get(String uri) throws ResourceNotFound {
-				File f = BlobRepository.this.get(uri);
+				File f = BitprintFileRepository.this.get(uri);
 				if( f == null ) throw new ResourceNotFound(uri);
 				return new FileInputStreamable(f);
-			}
-		};
-	}
-	
-	public Storer<byte[]> toChunkStorer() {
-		return new Storer<byte[]>() {
-			@Override public String store(byte[] v) {
-				try {
-					return BlobRepository.this.store(v, 0, v.length);
-				} catch( IOException e ) {
-					// TODO: could emit a warning and return calculated ID anyway
-					// System.err.println("Warning: failed to store a chunk due to "+e.getMessage());
-					throw new RuntimeException(e);
-				}
 			}
 		};
 	}

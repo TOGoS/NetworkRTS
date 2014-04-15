@@ -9,11 +9,11 @@ import togos.networkrts.experimental.game18.StorageContext;
 import togos.networkrts.experimental.qt2drender.VizState;
 import togos.networkrts.experimental.qt2drender.demo.NetRenderDemo.RenderContext;
 import togos.networkrts.experimental.qt2drender.demo.NetRenderDemo.VizStateCanvas;
-import togos.networkrts.repo.BlobRepository;
+import togos.networkrts.repo.BitprintFileRepository;
 
 public class DemoUtil
 {
-	public static final BlobRepository DEFAULT_BLOB_REPO = new BlobRepository(new File(".ccouch"));
+	public static final BitprintFileRepository DEFAULT_BLOB_REPO = new BitprintFileRepository(new File(".ccouch"));
 	public static final StorageContext DEFAULT_STORAGE_CONTEXT = new StorageContext(DEFAULT_BLOB_REPO);
 	
 	public static void showVizStateWindow( VizState vs ) {

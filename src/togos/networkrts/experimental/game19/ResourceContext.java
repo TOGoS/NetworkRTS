@@ -9,18 +9,19 @@ import java.util.Map;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.qt2drender.Blackifier;
-import togos.networkrts.repo.BlobRepository;
+import togos.networkrts.repo.BitprintFileRepository;
 import togos.networkrts.util.ImageGetter;
+import togos.networkrts.util.Repository;
 import togos.networkrts.util.ResourceHandlePool;
 
 public class ResourceContext
 {
-	protected final BlobRepository repo;
+	protected final BitprintFileRepository repo;
 	public final ImageGetter imageGetter;
 	public final ResourceHandlePool resourceHandlePool;
 	
 	public ResourceContext( File storageDir ) {
-		repo = new BlobRepository(storageDir);
+		repo = new BitprintFileRepository(storageDir);
 		imageGetter = new ImageGetter(repo.toBlobGetter());
 		resourceHandlePool = new ResourceHandlePool();
 	}
@@ -52,5 +53,9 @@ public class ResourceContext
 			); 
 		}
 		return shadeOverlays;
+	}
+	
+	public Repository<byte[]> getByteArrayRepository() {
+		return repo.toByteArrayRepository();
 	}
 }
