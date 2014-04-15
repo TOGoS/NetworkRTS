@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import togos.networkrts.util.Getter;
+import togos.networkrts.util.HasURI;
 import togos.networkrts.util.HashUtil;
 import togos.networkrts.util.ResourceHandlePool;
 import togos.networkrts.util.ResourceNotFound;
@@ -166,6 +167,33 @@ public class CerealDecoder implements Getter<Object>
 			return getDecodeState(urn).getValue();
 		} catch( InvalidEncoding e ) {
 			throw new ResourceNotFound(urn, e);
+		}
+	}
+	
+	public <T> T removeStackItem( DecodeState ds, int index, Class<T> expectedClass )
+		throws ResourceNotFound, InvalidEncoding
+	{
+		Object item = ds.removeStackItem(index);
+		if( expectedClass.isAssignableFrom(item.getClass()) ) {
+			return expectedClass.cast(item);
+		} else if( item instanceof HasURI ) {
+			final String uri = ((HasURI)item).getUri();
+			item = get( uri );
+			if( expectedClass.isAssignableFrom(item.getClass()) ) {
+				return expectedClass.cast(item);
+			} else {
+				throw new InvalidEncoding(
+					item.getClass().getSimpleName()+
+					"-reference ("+uri+") found on the stack when expecting a "+
+					expectedClass.getSimpleName()
+				);
+			}
+		} else {
+			throw new InvalidEncoding(
+				item.getClass().getSimpleName()+
+				" found on the stack when expecting a "+
+				expectedClass.getSimpleName()
+			);
 		}
 	}
 }
