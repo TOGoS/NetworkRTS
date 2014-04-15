@@ -6,7 +6,6 @@ import java.util.Random;
 
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.Icon;
-import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
 import togos.networkrts.experimental.game19.scene.Layer.LayerLink;
 import togos.networkrts.experimental.game19.world.BitAddresses;
@@ -33,13 +32,13 @@ import togos.networkrts.util.SoftResourceHandle;
 public class DemoWorld
 {
 	protected static Icon loadBlockIcon(ResourceContext rc, String filename, float frontZ) throws IOException {
-		ImageHandle ih = rc.storeImageHandle(new File(filename));
-		return new Icon(ih, -0.5f, -0.5f, frontZ, 1f, 1f);
+		String urn = rc.storeFile(new File(filename));
+		return new Icon(urn, -0.5f, -0.5f, frontZ, 1f, 1f);
 	}
 	
 	protected static Icon loadIcon(ResourceContext rc, String filename, float size) throws IOException {
-		ImageHandle ih = rc.storeImageHandle(new File(filename));
-		return new Icon(ih, -size/2, -size/2, size/2, size, size);
+		String urn = rc.storeFile(new File(filename));
+		return new Icon(urn, -size/2, -size/2, size/2, size, size);
 	}
 	
 	public static World initWorld( ResourceContext rc ) throws IOException {

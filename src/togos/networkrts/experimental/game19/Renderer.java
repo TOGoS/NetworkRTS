@@ -76,7 +76,7 @@ public class Renderer
 					if( cc != null ) for( Block b : cc.getBlocks() ) {
 						Icon ic = b.icon;
 						if( ic.imageZ <= minZ || ic.imageZ > maxZ ) continue;
-						ImageHandle ih = ic.image;
+						ImageHandle ih = resourceContext.getImageHandle(ic.imageUri);
 						if( ih.isCompletelyTransparent ) continue;
 						try {
 							// TODO: Scale and place according to icon x, y, w, h, where
@@ -117,7 +117,7 @@ public class Renderer
 			final Getter<BufferedImage> imageGetter = resourceContext.imageGetter;
 			for( Block b : node.getBlocks() ) {
 				Icon ic = b.icon;
-				ImageHandle ih = ic.image;
+				ImageHandle ih = resourceContext.getImageHandle(ic.imageUri);
 				if( ih.isCompletelyTransparent ) continue;
 				try {
 					// TODO: Scale and place according to icon x, y, w, h, where
@@ -206,8 +206,10 @@ public class Renderer
 				draw( s.layer, x, y, dist, g, scale, scx, scy, prevZ, icon.imageZ );
 			}
 			
+			ImageHandle ih = resourceContext.getImageHandle(icon.imageUri);
+			
 			draw(
-				icon.image,
+				ih,
 				(int)(scx+sscale*(x+nt.getX()+icon.imageX)),
 				(int)(scy+sscale*(y+nt.getY()+icon.imageY)),
 				(int)Math.ceil(sscale*icon.imageWidth),

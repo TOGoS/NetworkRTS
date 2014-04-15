@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
@@ -26,17 +27,30 @@ public class ResourceContext
 		resourceHandlePool = new ResourceHandlePool();
 	}
 	
-	Map<File,String> imageUrns = new HashMap<File,String>();
-	public String storeImage( File f ) throws IOException {
-		String urn = imageUrns.get(f);
+	Map<File,String> fileUrns = new HashMap<File,String>();
+	public String storeFile( File f ) throws IOException {
+		String urn = fileUrns.get(f);
 		if( urn == null ) {
-			imageUrns.put(f, urn = repo.store( f, false ));
+			fileUrns.put(f, urn = repo.store( f, false ));
 		}
 		return urn;
 	}
 	
-	public ImageHandle storeImageHandle( File f ) throws IOException {
-		return new ImageHandle( resourceHandlePool.<BufferedImage>get(storeImage(f)) );
+	public Repository<byte[]> getByteArrayRepository() {
+		return repo.toByteArrayRepository();
+	}
+	
+	//// Image stuff; maybe belongs in a subclass?
+	
+	protected final WeakHashMap<String,ImageHandle> imageHandleCache = new WeakHashMap<String,ImageHandle>();
+	protected final ResourceHandlePool imageResourceHandlePool = new ResourceHandlePool();
+	public synchronized ImageHandle getImageHandle(String uri) {
+		ImageHandle ih = imageHandleCache.get(uri);
+		if( ih == null ) {
+			ih = new ImageHandle(imageResourceHandlePool.<BufferedImage>get(uri));
+			imageHandleCache.put(uri, ih);
+		}
+		return ih;
 	}
 	
 	protected BufferedImage[] shadeOverlays;
@@ -53,9 +67,5 @@ public class ResourceContext
 			); 
 		}
 		return shadeOverlays;
-	}
-	
-	public Repository<byte[]> getByteArrayRepository() {
-		return repo.toByteArrayRepository();
 	}
 }

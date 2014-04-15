@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import togos.networkrts.cereal.CerealDecoder;
 import togos.networkrts.cereal.CerealDecoder.DecodeState;
 import togos.networkrts.cereal.InvalidEncoding;
+import togos.networkrts.cereal.SHA1ObjectReference;
 import togos.networkrts.cereal.StandardValueOps;
 import togos.networkrts.experimental.game19.io.CerealWorldIO;
 import togos.networkrts.experimental.game19.io.WorldObjectCCCodec;
@@ -21,7 +22,12 @@ public class Icon
 		@Override public void encode(
 			Icon icon, byte[] constructorPrefix, OutputStream os, CerealWorldIO cwio
 		) throws IOException {
-			StandardValueOps.writeSha1ObjectReference(icon.image.original, os);
+			try {
+				StandardValueOps.writeSha1ObjectReference(SHA1ObjectReference.parse(icon.imageUri), os);
+			} catch( InvalidEncoding e ) {
+				throw new UnsupportedOperationException(
+					"Can't represent image URI as SHA-1 ref: "+icon.imageUri, e);
+			}
 			StandardValueOps.writeNumberCompact(icon.imageX, os);
 			StandardValueOps.writeNumberCompact(icon.imageY, os);
 			StandardValueOps.writeNumberCompact(icon.imageZ, os);
@@ -50,10 +56,10 @@ public class Icon
 	public static final Float DEFAULT_NONTILE_FRONT_Z = 0.1f;
 	public static final Float DEFAULT_BLOCK_FRONT_Z = 0.5f;
 	
-	public final ImageHandle image;
+	public final String imageUri;
 	public final float imageX, imageY, imageZ, imageWidth, imageHeight;
-	public Icon( ImageHandle image, float x, float y, float z, float w, float h ) {
-		this.image = image;
+	public Icon( String imageUri, float x, float y, float z, float w, float h ) {
+		this.imageUri = imageUri;
 		this.imageZ = z;
 		this.imageX = x; this.imageWidth  = w;
 		this.imageY = y; this.imageHeight = h;

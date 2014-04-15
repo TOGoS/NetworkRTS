@@ -13,7 +13,6 @@ import java.util.Random;
 import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.Icon;
-import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.game19.world.Block;
@@ -26,8 +25,8 @@ public class RenderDemo
 	ResourceContext rc = new ResourceContext(new File(".ccouch"));
 	
 	protected Icon loadBlockIcon(String filename) throws IOException {
-		ImageHandle ih = rc.storeImageHandle(new File(filename));
-		return new Icon(ih, -0.5f, -0.5f, 0.5f, 1f, 1f);
+		String urn = rc.storeFile(new File(filename));
+		return new Icon(urn, -0.5f, -0.5f, 0.5f, 1f, 1f);
 	}
 	
 	protected Layer makeLayer() throws IOException {
