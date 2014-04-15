@@ -25,6 +25,10 @@ public class SoftResourceHandle<T> implements ResourceHandle<T>, Serializable
 		return uri;
 	}
 	
+	@Override public String toString() {
+		return "<"+getUri()+">";
+	}
+	
 	public synchronized boolean lockForPopulation() {
 		if( beingPopulated ) return false;
 		if( error != null ) return false;

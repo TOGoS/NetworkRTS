@@ -27,6 +27,10 @@ public class SHA1ObjectReference implements HasURI
 		return uri;
 	}
 	
+	@Override public String toString() {
+		return "<"+getUri()+">";
+	}
+	
 	@Override public int hashCode() {
 		return getUri().hashCode();
 	}
