@@ -18,6 +18,7 @@ import togos.networkrts.cereal.op.PushSHA1ObjectReference;
 import togos.networkrts.cereal.op.PushShortString;
 import togos.networkrts.cereal.op.PushTrue;
 import togos.networkrts.util.Float16;
+import togos.networkrts.util.HasURI;
 
 public class StandardValueOps
 {
@@ -271,6 +272,14 @@ public class StandardValueOps
 	public static void writeSha1ObjectReference( SHA1ObjectReference sr, OutputStream os ) throws IOException {
 		os.write( sr.sha1IdentifiesSerialization() ? RE_OBJECTSHA1 : RE_BLOBSHA1 );
 		os.write( sr.getSha1() );
+	}
+	
+	public static void writeSha1ObjectReference( HasURI ref, OutputStream os ) throws IOException {
+		try {
+			writeSha1ObjectReference( SHA1ObjectReference.parse(ref.getUri()), os );
+		} catch( InvalidEncoding e ) {
+			throw new UnsupportedOperationException(ref.getUri() + " can't be encoded as an SHA1 object/blob reference", e);
+		}
 	}
 	
 	public static void writeValue( Object thing, OutputStream os ) throws IOException {

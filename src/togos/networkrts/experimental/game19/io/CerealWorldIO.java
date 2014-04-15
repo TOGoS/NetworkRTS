@@ -15,6 +15,7 @@ import togos.networkrts.cereal.OpcodeBehavior;
 import togos.networkrts.cereal.OpcodeDefinition;
 import togos.networkrts.cereal.SHA1ObjectReference;
 import togos.networkrts.cereal.StandardValueOps;
+import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
 import togos.networkrts.experimental.game19.world.QuadRSTNode;
@@ -56,7 +57,9 @@ public class CerealWorldIO implements WorldIO, OpcodeBehavior
 		addConstructor( 0x0001, QuadRSTNode.CCC );
 		addConstructor( 0x0002, BlockStackRSTNode.CCC );
 		addConstructor( 0x0003, Block.CCC1 );
+		
 		addConstructor( 0x1000, World.CCC1 );
+		addConstructor( 0x1001, Icon.CCC );
 	}
 	
 	static <T> WorldObjectCCCodec<? super T> getDefaultEncoder(T o) {
