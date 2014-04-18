@@ -1,6 +1,7 @@
 package togos.networkrts.experimental.game19.io;
 
 import java.io.File;
+import java.io.IOException;
 
 import junit.framework.TestCase;
 import togos.networkrts.experimental.game19.ResourceContext;
@@ -10,15 +11,18 @@ import togos.networkrts.util.HasURI;
 
 public class WorldCoolCerealizationTest extends TestCase
 {
+	ResourceContext rc = new ResourceContext(new File(".ccouch"));
+	
+	World createWorld() throws IOException {
+		return DemoWorld.initLittleWorld(rc);
+	}
+	
 	public void testEncodeDecode() throws Exception {
-		ResourceContext rc = new ResourceContext(new File(".ccouch"));
-		
 		HasURI worldRef;
 		{
 			CerealWorldIO worldIo = new CerealWorldIO(rc.getByteArrayRepository());
 			
-			// TODO: build a simpler world so this test doesn't take so long
-			World w = DemoWorld.initWorld(rc);
+			World w = createWorld();
 			
 			worldRef = worldIo.storeObject(w);
 			assertNotNull(worldRef);

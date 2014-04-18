@@ -47,6 +47,7 @@ public class NumberEncodingTest extends TestCase
 		testUnsignedBase128Encode( 0x00000000, new byte[]{ 0x00 } );
 		testUnsignedBase128Encode( 0x0000007F, new byte[]{ 0x7F } );
 		testUnsignedBase128Encode( 0x00000080, new byte[]{ (byte)0x81, 0x00 } );
+		testUnsignedBase128Encode( 0x00001000, new byte[]{ (byte)0xA0, 0x00} );
 		testUnsignedBase128Encode( 0x00002000, new byte[]{ (byte)0xC0, 0x00 } );
 		testUnsignedBase128Encode( 0x00003FFF, new byte[]{ (byte)0xFF, 0x7F } );
 		testUnsignedBase128Encode( 0x00004000, new byte[]{ (byte)0x81, (byte)0x80, 0x00 } );
@@ -60,6 +61,7 @@ public class NumberEncodingTest extends TestCase
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		final int offset = 5;
 		try {
+			// Write some padding to ensure things don't only work when offset = 0
 			for( int i=0; i<offset; ++i ) baos.write((byte)'a');
 			NumberEncoding.writeUnsignedBase128( v, baos );
 		} catch( IOException e ) {
@@ -67,8 +69,8 @@ public class NumberEncodingTest extends TestCase
 		}
 		byte[] b = baos.toByteArray();
 		long decodeResult = NumberEncoding.readUnsignedBase128(b, offset);
-		assertEquals( b.length-offset, decodeResult>>56 );
-		assertEquals( v, decodeResult & NumberEncoding.BASE128_VALUE_MASK );
+		assertEquals( b.length-offset, NumberEncoding.base128Skip(decodeResult) );
+		assertEquals( v, NumberEncoding.base128Value(decodeResult) );
 	}
 	
 	public void testUnsignedBase128EncodeDecode() throws InvalidEncoding {

@@ -1,0 +1,16 @@
+Create NetworkRTS World Object
+
+Following the opcode is a base128-encoded (unsigned) integer defining
+which constructor (actually an arbitrary function as far as this
+specification is concerned) is to be invoked.
+
+The functions may themselves read more bytes from the instruction stream.
+
+The constructor number -> function mapping is not defined here.
+Presumably all implementations will agree by convention on the meaning
+of a particular constructor ID.  Once defined, constructor IDs should
+retain their meaning forever.
+
+If a constructor ID is encountered whose mapping is unknown to the
+interpreter, it should be treated as malformed input, and evaluation
+must stop.

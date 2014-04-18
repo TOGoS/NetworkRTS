@@ -41,6 +41,62 @@ public class DemoWorld
 		return new Icon(urn, -size/2, -size/2, size/2, size, size);
 	}
 	
+	public static World initLittleWorld( ResourceContext rc ) throws IOException {
+		Icon brickImage = loadBlockIcon(rc, "tile-images/dumbrick1.png", 0.5f);
+		Icon dirtImage = loadBlockIcon(rc, "tile-images/dirt0.png", 0.5f);
+		Icon grassImage = loadBlockIcon(rc, "tile-images/grass0.png", 0.5f);
+		Icon treeImage = loadBlockIcon(rc, "tile-images/tree0.png", -0.4f);
+		Icon spikeImage = loadBlockIcon(rc, "tile-images/spikes0.png", 0.5f);
+		
+		final Block bricks = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, brickImage, BoringBlockInternals.INSTANCE);
+		final Block dirt = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, dirtImage, BoringBlockInternals.INSTANCE);
+		final Block grass = new Block(0, 0, grassImage, BoringBlockInternals.INSTANCE);
+		final Block tree = new Block(0, 0, treeImage, BoringBlockInternals.INSTANCE);
+		final Block spikes = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_SPIKEY, spikeImage, BoringBlockInternals.INSTANCE);
+		
+		final SubstanceContainerInternals fuelCanInternals;
+		{
+			Icon[] fuelCanIcons = new Icon[4];
+			for( int i=0; i<fuelCanIcons.length; ++i ) {
+				fuelCanIcons[i] = loadIcon(rc, "tile-images/FuelCan/FuelCan"+i+".png", 0.5f);
+			}
+			AABB fuelCanAabb = new AABB(-0.125, -0.125, -0.125, 0.25, 0.25, 0.25);
+			SubstanceContainerType fuelCanType = new SubstanceContainerType(
+				"Fuel can", fuelCanIcons, fuelCanAabb, 1, 0.01
+			);
+			fuelCanInternals = SubstanceContainerInternals.filled(fuelCanType, Substances.KEROSENE);
+		}
+		
+		int worldSizePower = 24;
+		int worldDataOrigin = -(1<<(worldSizePower-1));
+		
+		RSTNode n = QuadRSTNode.createHomogeneous(bricks.stack, worldSizePower);
+		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( -2, -2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+		
+		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( 3, 0, 32, 32 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( 3, 31, 32, 1 ), new SolidNodeFiller( spikes.stack ));
+		
+		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 0, 20, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
+		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 4, 20, 1 ), new SolidNodeFiller( dirt.stack ));
+		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 3, 20, 1 ), new RSTNodeUpdater() {
+			final RSTNode treeAndGrass = BlockStackRSTNode.create(new Block[] { tree, grass } );
+			final Random r = new Random();
+			@Override public RSTNode update(RSTNode oldNode, int x, int y, int sizePower) {
+				double v = r.nextDouble();
+				return v < 0.1 ? bricks.stack : v < 0.25 ? treeAndGrass : grass.stack;
+			}
+		});
+		
+		EntitySpatialTreeIndex<NonTile> nonTiles = new EntitySpatialTreeIndex<NonTile>();
+		
+		nonTiles = nonTiles.with( new BlargNonTile(0, 0, -5, 0, 0, 0, fuelCanInternals) );
+		
+		return new World(n, worldSizePower, nonTiles,
+			new LayerLink(true, new SoftResourceHandle<Layer>("urn:sha1:blah"), 0, 0, 0, 0xFF001122)
+		);
+	}
+	
 	public static World initWorld( ResourceContext rc ) throws IOException {
 		Icon brickImage = loadBlockIcon(rc, "tile-images/dumbrick1.png", 0.5f);
 		Icon dirtImage = loadBlockIcon(rc, "tile-images/dirt0.png", 0.5f);

@@ -39,7 +39,7 @@ public class Block implements BitAddressRange, HasAutoUpdateTime
 				StandardValueOps.writeNumberCompact(block.flags, os);
 				propsWritten |= PROP_FLAGS;
 			}
-			{
+			if( block.icon != null) {
 				cwio.writeObjectReference(block.icon, os);
 				propsWritten |= PROP_ICON;
 			}
@@ -76,7 +76,7 @@ public class Block implements BitAddressRange, HasAutoUpdateTime
 			if( (props & PROP_FLAGS) != 0 ) {
 				flags = context.removeStackItem(ds, -1, Number.class).longValue();
 			}
-			if( (props & PROP_FLAGS) != 0 ) {
+			if( (props & PROP_BIT_ADDRESS) != 0 ) {
 				bitAddress = context.removeStackItem(ds, -1, Number.class).longValue();
 			}
 			

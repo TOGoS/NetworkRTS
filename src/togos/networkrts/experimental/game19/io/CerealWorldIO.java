@@ -11,7 +11,6 @@ import togos.networkrts.cereal.CerealDecoder.DecodeState;
 import togos.networkrts.cereal.CerealUtil;
 import togos.networkrts.cereal.InvalidEncoding;
 import togos.networkrts.cereal.NumberEncoding;
-import togos.networkrts.cereal.OpcodeBehavior;
 import togos.networkrts.cereal.OpcodeDefinition;
 import togos.networkrts.cereal.SHA1ObjectReference;
 import togos.networkrts.cereal.StandardValueOps;
@@ -26,9 +25,34 @@ import togos.networkrts.util.HashUtil;
 import togos.networkrts.util.ResourceNotFound;
 import togos.networkrts.util.Storer;
 
-public class CerealWorldIO implements WorldIO, OpcodeBehavior
+public class CerealWorldIO implements WorldIO
 {
-	static final byte CONSTRUCTOR_OPCODE = 0x61;
+	public static class ConstructWorldObject implements OpcodeDefinition {
+		public static final ConstructWorldObject INSTANCE = new ConstructWorldObject();
+		
+		private ConstructWorldObject() { }
+		
+		@Override public int apply(
+				byte[] data, int offset, DecodeState ds, CerealDecoder context
+			) throws InvalidEncoding, ResourceNotFound {
+				++offset;
+				final long numberDecodeResult = NumberEncoding.readUnsignedBase128(data, offset);
+				offset += NumberEncoding.base128Skip(numberDecodeResult);
+				final long constructorNumber = NumberEncoding.base128Value(numberDecodeResult);
+				if( constructorNumber < 0 || constructorNumber > decoders.length ) {
+					throw new InvalidEncoding("No such constructor as "+constructorNumber);
+				}
+				WorldObjectCCCodec<?> decoder = decoders[(int)constructorNumber];
+				if( decoder == null ) {
+					throw new InvalidEncoding("No such constructor as "+constructorNumber);
+				}
+				return decoder.decode(data, offset, ds, context);
+			}
+			
+			@Override public String getUrn() { return "urn:sha1:SE24V7IVXEPDO7XRVG7QDH7TJQZME3ML"; }
+	}
+	
+	public static final byte CONSTRUCTOR_OPCODE = 0x61;
 	
 	/** 24-bit-prefix opcodes */
 	static final WorldObjectCCCodec<?>[] decoders = new WorldObjectCCCodec<?>[65536];
@@ -93,6 +117,7 @@ public class CerealWorldIO implements WorldIO, OpcodeBehavior
 				for( int i=0; i<StandardValueOps.STANDARD_OPS.length; ++i ) {
 					opcodeImports[i] = StandardValueOps.STANDARD_OPS[i];
 				}
+				opcodeImports[CONSTRUCTOR_OPCODE] = ConstructWorldObject.INSTANCE;
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				try {
 					CerealUtil.writeHeaderWithImports(opcodeImports, baos);
@@ -160,23 +185,5 @@ public class CerealWorldIO implements WorldIO, OpcodeBehavior
 	
 	public void writeObjectReference(Object o, OutputStream os) throws IOException {
 		StandardValueOps.writeSha1ObjectReference(storeObject(o), os);
-	}
-	
-	//// Decode opcode implementation
-	
-	@Override public int apply(
-		byte[] data, int offset, DecodeState ds, CerealDecoder context
-	) throws InvalidEncoding, ResourceNotFound {
-		final long numberDecodeResult = NumberEncoding.readUnsignedBase128(data, offset+1);
-		offset += NumberEncoding.base128Skip(numberDecodeResult);
-		final long constructorNumber = NumberEncoding.base128Value(numberDecodeResult);
-		if( constructorNumber < 0 || constructorNumber > decoders.length ) {
-			throw new InvalidEncoding("No such constructor as "+constructorNumber);
-		}
-		WorldObjectCCCodec<?> decoder = decoders[(int)constructorNumber];
-		if( decoder == null ) {
-			throw new InvalidEncoding("No such constructor as "+constructorNumber);
-		}
-		return decoder.decode(data, offset, ds, context);
 	}
 }

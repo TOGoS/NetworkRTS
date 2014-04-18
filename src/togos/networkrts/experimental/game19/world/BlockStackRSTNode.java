@@ -45,7 +45,7 @@ public class BlockStackRSTNode extends BaseRSTNode
 			if( blockCount > 1024 ) throw new InvalidEncoding("Block stack has way too many blocks");
 			Block[] blocks = new Block[(int)blockCount];
 			for( int j=blocks.length-1; j>=0; --j ) {
-				context.removeStackItem(ds, -1, Block.class);
+				blocks[j] = context.removeStackItem(ds, -1, Block.class);
 			}
 			ds.pushStackItem(BlockStackRSTNode.create(blocks));
 			

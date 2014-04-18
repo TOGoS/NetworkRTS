@@ -1,5 +1,7 @@
 package togos.networkrts.cereal;
 
+import static togos.networkrts.cereal.SHA1ObjectReference.SUBJECT_OF_PREFIX;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,8 +14,6 @@ import togos.networkrts.util.HashUtil;
 import togos.networkrts.util.ResourceHandlePool;
 import togos.networkrts.util.ResourceNotFound;
 import togos.networkrts.util.SoftResourceHandle;
-
-import static togos.networkrts.cereal.SHA1ObjectReference.SUBJECT_OF_PREFIX;
 
 public class CerealDecoder implements Getter<Object>
 {
@@ -84,7 +84,8 @@ public class CerealDecoder implements Getter<Object>
 			
 			DecodeState ds = thaw();
 			while( i < data.length ) {
-				i = ds.opcodeBehaviors[data[i]&0xFF].apply(data, i, ds, ctx);
+				OpcodeBehavior ob = ds.opcodeBehaviors[data[i]&0xFF];
+				i = ob.apply(data, i, ds, ctx);
 			}
 			return ds;
 		}
@@ -132,7 +133,7 @@ public class CerealDecoder implements Getter<Object>
 		
 		byte[] initialStateSha1 = CerealUtil.extract(data, 4, 20);
 		DecodeState ds = getDecodeState(initialStateSha1);
-		return ds.process( data, 24, this );
+		return ds.process( data, 24, this ).freeze();
 	}
 	
 	protected Getter<DecodeState> decodeStateGetter = new Getter<DecodeState>() {

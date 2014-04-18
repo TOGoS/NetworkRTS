@@ -42,7 +42,8 @@ public class QuadRSTNode extends BaseRSTNode
 				}
 				if( obj instanceof Block ) {
 					obj = ((Block)obj).stack;
-				} else if( obj instanceof RSTNode ) {
+				}
+				if( obj instanceof RSTNode ) {
 					subNodes[i] = (RSTNode)obj;
 				} else {
 					throw new InvalidEncoding("Expected an RSTNode or Block, found a "+obj.getClass());

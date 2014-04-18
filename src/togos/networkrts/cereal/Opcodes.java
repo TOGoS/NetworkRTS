@@ -18,6 +18,7 @@ import togos.networkrts.cereal.op.PushSHA1BlobReference;
 import togos.networkrts.cereal.op.PushSHA1ObjectReference;
 import togos.networkrts.cereal.op.PushShortString;
 import togos.networkrts.cereal.op.PushTrue;
+import togos.networkrts.experimental.game19.io.CerealWorldIO;
 
 public class Opcodes
 {
@@ -37,7 +38,9 @@ public class Opcodes
         PushMediumString.INSTANCE,
         PushOpcodeByteValue.INSTANCE,
         PushSHA1BlobReference.INSTANCE,
-        PushSHA1ObjectReference.INSTANCE
+        PushSHA1ObjectReference.INSTANCE,
+        
+        CerealWorldIO.ConstructWorldObject.INSTANCE
 	};
 	
 	public static final HashMap<String, OpcodeDefinition> BY_URN = new HashMap<String,OpcodeDefinition>();
@@ -52,10 +55,6 @@ public class Opcodes
 			}
 			BY_URN.put( def.getUrn(), def );
 		}
-	}
-	
-	public OpcodeBehavior getOpcodeBehavior( String urn ) {
-		return BY_URN.get(urn);
 	}
 	
 	/**
