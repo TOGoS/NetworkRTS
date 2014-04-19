@@ -28,7 +28,7 @@ public class StandardValueEncodingTest extends BaseCerealDecoderTest
 				}
 			}
 			DecodeState ds = new DecodeState(opcodeBehavior);
-			ds.process(encoded, 0, null);
+			ds.process(encoded, 0, encoded.length, null);
 			if( v instanceof Double || v instanceof Float ) {
 				assertEquals( v.doubleValue(), ((Number)ds.getValue()).doubleValue() );
 			} else {
@@ -47,7 +47,7 @@ public class StandardValueEncodingTest extends BaseCerealDecoderTest
 	
 	public void testEncodeDecodeNumber() throws InvalidEncoding, ResourceNotFound {
 		byte[] data = encodeStuff(-3.5);
-		Object v = decoder.decode(data);
+		Object v = decoder.decode(data, 0, data.length);
 		assertTrue( v instanceof Number );
 		assertEqualsish( -3.5, v );
 	}
@@ -121,7 +121,7 @@ public class StandardValueEncodingTest extends BaseCerealDecoderTest
 		};
 		
 		byte[] data = encodeStuff( things );
-		DecodeState ds = decoder.decodeToDecodeState(data);
+		DecodeState ds = decoder.decodeToDecodeState(data, 0, data.length);
 		Object[] stack = ds.getStackSnapshot();
 		assertEquals( things.length, stack.length );
 		for( int i=0; i<things.length; ++i ) {

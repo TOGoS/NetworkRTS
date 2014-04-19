@@ -2,6 +2,7 @@ package togos.networkrts.experimental.game19.world.thing.jetman;
 
 import java.util.Random;
 
+import togos.networkrts.experimental.game19.io.CerealWorldIO;
 import togos.networkrts.experimental.game19.physics.BlockCollision;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
@@ -20,7 +21,10 @@ import togos.networkrts.experimental.game19.world.thing.pickup.SubstanceContaine
 import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.experimental.gameengine1.index.EntityRanges;
 import togos.networkrts.experimental.gameengine1.index.Visitor;
+import togos.networkrts.experimental.packet19.RESTRequest;
 import togos.networkrts.util.BitAddressUtil;
+import togos.networkrts.util.Repository;
+import togos.networkrts.util.ResourceNotFound;
 
 public class JetManInternals implements NonTileInternals<BlargNonTile>
 {
@@ -145,24 +149,39 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 				switch( m.type ) {
 				case INCOMING_PACKET:
 					Object p = m.payload;
-					if( p instanceof Number ) {
-						int _wd = ((Number)p).intValue();
-						if( _wd >= -1 && _wd <= 7 ) {
-							newThrustDir = _wd;
-						}
-					} else if( p instanceof Boolean ) {
-						conscious = ((Boolean)p).booleanValue();
-					} else if( p instanceof String ) {
-						for( int j=0; j<4; ++j ) {
-							Random rand = new Random();
-							Icon[] pieceIcons = new Icon[] { icons.leg1, icons.leg2, icons.torso, icons.jetpack };
+					if( p instanceof RESTRequest ) {
+						RESTRequest rr = (RESTRequest)p;
+						if( "/spew".equals(rr.getPath()) ) {
+							if( "POST".equals(rr.getMethod()) ) {
+								for( int j=0; j<4; ++j ) {
+									Random rand = new Random();
+									Icon[] pieceIcons = new Icon[] { icons.leg1, icons.leg2, icons.torso, icons.jetpack };
 
-							Icon ic = pieceIcons[j];
-							updateContext.addNonTile(new BlargNonTile(0, time, newX, newY,
-								newVx+newVx*rand.nextGaussian()+newVy*rand.nextGaussian(),
-								newVy+newVy*rand.nextGaussian()+newVx*rand.nextGaussian(),
-								new JetManPieceBehavior(ic)
-							));
+									Icon ic = pieceIcons[j];
+									updateContext.addNonTile(new BlargNonTile(0, time, newX, newY,
+										newVx+newVx*rand.nextGaussian()+newVy*rand.nextGaussian(),
+										newVy+newVy*rand.nextGaussian()+newVx*rand.nextGaussian(),
+										new JetManPieceBehavior(ic)
+									));
+								}
+							}
+						} else if( "/brain/enabled".equals(rr.getPath()) ) {
+							if( "PUT".equals(rr.getMethod()) ) {
+								Object o = rr.getPayload().getPayload(Object.class, CerealWorldIO.DISCONNECTED.packetPayloadCodec);
+								if( o instanceof Boolean ) {
+									conscious = ((Boolean)o).booleanValue();
+								}
+							}
+						} else if( "/movement-direction".equals(rr.getPath()) ) {
+							if( "PUT".equals(rr.getMethod()) ) {
+								Object o = rr.getPayload().getPayload(Object.class, CerealWorldIO.DISCONNECTED.packetPayloadCodec);
+								if( o instanceof Number ) {
+									int _wd = ((Number)o).intValue();
+									if( _wd >= -1 && _wd <= 7 ) {
+										newThrustDir = _wd;
+									}
+								}
+							}
 						}
 					}
 					break;

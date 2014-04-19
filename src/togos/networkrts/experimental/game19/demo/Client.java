@@ -21,6 +21,7 @@ import java.util.concurrent.BlockingQueue;
 
 import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
+import togos.networkrts.experimental.game19.io.CerealWorldIO;
 import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
 import togos.networkrts.experimental.game19.scene.Scene;
 import togos.networkrts.experimental.game19.world.Message;
@@ -215,10 +216,12 @@ class Client {
 	public BlockingQueue<Message> incomingMessageQueue;
 	public long playerBitAddress, simulationBitAddress, clientBitAddress;
 	public World initialWorld; // Only here so client can reset it
+	protected CerealWorldIO cerealWorldIo;
 	
 	public Client( ResourceContext resourceContext ) {
 		sceneCanvas = new SceneCanvas(resourceContext);
 		sceneCanvas.setBackground(Color.BLACK);
+		cerealWorldIo = new CerealWorldIO(resourceContext.getByteArrayRepository());
 	}
 	
 	protected void updateUiState() {
@@ -323,13 +326,19 @@ class Client {
 					sceneCanvas.redrawBuffer();
 					break;
 				case KeyEvent.VK_C:
-					outgoingMessageQueue.add(Message.create(playerBitAddress, MessageType.INCOMING_PACKET, clientBitAddress, Boolean.TRUE));
+					outgoingMessageQueue.add(Message.create(playerBitAddress, MessageType.INCOMING_PACKET, clientBitAddress,
+						FakeCoAPMessage.request((byte)0, 0, "PUT", "/brain/enabled", new WackPacket(Boolean.TRUE, Object.class, cerealWorldIo.packetPayloadCodec))
+					));
 					break;
 				case KeyEvent.VK_U:
-					outgoingMessageQueue.add(Message.create(playerBitAddress, MessageType.INCOMING_PACKET, clientBitAddress, Boolean.FALSE));
+					outgoingMessageQueue.add(Message.create(playerBitAddress, MessageType.INCOMING_PACKET, clientBitAddress,
+						FakeCoAPMessage.request((byte)0, 0, "PUT", "/brain/enabled", new WackPacket(Boolean.FALSE, Object.class, cerealWorldIo.packetPayloadCodec))
+					));
 					break;
 				case KeyEvent.VK_P:
-					outgoingMessageQueue.add(Message.create(playerBitAddress, MessageType.INCOMING_PACKET, clientBitAddress, "spew"));
+					outgoingMessageQueue.add(Message.create(playerBitAddress, MessageType.INCOMING_PACKET, clientBitAddress,
+						FakeCoAPMessage.request((byte)0, 0, "POST", "/spew", null)
+					));
 					break;
 				case KeyEvent.VK_R:
 					// TODO: ethernet frames, etc etc
@@ -395,8 +404,9 @@ class Client {
 				
 				int dir = dir(dirX, dirY);
 				if( dir != oldDir ) {
-					Message m = Message.create(playerBitAddress, MessageType.INCOMING_PACKET, clientBitAddress, Integer.valueOf(dir));
-					outgoingMessageQueue.add(m);
+					outgoingMessageQueue.add(Message.create(playerBitAddress, MessageType.INCOMING_PACKET, clientBitAddress,
+						FakeCoAPMessage.request((byte)0, 0, "PUT", "/movement-direction", new WackPacket(Integer.valueOf(dir), Object.class, cerealWorldIo.packetPayloadCodec))
+					));
 					oldDir = dir;
 				}
 			}

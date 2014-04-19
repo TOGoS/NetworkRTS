@@ -79,13 +79,15 @@ public class CerealDecoder implements Getter<Object>
 			return frozen ? new DecodeState( opcodeBehaviors, stack ) : this;
 		}
 
-		public DecodeState process( byte[] data, int i, CerealDecoder ctx ) throws InvalidEncoding, ResourceNotFound {
-			if( i == data.length ) return this;
+		public DecodeState process( byte[] data, int offset, int length, CerealDecoder ctx ) throws InvalidEncoding, ResourceNotFound {
+			assert offset+length <= data.length;
+			int end = offset+length;
+			if( offset == length ) return this;
 			
 			DecodeState ds = thaw();
-			while( i < data.length ) {
-				OpcodeBehavior ob = ds.opcodeBehaviors[data[i]&0xFF];
-				i = ob.apply(data, i, ds, ctx);
+			while( offset < end ) {
+				OpcodeBehavior ob = ds.opcodeBehaviors[data[offset]&0xFF];
+				offset = ob.apply(data, offset, ds, ctx);
 			}
 			return ds;
 		}
@@ -128,12 +130,12 @@ public class CerealDecoder implements Getter<Object>
 		return true;
 	}
 	
-	protected DecodeState decodeToDecodeState( byte[] data ) throws InvalidEncoding, ResourceNotFound {
-		if( !equals(data, 0, CerealUtil.TBB_HEADER, 0, 4) ) throw new InvalidEncoding("No TBB header found");
+	protected DecodeState decodeToDecodeState( byte[] data, int offset, int length ) throws InvalidEncoding, ResourceNotFound {
+		if( !equals(data, 0, CerealUtil.TBB_HEADER, offset, 4) ) throw new InvalidEncoding("No TBB header found");
 		
-		byte[] initialStateSha1 = CerealUtil.extract(data, 4, 20);
+		byte[] initialStateSha1 = CerealUtil.extract(data, offset+4, 20);
 		DecodeState ds = getDecodeState(initialStateSha1);
-		return ds.process( data, 24, this ).freeze();
+		return ds.process( data, offset+24, data.length-24, this ).freeze();
 	}
 	
 	protected Getter<DecodeState> decodeStateGetter = new Getter<DecodeState>() {
@@ -143,7 +145,8 @@ public class CerealDecoder implements Getter<Object>
 				if( uri.startsWith(SUBJECT_OF_PREFIX) ) {
 					uri = uri.substring(SUBJECT_OF_PREFIX.length());
 				}
-				return decodeToDecodeState( chunkSource.get(uri) );
+				byte[] data = chunkSource.get(uri);
+				return decodeToDecodeState( data, 0, data.length );
 			} catch( InvalidEncoding e ) {
 				throw new ResourceNotFound( uri, e );
 			}
@@ -161,8 +164,8 @@ public class CerealDecoder implements Getter<Object>
 	
 	////
 	
-	public Object decode( byte[] data ) throws InvalidEncoding, ResourceNotFound {
-		return decodeToDecodeState(data).getValue();
+	public Object decode( byte[] data, int offset, int length ) throws InvalidEncoding, ResourceNotFound {
+		return decodeToDecodeState(data, offset, length).getValue();
 	}
 	
 	public Object get( byte[] sha1 ) throws ResourceNotFound {

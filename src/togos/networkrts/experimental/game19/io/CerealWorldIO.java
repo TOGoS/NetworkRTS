@@ -19,9 +19,12 @@ import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
 import togos.networkrts.experimental.game19.world.QuadRSTNode;
 import togos.networkrts.experimental.game19.world.World;
+import togos.networkrts.experimental.packet19.MalformedDataException;
+import togos.networkrts.experimental.packet19.PacketPayloadCodec;
 import togos.networkrts.util.Getter;
 import togos.networkrts.util.HasURI;
 import togos.networkrts.util.HashUtil;
+import togos.networkrts.util.Repository;
 import togos.networkrts.util.ResourceNotFound;
 import togos.networkrts.util.Storer;
 
@@ -51,6 +54,38 @@ public class CerealWorldIO implements WorldIO
 			
 			@Override public String getUrn() { return "urn:sha1:SE24V7IVXEPDO7XRVG7QDH7TJQZME3ML"; }
 	}
+	
+	class CerealPacketPayloadCodec implements PacketPayloadCodec<Object>
+	{
+		@Override public Object decode( byte[] data, int offset, int length ) throws MalformedDataException {
+			try {
+				return cerealDecoder.decode(data, offset, length);
+			} catch( InvalidEncoding e ) {
+				throw new MalformedDataException("Invalid encoding", e);
+			} catch( ResourceNotFound e ) {
+				throw new MalformedDataException("Resource not found", e);
+			}
+		}
+		
+		@Override public void encode( Object obj, OutputStream os ) throws IOException {
+			// TODO Auto-generated method stub
+			throw new UnsupportedOperationException();
+		}
+	}
+	
+	static final Repository<byte[]> EMPTY_REPOSITORY = new Repository<byte[]>() {
+		@Override public byte[] get( String uri ) throws ResourceNotFound {
+			throw new ResourceNotFound(uri);
+		}
+		@Override public String store( byte[] v ) {
+			throw new UnsupportedOperationException();
+		}
+	};
+	/**
+	 * A CerealWorldIO instance that is not connected to a repository
+	 * and therefore can't load objects by reference. 
+	 */
+	public static final CerealWorldIO DISCONNECTED = new CerealWorldIO(EMPTY_REPOSITORY);
 	
 	public static final byte CONSTRUCTOR_OPCODE = 0x61;
 	
@@ -99,6 +134,8 @@ public class CerealWorldIO implements WorldIO
 	protected final Getter<byte[]> chunkGetter;
 	protected final Storer<byte[]> chunkStorer;
 	protected final CerealDecoder cerealDecoder;
+	
+	public final CerealPacketPayloadCodec packetPayloadCodec = new CerealPacketPayloadCodec();
 	
 	protected CerealWorldIO( Getter<byte[]> getter, Storer<byte[]> storer ) {
 		this.chunkGetter = getter;
