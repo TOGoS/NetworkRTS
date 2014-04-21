@@ -88,6 +88,14 @@ public class BlockStackRSTNode extends BaseRSTNode
 		return new BlockStackRSTNode( blocks, minAddress, maxAddress, aut );
 	}
 	
+	public static BlockStackRSTNode create( BlockStack s ) {
+		if( s instanceof BlockStackRSTNode ) {
+			return (BlockStackRSTNode)s;
+		} else {
+			return create( s.getBlocks() );
+		}
+	}
+	
 	public static BlockStackRSTNode create( Block block ) {
 		if( block.stack != null ) return block.stack;
 		return create( new Block[]{ block } );
@@ -97,19 +105,39 @@ public class BlockStackRSTNode extends BaseRSTNode
 	@Override public Block[] getBlocks() { return blocks; }
 	@Override public RSTNode[] getSubNodes() { return RSTNode.EMPTY_LIST; }
 	
-	@Override protected RSTNode _update( int x, int y, int sizePower, long time, MessageSet messages, UpdateContext updateContext ) {
-		// TODO: handle 'create block' messages here?
-		
-		//int resCount0 = results.size();
-		Block[] newBlocks = new Block[blocks.length];
+	protected static RSTNode updateBlocks( BlockStackRSTNode a, int x, int y, int sizePower, long time, MessageSet messages, UpdateContext updateContext ) {
+		Block[] newBlocks = new Block[a.blocks.length];
 		boolean anyBlocksUpdated = false;
-		for( int i=0; i<blocks.length; ++i ) {
-			newBlocks[i] = blocks[i].internals.update( blocks[i], x, y, sizePower, time, messages, updateContext );
-			if( newBlocks[i] != blocks[i] ) anyBlocksUpdated = true;
+		for( int i=0; i<a.blocks.length; ++i ) {
+			newBlocks[i] = a.blocks[i].internals.update( a.blocks[i], x, y, sizePower, time, messages, updateContext );
+			if( newBlocks[i] != a.blocks[i] ) anyBlocksUpdated = true;
 		}
-		return anyBlocksUpdated ? BlockStackRSTNode.create(newBlocks) : this;
+		return anyBlocksUpdated ? BlockStackRSTNode.create(newBlocks) : a;
 	}
-
+	
+	protected static BlockStackRSTNode updateStack( BlockStackRSTNode a, int x, int y, int sizePower, long time, MessageSet messages, UpdateContext updateContext ) {
+		final int size = 1<<sizePower;
+		final MessageSet nodeMessages = messages.subsetApplicableTo(x, y, x+size, y+size, BitAddresses.TYPE_NODE, BitAddresses.maxForType(BitAddresses.TYPE_NODE));
+		for( Message m : nodeMessages ) {
+			switch( m.type ) {
+			case ADD_BLOCKS:
+				a = withBlocks(a, (BlockStack)m.payload);
+				break;
+			case REPLACE_BLOCKS:
+				a = BlockStackRSTNode.create( (BlockStack)m.payload );
+				break;
+			default:
+				// Nothin
+			}
+		}
+		return a;
+	}
+	
+	@Override protected RSTNode _update( int x, int y, int sizePower, long time, MessageSet messages, UpdateContext updateContext ) {
+		BlockStackRSTNode a = updateStack( this, x, y, sizePower, time, messages, updateContext );
+		return updateBlocks( a, x, y, sizePower, time, messages, updateContext );
+	}
+	
 	public static RSTNode withoutBlock(RSTNode n, Block toBeRemoved) {
 		int matches = 0;
 		Block[] blocks = n.getBlocks();
@@ -129,7 +157,23 @@ public class BlockStackRSTNode extends BaseRSTNode
 		return create(newBlocks);
 	}
 	
-	public static RSTNode withBlock(RSTNode n, Block toBeAdded) {
+	public static BlockStackRSTNode withBlocks(RSTNode n, BlockStack toBeAdded) {
+		Block[] blocks = n.getBlocks();
+		Block[] addBlocks = toBeAdded.getBlocks();
+		if( blocks.length == 0 ) return create(toBeAdded);
+		
+		Block[] newBlocks = new Block[blocks.length+addBlocks.length];
+		for( int i=0; i<blocks.length; ++i ) {
+			newBlocks[i] = blocks[i];
+		}
+		for( int i=blocks.length, j=0; j<addBlocks.length; ++i, ++j ) {
+			newBlocks[i] = addBlocks[j];
+		}
+		
+		return create(newBlocks);
+	}
+	
+	public static BlockStackRSTNode withBlock(RSTNode n, Block toBeAdded) {
 		Block[] blocks = n.getBlocks();
 		if( blocks.length == 0 ) return toBeAdded.stack;
 		

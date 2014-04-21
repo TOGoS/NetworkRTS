@@ -15,6 +15,7 @@ import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.NonTileInternals;
 import togos.networkrts.experimental.game19.world.World;
+import togos.networkrts.experimental.game19.world.thing.BlockWand;
 import togos.networkrts.experimental.game19.world.thing.Substances;
 import togos.networkrts.experimental.game19.world.thing.pickup.SubstanceContainerInternals;
 import togos.networkrts.experimental.game19.world.thing.pickup.SubstanceContainerType;
@@ -23,8 +24,6 @@ import togos.networkrts.experimental.gameengine1.index.EntityRanges;
 import togos.networkrts.experimental.gameengine1.index.Visitor;
 import togos.networkrts.experimental.packet19.RESTRequest;
 import togos.networkrts.util.BitAddressUtil;
-import togos.networkrts.util.Repository;
-import togos.networkrts.util.ResourceNotFound;
 
 public class JetManInternals implements NonTileInternals<BlargNonTile>
 {
@@ -180,6 +179,13 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 									if( _wd >= -1 && _wd <= 7 ) {
 										newThrustDir = _wd;
 									}
+								}
+							}
+						} else if( "/block-wand/applications".equals(rr.getPath()) ) {
+							if( "POST".equals(rr.getMethod()) ) {
+								Object o = rr.getPayload().getPayload(Object.class, CerealWorldIO.DISCONNECTED.packetPayloadCodec);
+								if( o instanceof BlockWand.Application ) {
+									BlockWand.apply( (BlockWand.Application)o, updateContext );
 								}
 							}
 						}

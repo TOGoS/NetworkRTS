@@ -76,6 +76,9 @@ public class BitAddresses
 	public static final long withMaxFlags( long typeAndId ) {
 		return typeAndId | FLAG_MASK;
 	}
+	public static final long maxForType( long type ) {
+		return type | FLAG_MASK | ID_MASK;
+	}
 	
 	public static final long forceType( long type, long rest ) {
 		assert (type & TYPE_MASK) == type;

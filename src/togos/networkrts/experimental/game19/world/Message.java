@@ -18,7 +18,9 @@ public class Message implements BitAddressRange, MessageSet
 		INCOMING_PACKET,
 		REQUEST_PICKUP, // Somebody wants to take you!  Remove self and respond with INCOMING_ITEM if successful
 		INCOMING_ITEM, // Payload will be a NonTileInternals
-		NEIGHBOR_UPDATED
+		NEIGHBOR_UPDATED,
+		ADD_BLOCKS,
+		REPLACE_BLOCKS,
 	}
 	
 	public final long minBitAddress, maxBitAddress;

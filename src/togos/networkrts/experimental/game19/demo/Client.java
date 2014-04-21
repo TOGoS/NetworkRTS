@@ -27,16 +27,27 @@ import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.io.CerealWorldIO;
 import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
 import togos.networkrts.experimental.game19.scene.Scene;
+import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.World;
+import togos.networkrts.experimental.game19.world.thing.BlockWand;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManCoreStats;
 import togos.networkrts.experimental.packet19.FakeCoAPMessage;
 import togos.networkrts.experimental.packet19.RESTRequest;
 import togos.networkrts.experimental.packet19.WackPacket;
 import togos.networkrts.ui.ImageCanvas;
 
-class Client {
+class Client
+{
+	protected static final int max( int...things ) {
+		int m = Integer.MIN_VALUE;
+		for( int i=0; i<things.length; ++i ) {
+			if( things[i] > m ) m = things[i];
+		}
+		return m;
+	}
+	
 	static class TextMessage implements Comparable<Client.TextMessage> {
 		public final long receptionTime;
 		public final String text;
@@ -251,6 +262,7 @@ class Client {
 	
 	public synchronized void updateReceived() {
 		lastUpdateFromAvatar = System.currentTimeMillis();
+		updateMouseDrivenStuff();
 	}
 	public synchronized void setScene( Scene s ) {
 		scene = s;
@@ -272,6 +284,21 @@ class Client {
 		long currentTime = System.currentTimeMillis();
 		if( lastUpdateFromAvatar < currentTime - 1000 ) {
 			updateUiState();
+		}
+	}
+	
+	protected void sendPlayerMessage( String meth, String path, Object data ) {
+		outgoingMessageQueue.add(Message.create(playerBitAddress, MessageType.INCOMING_PACKET, clientBitAddress,
+			FakeCoAPMessage.request((byte)0, 0, meth, path, new WackPacket(data, Object.class, cerealWorldIo.packetPayloadCodec))
+		));
+	}
+	
+	protected int cursorX, cursorY;
+	protected boolean firing;
+	protected void updateMouseDrivenStuff() {
+		if( firing ) {
+			Point2D.Double p  = sceneCanvas.screenToWorldPoint(cursorX, cursorY);
+			sendPlayerMessage("POST", "/block-wand/applications", new BlockWand.Application(p.getX(), p.getY(), 0.25, false, BlockStackRSTNode.EMPTY));
 		}
 	}
 	
@@ -333,12 +360,32 @@ class Client {
 		clientUpdateThread.setDaemon(true);
 		clientUpdateThread.start();
 		MouseAdapter mouseListener = new MouseAdapter() {
+			protected boolean[] buttonsDown = new boolean[max(MouseEvent.BUTTON1, MouseEvent.BUTTON2, MouseEvent.BUTTON3)+1];
 			@Override public void mouseMoved(MouseEvent e) {
-				Point2D.Double p  = sceneCanvas.screenToWorldPoint(e.getX(), e.getY());
-				System.err.println(e.getX()+","+e.getY()+" -> "+p.getX()+","+p.getY());
+				cursorX = e.getX();
+				cursorY = e.getY();
+				update();
+			}
+			@Override public void mouseDragged(MouseEvent e) {
+				cursorX = e.getX();
+				cursorY = e.getY();
+				update();
+			}
+			@Override public void mousePressed(MouseEvent e) {
+				buttonsDown[e.getButton()] = true;
+				update();
+			}
+			@Override public void mouseReleased(MouseEvent e) {
+				buttonsDown[e.getButton()] = false;
+				update();
+			}
+			protected void update() {
+				firing = buttonsDown[MouseEvent.BUTTON1];
+				updateMouseDrivenStuff();
 			}
 		};
 		sceneCanvas.addMouseMotionListener(mouseListener);
+		sceneCanvas.addMouseListener(mouseListener);
 		sceneCanvas.addKeyListener(new KeyAdapter() {
 			@Override public void keyPressed(KeyEvent kevt) {
 				switch( kevt.getKeyCode() ) {
