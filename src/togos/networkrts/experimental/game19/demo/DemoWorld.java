@@ -79,6 +79,8 @@ public class DemoWorld
 				flags |= Block.FLAG_OPAQUE;
 			} else if( "solid".equals(line) ) {
 				flags |= Block.FLAG_SOLID;
+			} else if( "spikey".equals(line) ) {
+				flags |= Block.FLAG_SPIKEY;
 			} else if( (colonIdx = line.indexOf(":")) != -1 ) {
 				String key = line.substring(0, colonIdx).trim();
 				String val = line.substring(colonIdx+1).trim();
@@ -115,19 +117,22 @@ public class DemoWorld
 		return new Icon(urn, -size/2, -size/2, size/2, size, size);
 	}
 	
-	public static World initLittleWorld( ResourceContext rc ) throws IOException {
-		//Icon brickImage = loadBlockIcon(rc, "tile-images/dumbrick1.png", 0.5f);
-		Icon dirtImage = loadBlockIcon(rc, "tile-images/dirt0.png", 0.5f);
-		Icon grassImage = loadBlockIcon(rc, "tile-images/grass0.png", 0.5f);
-		Icon treeImage = loadBlockIcon(rc, "tile-images/tree0.png", -0.4f);
-		Icon spikeImage = loadBlockIcon(rc, "tile-images/spikes0.png", 0.5f);
+	static class DemoBlocks {
+		public Block bricks, dirt, grass, tree, spikes;
 		
-		//final Block bricks = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, brickImage, BoringBlockInternals.INSTANCE);
-		final Block bricks = loadBlock( new File("things/blocks/gray-stone-bricks.block"), rc );
-		final Block dirt = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, dirtImage, BoringBlockInternals.INSTANCE);
-		final Block grass = new Block(0, 0, grassImage, BoringBlockInternals.INSTANCE);
-		final Block tree = new Block(0, 0, treeImage, BoringBlockInternals.INSTANCE);
-		final Block spikes = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_SPIKEY, spikeImage, BoringBlockInternals.INSTANCE);
+		static DemoBlocks load( ResourceContext rc ) throws IOException {
+			DemoBlocks db = new DemoBlocks();
+			db.bricks = loadBlock( new File("things/blocks/gray-stone-bricks0.block"), rc );
+			db.dirt = loadBlock( new File("things/blocks/dirt0.block"), rc );
+			db.grass = loadBlock( new File("things/blocks/grass0.block"), rc );
+			db.tree = loadBlock( new File("things/blocks/small-tree0.block"), rc );
+			db.spikes = loadBlock( new File("things/blocks/big-gray-spikes0.block"), rc );
+			return db;
+		}
+	}
+	
+	public static World initLittleWorld( ResourceContext rc ) throws IOException {
+		final DemoBlocks blocks = DemoBlocks.load(rc);
 		
 		final SubstanceContainerInternals fuelCanInternals;
 		{
@@ -145,21 +150,21 @@ public class DemoWorld
 		int worldSizePower = 24;
 		int worldDataOrigin = -(1<<(worldSizePower-1));
 		
-		RSTNode n = QuadRSTNode.createHomogeneous(bricks.stack, worldSizePower);
+		RSTNode n = QuadRSTNode.createHomogeneous(blocks.bricks.stack, worldSizePower);
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( -2, -2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
 		
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( 3, 0, 32, 32 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
-		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( 3, 31, 32, 1 ), new SolidNodeFiller( spikes.stack ));
+		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( 3, 31, 32, 1 ), new SolidNodeFiller( blocks.spikes.stack ));
 		
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 0, 20, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
-		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 4, 20, 1 ), new SolidNodeFiller( dirt.stack ));
+		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 4, 20, 1 ), new SolidNodeFiller( blocks.dirt.stack ));
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 3, 20, 1 ), new RSTNodeUpdater() {
-			final RSTNode treeAndGrass = BlockStackRSTNode.create(new Block[] { tree, grass } );
+			final RSTNode treeAndGrass = BlockStackRSTNode.create(new Block[] { blocks.tree, blocks.grass } );
 			final Random r = new Random();
 			@Override public RSTNode update(RSTNode oldNode, int x, int y, int sizePower) {
 				double v = r.nextDouble();
-				return v < 0.1 ? bricks.stack : v < 0.25 ? treeAndGrass : grass.stack;
+				return v < 0.1 ? blocks.bricks.stack : v < 0.25 ? treeAndGrass : blocks.grass.stack;
 			}
 		});
 		
@@ -173,18 +178,7 @@ public class DemoWorld
 	}
 	
 	public static World initWorld( ResourceContext rc ) throws IOException {
-		//Icon brickImage = loadBlockIcon(rc, "tile-images/dumbrick1.png", 0.5f);
-		Icon dirtImage = loadBlockIcon(rc, "tile-images/dirt0.png", 0.5f);
-		Icon grassImage = loadBlockIcon(rc, "tile-images/grass0.png", 0.5f);
-		Icon treeImage = loadBlockIcon(rc, "tile-images/tree0.png", -0.4f);
-		Icon spikeImage = loadBlockIcon(rc, "tile-images/spikes0.png", 0.5f);
-		
-		//final Block bricks = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, brickImage, BoringBlockInternals.INSTANCE);
-		final Block bricks = loadBlock( new File("things/blocks/gray-stone-bricks.block"), rc );
-		final Block dirt = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, dirtImage, BoringBlockInternals.INSTANCE);
-		final Block grass = new Block(0, 0, grassImage, BoringBlockInternals.INSTANCE);
-		final Block tree = new Block(0, 0, treeImage, BoringBlockInternals.INSTANCE);
-		final Block spikes = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_SPIKEY, spikeImage, BoringBlockInternals.INSTANCE);
+		final DemoBlocks blocks = DemoBlocks.load(rc);
 		
 		final SubstanceContainerInternals fuelCanInternals;
 		{
@@ -202,21 +196,21 @@ public class DemoWorld
 		int worldSizePower = 24;
 		int worldDataOrigin = -(1<<(worldSizePower-1));
 		
-		RSTNode n = QuadRSTNode.createHomogeneous(bricks.stack, worldSizePower);
+		RSTNode n = QuadRSTNode.createHomogeneous(blocks.bricks.stack, worldSizePower);
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( -2, -2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TCircle( +2, +2, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
 		
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( 3, 0, 32, 32 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
-		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( 3, 31, 32, 1 ), new SolidNodeFiller( spikes.stack ));
+		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( 3, 31, 32, 1 ), new SolidNodeFiller( blocks.spikes.stack ));
 		
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 0, 20, 4 ), new SolidNodeFiller( BlockStackRSTNode.EMPTY ));
-		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 4, 20, 1 ), new SolidNodeFiller( dirt.stack ));
+		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 4, 20, 1 ), new SolidNodeFiller( blocks.dirt.stack ));
 		n = RSTUtil.fillShape( n, worldDataOrigin, worldDataOrigin, worldSizePower, new TRectangle( -24, 3, 20, 1 ), new RSTNodeUpdater() {
-			final RSTNode treeAndGrass = BlockStackRSTNode.create(new Block[] { tree, grass } );
+			final RSTNode treeAndGrass = BlockStackRSTNode.create(new Block[] { blocks.tree, blocks.grass } );
 			final Random r = new Random();
 			@Override public RSTNode update(RSTNode oldNode, int x, int y, int sizePower) {
 				double v = r.nextDouble();
-				return v < 0.1 ? bricks.stack : v < 0.25 ? treeAndGrass : grass.stack;
+				return v < 0.1 ? blocks.bricks.stack : v < 0.25 ? treeAndGrass : blocks.grass.stack;
 			}
 		});
 		
