@@ -36,9 +36,11 @@ import togos.networkrts.util.SoftResourceHandle;
 
 public class DemoWorld
 {
-	static Pattern iconPattern = Pattern.compile("" +
-		"(\\d+(?:.\\d+)),(\\d+(?:.\\d+)),(\\d+(?:.\\d+)),(\\d+(?:.\\d+)),(\\d+(?:.\\d+)) \\s+" +
-		"(\\S+)", Pattern.COMMENTS);
+	static String numRe = "([+-]?\\d+(?:.\\d+)?)"; 
+	
+	static Pattern iconPattern = Pattern.compile(
+		numRe+","+numRe+","+numRe+","+numRe+","+numRe+"\\s+(\\S+)"
+	);
 	
 	protected static Icon loadIcon( String name, ResourceContext rc ) throws IOException {
 		// For now assume name is a filename of a bufferedimage
@@ -51,7 +53,7 @@ public class DemoWorld
 			z = Float.parseFloat(m.group(3));
 			w = Float.parseFloat(m.group(4));
 			h = Float.parseFloat(m.group(5));
-			filename = m.group(5);
+			filename = m.group(6);
 		} else {
 			x = y = -0.5f;
 			z = 0.5f;
