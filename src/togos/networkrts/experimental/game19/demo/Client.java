@@ -194,23 +194,28 @@ class Client
 					if( scene != null ) {
 						renderer.draw( scene, -scene.poiX, -scene.poiY, distance, g, pixelsPerMeter, sb.getWidth()/2, sb.getHeight()/2 );
 					}
-					JetManCoreStats stats = u.stats;
-					if( stats != null ) {
-						g.setColor(Color.WHITE);
-						g.drawString( String.format("Fuel: % 5.2f / % 5.2f", stats.fuel, stats.maxFuel), 4, 12);
-						g.drawString( String.format("Suit: % 5.4f / % 5.4f", stats.suitHealth, stats.maxSuitHealth), 4, 12*2);
-						g.drawString( String.format("Head: % 5.4f / % 5.4f", stats.helmetHealth, stats.maxHelmetHealth), 4, 12*3);
-						g.drawString( String.format("Batt: % 5.4f / % 5.4f", stats.batteryCharge, stats.maxBatteryCharge), 4, 12*4);
-					}
-					for( int ti=u.textMessages.size()-1, ty=sb.getHeight()-12; ti>=0; --ti, ty -= 12 ) {
-						Client.TextMessage tm = u.textMessages.get(ti);
-						float tmOpacity = 1-(System.currentTimeMillis()-tm.receptionTime)/5000f;
-						if( tmOpacity <= 0 ) continue;
-						g.setColor(new Color(1,1,1,tmOpacity));
-						g.drawString( tm.text, 4, ty );
+					{
+						// TODO: Find or create a nice, tiny font 
+						JetManCoreStats stats = u.stats;
+						Font f = new Font("Arial", Font.PLAIN, 9);
+						g.setFont(f);
+						if( stats != null ) {
+							g.setColor(Color.WHITE);
+							g.drawString( String.format("Fuel: % 5.2f / % 5.2f", stats.fuel, stats.maxFuel), 4, 12);
+							g.drawString( String.format("Suit: % 5.4f / % 5.4f", stats.suitHealth, stats.maxSuitHealth), 4, 12*2);
+							g.drawString( String.format("Head: % 5.4f / % 5.4f", stats.helmetHealth, stats.maxHelmetHealth), 4, 12*3);
+							g.drawString( String.format("Batt: % 5.4f / % 5.4f", stats.batteryCharge, stats.maxBatteryCharge), 4, 12*4);
+						}
+						for( int ti=u.textMessages.size()-1, ty=sb.getHeight()-12; ti>=0; --ti, ty -= 12 ) {
+							Client.TextMessage tm = u.textMessages.get(ti);
+							float tmOpacity = 1-(System.currentTimeMillis()-tm.receptionTime)/5000f;
+							if( tmOpacity <= 0 ) continue;
+							g.setColor(new Color(1,1,1,tmOpacity));
+							g.drawString( tm.text, 4, ty );
+						}
 					}
 					if( !u.connected ) {
-						Font f = new Font("Verdana", Font.PLAIN, 24);
+						Font f = new Font("Arial", Font.PLAIN, 24);
 						g.setFont(f);
 						FontMetrics fm = g.getFontMetrics();
 						String ns = "NO SIGNAL";
