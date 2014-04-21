@@ -101,7 +101,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		
 		boolean conscious = checkStateFlag(S_CONSCIOUS);
 		
-		if( conscious ) {
+		if( conscious && time > lastUpdateTime ) {
 			headInternals.sendUpdate(nt, time, world, messages, updateContext, getStats());
 		}
 		
