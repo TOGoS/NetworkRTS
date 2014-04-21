@@ -23,6 +23,10 @@ public class ImageCanvas extends Canvas
 	protected int offX, offY;
 	protected float scale;
 	
+	public int getOffsetX() { return offX; }
+	public int getOffsetY() { return offY; }
+	public float getScale() { return scale; }
+	
 	/**
 	 * Adjust scale and offsets and return the image so
 	 * that this.image can be safely rebound from another thread
