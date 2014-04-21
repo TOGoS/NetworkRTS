@@ -22,7 +22,7 @@ public class ArrayMessageSet extends ArrayList<Message> implements MessageSet, M
 		int total = size();
 		int applicable = 0;
 		for( Message m : this ) {
-			if( m.targetShape.rectIntersection(minX, minY, maxX, maxY) == RectIntersector.INCLUDES_NONE ) continue;
+			if( m.targetShape.rectIntersection(minX, minY, maxX-minX, maxY-minY) == RectIntersector.INCLUDES_NONE ) continue;
 			if( !BitAddressUtil.rangesIntersect(m.minBitAddress, m.maxBitAddress, minBitAddress, maxBitAddress) ) continue;
 			++applicable;
 		}
@@ -30,7 +30,7 @@ public class ArrayMessageSet extends ArrayList<Message> implements MessageSet, M
 		if( applicable == total ) return this;
 		if( applicable == 1 ) {
 			for( Message m : this ) {
-				if( m.targetShape.rectIntersection(minX, minY, maxX, maxY) == RectIntersector.INCLUDES_NONE ) continue;
+				if( m.targetShape.rectIntersection(minX, minY, maxX-minX, maxY-minY) == RectIntersector.INCLUDES_NONE ) continue;
 				if( !BitAddressUtil.rangesIntersect(m.minBitAddress, m.maxBitAddress, minBitAddress, maxBitAddress) ) continue;
 				return m;
 			}
@@ -38,7 +38,7 @@ public class ArrayMessageSet extends ArrayList<Message> implements MessageSet, M
 		
 		ArrayMessageSet newMs = new ArrayMessageSet();
 		for( Message m : this ) {
-			if( m.targetShape.rectIntersection(minX, minY, maxX, maxY) == RectIntersector.INCLUDES_NONE ) continue;
+			if( m.targetShape.rectIntersection(minX, minY, maxX-minX, maxY-minY) == RectIntersector.INCLUDES_NONE ) continue;
 			if( !BitAddressUtil.rangesIntersect(m.minBitAddress, m.maxBitAddress, minBitAddress, maxBitAddress) ) continue;
 			newMs.add(m);
 		}
