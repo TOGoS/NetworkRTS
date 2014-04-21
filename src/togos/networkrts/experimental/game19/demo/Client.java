@@ -178,8 +178,8 @@ class Client
 				if( scene != null ) {
 					// Then width, height may actually be smaller
 					VisibilityClip vc = scene.visibilityClip;
-					int vcWidth  = roundEven(pixelsPerMeter*(vc.maxX-vc.minX)/minPixelSize);
-					int vcHeight = roundEven(pixelsPerMeter*(vc.maxY-vc.minY)/minPixelSize);
+					int vcWidth  = roundEven(pixelsPerMeter*(vc.maxX-vc.minX));
+					int vcHeight = roundEven(pixelsPerMeter*(vc.maxY-vc.minY));
 					wid = Math.min(vcWidth,  wid);
 					hei = Math.min(vcHeight, hei);
 				}
