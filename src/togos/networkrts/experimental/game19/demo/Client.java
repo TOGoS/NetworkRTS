@@ -10,8 +10,11 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -89,6 +92,25 @@ class Client {
 		
 		int pixelsPerMeter = 32;
 		int minPixelSize = 1;
+		double distance = 1;
+		
+		public static final Point2D.Double UNKNOWN_POINT = new Point2D.Double(Double.NaN, Double.NaN);
+		
+		/**
+		 * Translate the screen coordinate x, y
+		 * to its x, y world position at <distance>
+		 */
+		public Point2D.Double screenToWorldPoint( int x, int y ) {
+			UIState u = uiState;
+			if( u == null ) return UNKNOWN_POINT;
+			Scene s = u.scene;
+			if( s == null ) return UNKNOWN_POINT;
+			// renderer.draw( scene, -scene.poiX, -scene.poiY, distance, g, pixelsPerMeter, sb.getWidth()/2, sb.getHeight()/2 );
+			return new Point2D.Double(
+				s.poiX + (x - getWidth()/2) / scale / pixelsPerMeter / distance,
+				s.poiY + (y - getHeight()/2) / scale / pixelsPerMeter / distance
+			);
+		}
 		
 		protected final Renderer renderer;
 		public SceneCanvas( ResourceContext resourceContext ) {
@@ -159,7 +181,7 @@ class Client {
 					g.setColor( sceneBackgroundColor );
 					g.fillRect( 0, 0, sb.getWidth(), sb.getHeight() );
 					if( scene != null ) {
-						renderer.draw( scene, -scene.poiX, -scene.poiY, 1, g, pixelsPerMeter, sb.getWidth()/2, sb.getHeight()/2 );
+						renderer.draw( scene, -scene.poiX, -scene.poiY, distance, g, pixelsPerMeter, sb.getWidth()/2, sb.getHeight()/2 );
 					}
 					JetManCoreStats stats = u.stats;
 					if( stats != null ) {
@@ -310,7 +332,13 @@ class Client {
 		};
 		clientUpdateThread.setDaemon(true);
 		clientUpdateThread.start();
-		
+		MouseAdapter mouseListener = new MouseAdapter() {
+			@Override public void mouseMoved(MouseEvent e) {
+				Point2D.Double p  = sceneCanvas.screenToWorldPoint(e.getX(), e.getY());
+				System.err.println(e.getX()+","+e.getY()+" -> "+p.getX()+","+p.getY());
+			}
+		};
+		sceneCanvas.addMouseMotionListener(mouseListener);
 		sceneCanvas.addKeyListener(new KeyAdapter() {
 			@Override public void keyPressed(KeyEvent kevt) {
 				switch( kevt.getKeyCode() ) {
