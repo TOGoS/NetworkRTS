@@ -140,23 +140,22 @@ class Client {
 					needRedraw = false;
 				}
 				Scene scene = u.scene;
-				int wid, hei;
+				int wid = getWidth()/minPixelSize;
+				int hei = getHeight()/minPixelSize;
 				if( scene != null ) {
+					// Then width, height may actually be smaller
 					VisibilityClip vc = scene.visibilityClip;
-					int vcWidth  = roundEven(pixelsPerMeter*(vc.maxX-vc.minX));
-					int vcHeight = roundEven(pixelsPerMeter*(vc.maxY-vc.minY));
-					wid = Math.min(vcWidth, getWidth()/minPixelSize);
-					hei = Math.min(vcHeight,getHeight()/minPixelSize);
-				} else {
-					wid = getWidth();
-					hei = getHeight();
+					int vcWidth  = roundEven(pixelsPerMeter*(vc.maxX-vc.minX)/minPixelSize);
+					int vcHeight = roundEven(pixelsPerMeter*(vc.maxY-vc.minY)/minPixelSize);
+					wid = Math.min(vcWidth,  wid);
+					hei = Math.min(vcHeight, hei);
 				}
 				if( wid <= 0 || hei <= 0 ) continue;
 				
 				BufferedImage sb = getSceneBuffer(wid, hei);
 				synchronized( sb ) {
 					Graphics g = sb.getGraphics();
-					g.setClip(0, 0, sb.getWidth(), sceneBuffer.getHeight());
+					g.setClip(0, 0, sb.getWidth(), sb.getHeight());
 					g.setColor( sceneBackgroundColor );
 					g.fillRect( 0, 0, sb.getWidth(), sb.getHeight() );
 					if( scene != null ) {

@@ -33,11 +33,11 @@ public class ImageCanvas extends Canvas
 		if( img == null ) return img;
 		
 		scale = 1;
-		while( img.getWidth() * scale > getWidth() || img.getHeight() * scale > getHeight() ) {
-			scale /= 2;
+		while( img.getWidth() * (scale+1) <= getWidth() && img.getHeight() * (scale+1) <= getHeight() ) {
+			++scale;
 		}
-		while( img.getWidth() * scale * 2 <= getWidth() && img.getHeight() * 2 <= getHeight() ) {
-			scale *= 2;
+		while( img.getWidth() * scale > getWidth() || img.getHeight() * scale > getHeight() ) {
+			--scale;
 		}
 		
 		offX = (int)(getWidth() - img.getWidth() * scale) / 2;
