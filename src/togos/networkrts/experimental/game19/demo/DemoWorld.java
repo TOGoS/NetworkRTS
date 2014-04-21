@@ -1,8 +1,12 @@
 package togos.networkrts.experimental.game19.demo;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.Icon;
@@ -25,12 +29,82 @@ import togos.networkrts.experimental.game19.world.thing.pickup.SubstanceContaine
 import togos.networkrts.experimental.game19.world.thing.pickup.SubstanceContainerType;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
+import togos.networkrts.experimental.packet19.MalformedDataException;
 import togos.networkrts.experimental.shape.TCircle;
 import togos.networkrts.experimental.shape.TRectangle;
 import togos.networkrts.util.SoftResourceHandle;
 
 public class DemoWorld
 {
+	static Pattern iconPattern = Pattern.compile("" +
+		"(\\d+(?:.\\d+)),(\\d+(?:.\\d+)),(\\d+(?:.\\d+)),(\\d+(?:.\\d+)),(\\d+(?:.\\d+)) \\s+" +
+		"(\\S+)", Pattern.COMMENTS);
+	
+	protected static Icon loadIcon( String name, ResourceContext rc ) throws IOException {
+		// For now assume name is a filename of a bufferedimage
+		Matcher m;
+		float x, y, z, w, h;
+		String filename;
+		if( (m = iconPattern.matcher(name)).matches() ) {
+			x = Float.parseFloat(m.group(1));
+			y = Float.parseFloat(m.group(2));
+			z = Float.parseFloat(m.group(3));
+			w = Float.parseFloat(m.group(4));
+			h = Float.parseFloat(m.group(5));
+			filename = m.group(5);
+		} else {
+			x = y = -0.5f;
+			z = 0.5f;
+			w = h = 1;
+			filename = name;
+		}
+		String imageUri = rc.storeFile(new File(filename));
+		return new Icon(imageUri, x, y, z, w, h);
+	}
+	
+	public static Block loadBlockDef( BufferedReader r, ResourceContext rc ) throws IOException {
+		long flags = 0;
+		Icon icon = null;
+		String line;
+		int colonIdx;
+		boolean headerRead = false;
+		while( (line = r.readLine()) != null ) {
+			line = line.trim();
+			if( line.equals("#TEXT-BLOCK") ) headerRead = true;
+			if( line.startsWith("#") ) continue;
+			
+			if( !headerRead ) throw new MalformedDataException("Unrecognized block format; no '#TEXT-BLOCK' found");
+			
+			if( "opaque".equals(line) ) {
+				flags |= Block.FLAG_OPAQUE;
+			} else if( "solid".equals(line) ) {
+				flags |= Block.FLAG_SOLID;
+			} else if( (colonIdx = line.indexOf(":")) != -1 ) {
+				String key = line.substring(0, colonIdx).trim();
+				String val = line.substring(colonIdx+1).trim();
+				if( "icon".equals(key) ) {
+					icon = loadIcon(val, rc);
+				}
+			}
+		}
+		
+		long bitAddress = BitAddresses.TYPE_BLOCK;
+		if( (flags & Block.FLAG_SOLID) != 0 ) {
+			bitAddress |= BitAddresses.PHYSINTERACT;
+		}
+		
+		return new Block(bitAddress, flags, icon, BoringBlockInternals.INSTANCE);
+	}
+	
+	public static Block loadBlock( File f, ResourceContext rc ) throws IOException {
+		BufferedReader br = new BufferedReader(new FileReader(f));
+		try {
+			return loadBlockDef(br, rc);
+		} finally {
+			br.close();
+		}
+	}
+	
 	protected static Icon loadBlockIcon(ResourceContext rc, String filename, float frontZ) throws IOException {
 		String urn = rc.storeFile(new File(filename));
 		return new Icon(urn, -0.5f, -0.5f, frontZ, 1f, 1f);
@@ -42,13 +116,14 @@ public class DemoWorld
 	}
 	
 	public static World initLittleWorld( ResourceContext rc ) throws IOException {
-		Icon brickImage = loadBlockIcon(rc, "tile-images/dumbrick1.png", 0.5f);
+		//Icon brickImage = loadBlockIcon(rc, "tile-images/dumbrick1.png", 0.5f);
 		Icon dirtImage = loadBlockIcon(rc, "tile-images/dirt0.png", 0.5f);
 		Icon grassImage = loadBlockIcon(rc, "tile-images/grass0.png", 0.5f);
 		Icon treeImage = loadBlockIcon(rc, "tile-images/tree0.png", -0.4f);
 		Icon spikeImage = loadBlockIcon(rc, "tile-images/spikes0.png", 0.5f);
 		
-		final Block bricks = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, brickImage, BoringBlockInternals.INSTANCE);
+		//final Block bricks = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, brickImage, BoringBlockInternals.INSTANCE);
+		final Block bricks = loadBlock( new File("things/blocks/gray-stone-bricks.block"), rc );
 		final Block dirt = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, dirtImage, BoringBlockInternals.INSTANCE);
 		final Block grass = new Block(0, 0, grassImage, BoringBlockInternals.INSTANCE);
 		final Block tree = new Block(0, 0, treeImage, BoringBlockInternals.INSTANCE);
@@ -98,13 +173,14 @@ public class DemoWorld
 	}
 	
 	public static World initWorld( ResourceContext rc ) throws IOException {
-		Icon brickImage = loadBlockIcon(rc, "tile-images/dumbrick1.png", 0.5f);
+		//Icon brickImage = loadBlockIcon(rc, "tile-images/dumbrick1.png", 0.5f);
 		Icon dirtImage = loadBlockIcon(rc, "tile-images/dirt0.png", 0.5f);
 		Icon grassImage = loadBlockIcon(rc, "tile-images/grass0.png", 0.5f);
 		Icon treeImage = loadBlockIcon(rc, "tile-images/tree0.png", -0.4f);
 		Icon spikeImage = loadBlockIcon(rc, "tile-images/spikes0.png", 0.5f);
 		
-		final Block bricks = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, brickImage, BoringBlockInternals.INSTANCE);
+		//final Block bricks = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, brickImage, BoringBlockInternals.INSTANCE);
+		final Block bricks = loadBlock( new File("things/blocks/gray-stone-bricks.block"), rc );
 		final Block dirt = new Block(BitAddresses.PHYSINTERACT, Block.FLAG_SOLID|Block.FLAG_OPAQUE, dirtImage, BoringBlockInternals.INSTANCE);
 		final Block grass = new Block(0, 0, grassImage, BoringBlockInternals.INSTANCE);
 		final Block tree = new Block(0, 0, treeImage, BoringBlockInternals.INSTANCE);
