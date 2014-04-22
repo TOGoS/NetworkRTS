@@ -9,7 +9,6 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -29,9 +28,9 @@ import java.util.concurrent.BlockingQueue;
 import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.io.CerealWorldIO;
-import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
+import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
 import togos.networkrts.experimental.game19.scene.Scene;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
@@ -283,7 +282,7 @@ class Client
 		this.resourceContext = rc;
 		sceneCanvas = new SceneCanvas(resourceContext);
 		sceneCanvas.setBackground(Color.BLACK);
-		cerealWorldIo = new CerealWorldIO(resourceContext.getByteArrayRepository());
+		cerealWorldIo = rc.getCerealWorldIo();
 		sceneCanvas.addOverlay(new UIOverlay() {
 			@Override public void draw(Graphics g, int width, int height) {
 				int y = 4;
@@ -490,7 +489,12 @@ class Client
 					break;
 				case KeyEvent.VK_R:
 					// TODO: ethernet frames, etc etc
-					FakeCoAPMessage fcm = FakeCoAPMessage.request((byte)0, 0, RESTRequest.PUT, "/world", new WackPacket(initialWorld, Object.class, null));
+					FakeCoAPMessage fcm = FakeCoAPMessage.request((byte)0, 0, RESTRequest.PUT, "/world", new WackPacket(initialWorld, Object.class, cerealWorldIo.packetPayloadCodec));
+					outgoingMessageQueue.add(Message.create(simulationBitAddress, MessageType.INCOMING_PACKET, clientBitAddress, fcm));
+					break;
+				case KeyEvent.VK_V:
+					// TODO: ethernet frames, etc etc
+					fcm = FakeCoAPMessage.request((byte)0, 0, RESTRequest.POST, "/world/saves", new WackPacket(Boolean.TRUE, Object.class, cerealWorldIo.packetPayloadCodec));
 					outgoingMessageQueue.add(Message.create(simulationBitAddress, MessageType.INCOMING_PACKET, clientBitAddress, fcm));
 					break;
 				case KeyEvent.VK_0: case KeyEvent.VK_1: case KeyEvent.VK_2: case KeyEvent.VK_3: case KeyEvent.VK_4:

@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import togos.networkrts.experimental.game19.io.CerealWorldIO;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.qt2drender.Blackifier;
@@ -67,5 +68,11 @@ public class ResourceContext
 			); 
 		}
 		return shadeOverlays;
+	}
+	
+	protected CerealWorldIO cerealWorldIo;
+	public CerealWorldIO getCerealWorldIo() {
+		if( cerealWorldIo == null ) cerealWorldIo = new CerealWorldIO(getByteArrayRepository());
+		return cerealWorldIo;
 	}
 }

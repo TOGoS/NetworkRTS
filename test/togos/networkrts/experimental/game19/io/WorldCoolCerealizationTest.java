@@ -20,7 +20,7 @@ public class WorldCoolCerealizationTest extends TestCase
 	public void testEncodeDecode() throws Exception {
 		HasURI worldRef;
 		{
-			CerealWorldIO worldIo = new CerealWorldIO(rc.getByteArrayRepository());
+			CerealWorldIO worldIo = rc.getCerealWorldIo();
 			
 			World w = createWorld();
 			

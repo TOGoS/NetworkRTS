@@ -3,6 +3,7 @@ package togos.networkrts.experimental.game19.sim;
 import java.util.Collection;
 import java.util.Queue;
 
+import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.world.ArrayMessageSet;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Message;
@@ -55,7 +56,8 @@ public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
 	}
 	
 	protected World world;
-	protected PacketPayloadCodec<Object> cerealWorldPacketPayloadCodec;
+	protected final ResourceContext resourceContext;
+	protected final PacketPayloadCodec<Object> cerealWorldPacketPayloadCodec;
 	protected long simulationBitAddress;
 	protected long simulationEthernetAddress;
 	protected IP6Address simulationIpAddress;
@@ -84,10 +86,12 @@ public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
 		}
 	}
 	
-	public Simulation(World world, Queue<AsyncTask> asyncTaskQueue, Queue<Message> outgoingMessageQueue ) {
+	public Simulation(World world, Queue<AsyncTask> asyncTaskQueue, Queue<Message> outgoingMessageQueue, ResourceContext rc) {
 		this.world = world;
 		this.asyncTaskQueue = asyncTaskQueue;
 		this.outgoingMessageQueue = outgoingMessageQueue;
+		this.resourceContext = rc;
+		this.cerealWorldPacketPayloadCodec = rc.getCerealWorldIo().packetPayloadCodec;
 	}
 	
 	public World getWorld() {
@@ -155,9 +159,21 @@ public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
 			RESTMessage rm = (RESTMessage)pw.payload;
 			if( rm.getRestMessageType() != RESTMessage.RESTMessageType.REQUEST ) break handleRestRequest; 
 			
-			if( RESTRequest.PUT.equals(rm.getMethod()) && "/world".equals(rm.getPath()) ) {
-				world = (World)rm.getPayload().getPayload(Object.class, cerealWorldPacketPayloadCodec);
-				System.err.println("World replaced with "+world);
+			if( "/world".equals(rm.getPath()) ) {
+				if( RESTRequest.PUT.equals(rm.getMethod()) ) {
+					world = (World)rm.getPayload().getPayload(Object.class, cerealWorldPacketPayloadCodec);
+					System.err.println("World replaced with "+world);
+				}
+			} else if( "/world/saves".equals(rm.getPath()) ) {
+				final World w = world;
+				if( RESTRequest.POST.equals(rm.getMethod()) ) {
+					asyncTaskQueue.add(new AsyncTask() {
+						@Override public void run(UpdateContext ctx) {
+							System.err.println("Saving world...");
+							System.err.println("World = "+resourceContext.getCerealWorldIo().storeObject(w));
+						}
+					});
+				}
 			}
 		}
 		return world;
@@ -181,6 +197,7 @@ public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
 		RSTNode rst;
 		if( phase == 2 ) {
 			for( Message m : Messages.subsetApplicableTo(incomingMessages, simulationBitAddress) ) {
+				System.err.println("Get some sim messages!");
 				world = processSimMessage(world, m, updateContext);
 			}
 			

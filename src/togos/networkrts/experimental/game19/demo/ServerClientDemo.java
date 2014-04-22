@@ -42,7 +42,7 @@ public class ServerClientDemo
 			final NonTile playerNonTile = JetManInternals.createJetMan(playerId, clientBa, jetManIcons);
 			initialWorld = DemoWorld.initWorld(resourceContext).withNonTile(playerNonTile);
 			server = new Network();
-			Simulator sim = new Simulator( initialWorld, 50, simBa, server.incomingMessageQueue );
+			Simulator sim = new Simulator( initialWorld, 50, simBa, server.incomingMessageQueue, resourceContext );
 			sim.setDaemon(true);
 			server.addComponent(sim);
 		}
@@ -66,6 +66,7 @@ public class ServerClientDemo
 		c.loadWandBlock(4, new File("things/blocks/small-tree0.block"));
 		c.loadWandBlock(5, new File("things/blocks/big-gray-spikes0.block"));
 		
+		c.simulationBitAddress = simBa;
 		c.clientBitAddress = clientBa;
 		c.playerBitAddress = playerBa;
 		c.initialWorld = initialWorld;

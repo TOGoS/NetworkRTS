@@ -3,6 +3,7 @@ package togos.networkrts.experimental.game19.sim;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.extnet.NetworkComponent;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Message;
@@ -64,9 +65,9 @@ public class Simulator implements NetworkComponent
 	protected EventLooper<Message> looper;
 	protected Simulation simulation;
 	
-	public Simulator( World world, long minStepInterval, long simId, Queue<Message> outgoingMessageQueue ) {
+	public Simulator( World world, long minStepInterval, long simId, Queue<Message> outgoingMessageQueue, ResourceContext rc ) {
 		outgoingMessages = outgoingMessageQueue;
-		simulation = new Simulation(world, asyncTaskQueue, outgoingMessages);
+		simulation = new Simulation(world, asyncTaskQueue, outgoingMessages, rc);
 		if( simId != 0 ) simulation.simulationBitAddress = BitAddresses.forceType(BitAddresses.TYPE_INTERNAL, simId);
 		looper = new EventLooper<Message>(incomingMessages, simulation, minStepInterval);
 		// TODO: uncomment when it's time to optimize
