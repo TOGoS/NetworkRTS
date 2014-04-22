@@ -16,7 +16,10 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
@@ -27,6 +30,7 @@ import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.io.CerealWorldIO;
 import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
 import togos.networkrts.experimental.game19.scene.Scene;
+import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
@@ -253,11 +257,13 @@ class Client
 	public BlockingQueue<Message> incomingMessageQueue;
 	public long playerBitAddress, simulationBitAddress, clientBitAddress;
 	public World initialWorld; // Only here so client can reset it
+	protected ResourceContext resourceContext;
 	protected CerealWorldIO cerealWorldIo;
 	
 	public Client( ResourceContext resourceContext ) {
 		sceneCanvas = new SceneCanvas(resourceContext);
 		sceneCanvas.setBackground(Color.BLACK);
+		this.resourceContext = resourceContext;
 		cerealWorldIo = new CerealWorldIO(resourceContext.getByteArrayRepository());
 	}
 	
@@ -298,12 +304,25 @@ class Client
 		));
 	}
 	
+	BlockStack[] wandBlocks = new BlockStack[]{ BlockStackRSTNode.EMPTY };
+	int currentWandBlockIndex = 0;
+	
+	public void loadWandBlock( int index, File blockDefFile ) throws IOException {
+		assert index >= 0;
+		assert index < 256;
+		BlockStack loaded = DemoWorld.loadBlock(blockDefFile, resourceContext).stack;
+		if( wandBlocks.length <= index ) {
+			wandBlocks = Arrays.copyOf(wandBlocks, index+1);
+		}
+		wandBlocks[index] = loaded;
+	}
+	
 	protected int cursorX, cursorY;
 	protected boolean firing;
 	protected void updateMouseDrivenStuff() {
 		if( firing ) {
 			Point2D.Double p  = sceneCanvas.screenToWorldPoint(cursorX, cursorY);
-			sendPlayerMessage("POST", "/block-wand/applications", new BlockWand.Application(p.getX(), p.getY(), 0.25, false, BlockStackRSTNode.EMPTY));
+			sendPlayerMessage("POST", "/block-wand/applications", new BlockWand.Application(p.getX(), p.getY(), 0.25, false, wandBlocks[currentWandBlockIndex]));
 		}
 	}
 	
@@ -423,6 +442,13 @@ class Client
 					// TODO: ethernet frames, etc etc
 					FakeCoAPMessage fcm = FakeCoAPMessage.request((byte)0, 0, RESTRequest.PUT, "/world", new WackPacket(initialWorld, Object.class, null));
 					outgoingMessageQueue.add(Message.create(simulationBitAddress, MessageType.INCOMING_PACKET, clientBitAddress, fcm));
+					break;
+				case KeyEvent.VK_0: case KeyEvent.VK_1: case KeyEvent.VK_2: case KeyEvent.VK_3: case KeyEvent.VK_4:
+				case KeyEvent.VK_5: case KeyEvent.VK_6: case KeyEvent.VK_7: case KeyEvent.VK_8: case KeyEvent.VK_9:
+					int index = kevt.getKeyCode() - KeyEvent.VK_0;
+					if( kevt.isAltDown() ) {
+						currentWandBlockIndex = Math.min(index, wandBlocks.length-1);
+					}
 					break;
 				}
 			}

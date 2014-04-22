@@ -60,6 +60,12 @@ public class ServerClientDemo
 			@Override public void halt() {}
 		});
 		
+		c.loadWandBlock(1, new File("things/blocks/gray-stone-bricks0.block"));
+		c.loadWandBlock(2, new File("things/blocks/dirt0.block"));
+		c.loadWandBlock(3, new File("things/blocks/grass0.block"));
+		c.loadWandBlock(4, new File("things/blocks/small-tree0.block"));
+		c.loadWandBlock(5, new File("things/blocks/big-gray-spikes0.block"));
+		
 		c.clientBitAddress = clientBa;
 		c.playerBitAddress = playerBa;
 		c.initialWorld = initialWorld;
