@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
@@ -29,7 +30,10 @@ import togos.networkrts.experimental.game19.Renderer;
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.io.CerealWorldIO;
 import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
+import togos.networkrts.experimental.game19.scene.Icon;
+import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Scene;
+import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
 import togos.networkrts.experimental.game19.world.Message;
@@ -41,6 +45,8 @@ import togos.networkrts.experimental.packet19.FakeCoAPMessage;
 import togos.networkrts.experimental.packet19.RESTRequest;
 import togos.networkrts.experimental.packet19.WackPacket;
 import togos.networkrts.ui.ImageCanvas;
+import togos.networkrts.util.Getter;
+import togos.networkrts.util.ResourceNotFound;
 
 class Client
 {
@@ -92,24 +98,37 @@ class Client
 		}
 	}
 	
+	interface UIOverlay {
+		public void draw( Graphics g, int width, int height );
+	}
+	
 	static class SceneCanvas extends ImageCanvas
 	{
 		private static final long serialVersionUID = 1L;
-
-		protected BufferedImage sceneBuffer; // = new BufferedImage(512, 384, BufferedImage.TYPE_INT_RGB); // Much faster than ARGB!
-		protected synchronized BufferedImage getSceneBuffer( int width, int height ) {
-			if( sceneBuffer == null || sceneBuffer.getWidth() != width || sceneBuffer.getHeight() != height ) {
-				return sceneBuffer = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-			} else {
-				return sceneBuffer;
-			}
-		}
+		
+		protected HashSet<UIOverlay> overlays = new HashSet<UIOverlay>();
+		
+		protected BufferedImage sceneBuffer;
 		
 		int pixelsPerMeter = 32;
 		int minPixelSize = 1;
 		double distance = 1;
 		
 		public static final Point2D.Double UNKNOWN_POINT = new Point2D.Double(Double.NaN, Double.NaN);
+		
+		Color sceneBackgroundColor = new Color(0.2f, 0, 0);
+		Client.UIState uiState = new UIState(null, null, Collections.<Client.TextMessage>emptyList(), false);
+		
+		protected final Renderer renderer;
+		
+		public SceneCanvas( ResourceContext resourceContext ) {
+			renderer = new Renderer(resourceContext);
+			addComponentListener(new ComponentAdapter() {
+				@Override public void componentResized(ComponentEvent e) { redrawBuffer(); }
+			});
+		}
+		
+		public void addOverlay( UIOverlay overlay ) { overlays.add(overlay); }
 		
 		/**
 		 * Translate the screen coordinate x, y
@@ -126,17 +145,6 @@ class Client
 				s.poiY + (y - getHeight()/2) / scale / pixelsPerMeter / distance
 			);
 		}
-		
-		protected final Renderer renderer;
-		public SceneCanvas( ResourceContext resourceContext ) {
-			renderer = new Renderer(resourceContext);
-			addComponentListener(new ComponentAdapter() {
-				@Override public void componentResized(ComponentEvent e) { redrawBuffer(); }
-			});
-		}
-		
-		Color sceneBackgroundColor = new Color(0.2f, 0, 0);
-		Client.UIState uiState = new UIState(null, null, Collections.<Client.TextMessage>emptyList(), false);
 		
 		public synchronized void setUiState( Client.UIState s ) {
 			if( s.equals(uiState) ) return; 
@@ -166,6 +174,14 @@ class Client
 		protected synchronized void redrawBuffer() {
 			needRedraw = true;
 			notifyAll();
+		}
+		
+		protected synchronized BufferedImage getSceneBuffer( int width, int height ) {
+			if( sceneBuffer == null || sceneBuffer.getWidth() != width || sceneBuffer.getHeight() != height ) {
+				return sceneBuffer = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+			} else {
+				return sceneBuffer;
+			}
 		}
 		
 		public void redrawLoop() throws InterruptedException {
@@ -198,7 +214,10 @@ class Client
 					if( scene != null ) {
 						renderer.draw( scene, -scene.poiX, -scene.poiY, distance, g, pixelsPerMeter, sb.getWidth()/2, sb.getHeight()/2 );
 					}
+					for( UIOverlay o : overlays ) o.draw(g, sb.getWidth(), sb.getHeight());
+					
 					{
+						// TODO: Make these things overlays
 						// TODO: Find or create a nice, tiny font 
 						JetManCoreStats stats = u.stats;
 						Font f = new Font("Arial", Font.PLAIN, 9);
@@ -257,14 +276,44 @@ class Client
 	public BlockingQueue<Message> incomingMessageQueue;
 	public long playerBitAddress, simulationBitAddress, clientBitAddress;
 	public World initialWorld; // Only here so client can reset it
-	protected ResourceContext resourceContext;
-	protected CerealWorldIO cerealWorldIo;
+	protected final ResourceContext resourceContext;
+	protected final CerealWorldIO cerealWorldIo;
 	
-	public Client( ResourceContext resourceContext ) {
+	public Client( ResourceContext rc ) {
+		this.resourceContext = rc;
 		sceneCanvas = new SceneCanvas(resourceContext);
 		sceneCanvas.setBackground(Color.BLACK);
-		this.resourceContext = resourceContext;
 		cerealWorldIo = new CerealWorldIO(resourceContext.getByteArrayRepository());
+		sceneCanvas.addOverlay(new UIOverlay() {
+			@Override public void draw(Graphics g, int width, int height) {
+				int y = 4;
+				int tileSize = 16;
+				int x = width - tileSize - 4; 
+				final Getter<BufferedImage> imageGetter = resourceContext.imageGetter;
+				for( int bsi=0; bsi<wandBlocks.length; ++bsi ) {
+					BlockStack bs = wandBlocks[bsi];
+					for( Block b : bs.getBlocks() ) {
+						Icon ic = b.icon;
+						ImageHandle ih = resourceContext.getImageHandle(ic.imageUri);
+						if( ih.isCompletelyTransparent ) continue;
+						try {
+							// TODO: Scale and place according to icon x, y, w, h, where
+							// -0.5 = top/left edge of cell, +0.5 = bottom/right edge of cell
+							g.drawImage( ih.getScaled(imageGetter,tileSize,tileSize), x, y, null );
+						} catch( ResourceNotFound e ) {
+							System.err.println("Couldn't load image "+ih.original.getUri());
+							g.setColor( Color.PINK );
+							g.fillRect( x+1, y+1, tileSize-2, tileSize-2 );
+						}
+					}
+					if( bsi == currentWandBlockIndex ) {
+						g.setColor(Color.WHITE);
+						g.drawRect(x-1, y-1, tileSize+2, tileSize+2);
+					}
+					y += tileSize + 8;
+				}
+			}
+		});
 	}
 	
 	protected void updateUiState() {
