@@ -368,10 +368,11 @@ class Client
 	
 	protected int cursorX, cursorY;
 	protected boolean firing;
+	protected boolean altIsDown = false, controlIsDown = false, shiftIsDown = false;
 	protected void updateMouseDrivenStuff() {
 		if( firing ) {
 			Point2D.Double p  = sceneCanvas.screenToWorldPoint(cursorX, cursorY);
-			sendPlayerMessage("POST", "/block-wand/applications", new BlockWand.Application(p.getX(), p.getY(), 0.25, false, wandBlocks[currentWandBlockIndex]));
+			sendPlayerMessage("POST", "/block-wand/applications", new BlockWand.Application(p.getX(), p.getY(), 0.25, controlIsDown, wandBlocks[currentWandBlockIndex]));
 		}
 	}
 	
@@ -502,7 +503,24 @@ class Client
 				}
 			}
 		});
-		sceneCanvas.addKeyListener(new KeyListener() {
+		sceneCanvas.addKeyListener(new KeyAdapter() {
+			protected void keySomething( int keyCode, boolean state ) {
+				switch( keyCode ) {
+				case KeyEvent.VK_ALT    : altIsDown = state; break;
+				case KeyEvent.VK_CONTROL: controlIsDown = state; break;
+				case KeyEvent.VK_SHIFT  : shiftIsDown = state; break;
+				}
+			}
+			
+			@Override public void keyPressed(KeyEvent kevt) {
+				keySomething(kevt.getKeyCode(), true);
+			}
+
+			@Override public void keyReleased(KeyEvent kevt) {
+				keySomething(kevt.getKeyCode(), false);
+			}
+		});
+		sceneCanvas.addKeyListener(new KeyAdapter() {
 			boolean[] keysDown = new boolean[8];
 			int oldDir = -2; // Unknown!
 			
@@ -572,8 +590,6 @@ class Client
 			@Override public void keyReleased(KeyEvent kevt) {
 				keySomething(kevt.getKeyCode(), false);
 			}
-
-			@Override public void keyTyped(KeyEvent arg0) {}
 		});
 		
 		f.addWindowListener(new WindowAdapter() {
