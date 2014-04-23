@@ -108,13 +108,14 @@ public class CerealDecoder implements Getter<Object>
 	
 	protected final Getter<byte[]> chunkSource;
 	protected final ResourceHandlePool decodeStateCache = new ResourceHandlePool();
+	protected final String initialDecodeStateUrn;
 	protected final DecodeState initialDecodeState;
 	
 	protected CerealDecoder( Getter<byte[]> chunkSource, String initialDecodeStateUrn, DecodeState initialDecodeState ) {
 		this.chunkSource = chunkSource;
-		
-		decodeStateCache.<DecodeState>get(initialDecodeStateUrn).setValue(initialDecodeState);
-		this.initialDecodeState = initialDecodeState.freeze();
+		initialDecodeState = initialDecodeState.freeze();
+		this.initialDecodeStateUrn = initialDecodeStateUrn;
+		this.initialDecodeState = initialDecodeState;
 	}
 	
 	public CerealDecoder( Getter<byte[]> chunkSource ) {
@@ -130,16 +131,69 @@ public class CerealDecoder implements Getter<Object>
 		return true;
 	}
 	
+	protected void debugData( byte[] data, int offset, int length, String linePrefix ) {
+		int i;
+		int octetsPerLine = 24;
+		for( i=0; i<length; ) {
+			if( i % octetsPerLine == 0 ) {
+				System.err.print(linePrefix);
+			}
+			System.err.print(String.format("%02x", data[offset+i] & 0xFF));
+			++i;
+			if( i % octetsPerLine == 0 ) System.err.println();
+			else System.err.print(" ");
+		}
+		if( i % octetsPerLine != 0 ) System.err.println();
+	}
+	
+	protected void debugDecodeError( DecodeState ds, byte[] data, int offset, int length, Exception e ) {
+		String blobUrn = HashUtil.sha1Urn(HashUtil.sha1(data, offset, length));
+		System.err.println("Error while decoding "+blobUrn+";  Decode State:");
+		System.err.println("  Data:");
+		debugData(data, offset, length, "    ");
+		try {
+			byte[] initialStateSha1 = CerealUtil.extract(data, offset+4, 20);
+			System.err.println("  Initial state: "+HashUtil.sha1Urn(initialStateSha1));
+		} catch (InvalidEncoding e1) {
+			System.err.println("  Initial state: (could not decode)");
+		}
+		if( ds.stack.size() == 0 ) {
+			System.err.println("  Empty stack");
+		} else {
+			System.err.println("  Stack:");
+			for( Object o : ds.stack ) {
+				System.err.println("    "+o.toString());
+			}
+		}
+	}
+	
 	protected DecodeState decodeToDecodeState( byte[] data, int offset, int length ) throws InvalidEncoding, ResourceNotFound {
 		if( !equals(data, 0, CerealUtil.TBB_HEADER, offset, 4) ) throw new InvalidEncoding("No TBB header found");
 		
 		byte[] initialStateSha1 = CerealUtil.extract(data, offset+4, 20);
 		DecodeState ds = getDecodeState(initialStateSha1);
-		return ds.process( data, offset+24, data.length-24, this ).freeze();
+		try {
+			ds = ds.process( data, offset+24, data.length-24, this );
+		} catch( InvalidEncoding e ) {
+			debugDecodeError(ds, data, offset, length, e);
+			throw e;
+		} catch( ResourceNotFound e ) {
+			debugDecodeError(ds, data, offset, length, e);
+			throw e;
+		}
+		return ds.freeze();
 	}
 	
 	protected Getter<DecodeState> decodeStateGetter = new Getter<DecodeState>() {
 		@Override public DecodeState get( String uri ) throws ResourceNotFound {
+			if( initialDecodeStateUrn.equals(uri) ) {
+				// Relying on the initial decode state URN -> data
+				// being stored in the cache is a bad idea!
+				// It has caused me hours of debugging.
+				// Better to treat it specially.
+				return initialDecodeState;
+			}
+			
 			try {
 				// The subject-of: prefix is implied.  We'll ignore it.
 				if( uri.startsWith(SUBJECT_OF_PREFIX) ) {
