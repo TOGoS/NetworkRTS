@@ -7,6 +7,8 @@ import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -602,7 +604,13 @@ class Client
 				redrawThread.interrupt();
 				watchdogThread.interrupt();
 			}
-		});		
+		});
+		f.addFocusListener(new FocusListener() {
+			@Override public void focusLost(FocusEvent arg0) { }
+			@Override public void focusGained(FocusEvent arg0) {
+				sceneCanvas.requestFocus();
+			}
+		});
 		f.pack();
 		f.setVisible(true);
 	}
