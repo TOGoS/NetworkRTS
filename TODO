@@ -1,13 +1,11 @@
 Game19 to-do list.
 i.e. things to work on when you get sick of working on some other component
 
+Figure out why 'R' (revert simulation) doesn't work after jetman dies. 
+
 Figure out why simulation gets all slow whn jetman dies.
 
-Save/load world.
-
-Make content creation possible/fun
-- quadtree editor
-- simple (probably JSON-based) tile format
+- Include entities in world save/load
 
 Entity/entity collisions
 - Use to make some moving platforms or something
@@ -51,3 +49,11 @@ Remember to allow for animations
 - Continuous (vector-based, like flash cartoons; would be useful for e.g. waving trees, spinning fans)
 - Would need to combine many animations into one in a scalable way
   for drawing large composite nodes (e.g. distant background planes)
+
+## Completed! ##
+
+* Save/load RST.
+
+* Make content creation possible/fun
+  * quadtree editor
+  * simple (probably JSON-based) tile format
