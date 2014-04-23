@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import togos.networkrts.cereal.SHA1ObjectReference;
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.extnet.Network;
 import togos.networkrts.experimental.game19.extnet.NetworkComponent;
@@ -24,6 +25,15 @@ public class ServerClientDemo
 {
 	// TODO: Move a lot of the details into Client/Server
 	public static void main( String[] args ) throws Exception {
+		String worldUrn = null;
+		for( int i=0; i<args.length; ++i ) {
+			if( "-world".equals(args[i]) ) {
+				worldUrn = args[++i];
+			} else {
+				throw new RuntimeException("Unrecognized argument '"+args[i]+"'");
+			}
+		}
+		
 		final Network server;
 		
 		IDGenerator idGenerator = new IDGenerator();
@@ -36,11 +46,15 @@ public class ServerClientDemo
 		final long clientBa = BitAddresses.forceType(BitAddresses.TYPE_EXTERNAL, clientId);
 		final long simId = idGenerator.newId();
 		final long simBa = BitAddresses.forceType(BitAddresses.TYPE_INTERNAL, simId);
-		final World initialWorld;
+		World initialWorld;
 		{
+			initialWorld = worldUrn == null ?
+				DemoWorld.initWorld(resourceContext) :
+				resourceContext.getCerealWorldIo().getObject(SHA1ObjectReference.parse(worldUrn), World.class);
+			
 			final JetManIcons jetManIcons = JetManIcons.load(resourceContext);
 			final NonTile playerNonTile = JetManInternals.createJetMan(playerId, clientBa, jetManIcons);
-			initialWorld = DemoWorld.initWorld(resourceContext).withNonTile(playerNonTile);
+			initialWorld = initialWorld.withNonTile(playerNonTile);
 			server = new Network();
 			Simulator sim = new Simulator( initialWorld, 50, simBa, server.incomingMessageQueue, resourceContext );
 			sim.setDaemon(true);
