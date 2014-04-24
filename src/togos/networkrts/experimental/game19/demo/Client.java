@@ -447,12 +447,16 @@ class Client
 				update();
 			}
 			@Override public void mousePressed(MouseEvent e) {
-				buttonsDown[e.getButton()] = true;
-				update();
+				if( e.getButton() < buttonsDown.length ) {
+					buttonsDown[e.getButton()] = true;
+					update();
+				}
 			}
 			@Override public void mouseReleased(MouseEvent e) {
-				buttonsDown[e.getButton()] = false;
-				update();
+				if( e.getButton() < buttonsDown.length ) {
+					buttonsDown[e.getButton()] = false;
+					update();
+				}
 			}
 			protected void update() {
 				firing = buttonsDown[MouseEvent.BUTTON1];
