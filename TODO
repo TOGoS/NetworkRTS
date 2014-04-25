@@ -1,10 +1,6 @@
 Game19 to-do list.
 i.e. things to work on when you get sick of working on some other component
 
-Figure out why 'R' (revert simulation) doesn't work after jetman dies. 
-
-Figure out why simulation gets all slow whn jetman dies.
-
 - Include entities in world save/load
 
 Entity/entity collisions
@@ -57,3 +53,9 @@ Remember to allow for animations
 * Make content creation possible/fun
   * quadtree editor
   * simple (probably JSON-based) tile format
+
+* Figure out why 'R' (revert simulation) doesn't work after jetman dies.
+  (Simulation was ignoring messages for itself unless they were also relevant to the world)
+
+* Figure out why simulation gets all slow whn jetman dies.
+  (EventLooper was buggy)
