@@ -152,9 +152,9 @@ public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregati
 		return pw;
 	}
 	
-	protected World handleSimMessage(World world, PacketWrapping<?> pw, SimUpdateContext updateContext) throws MalformedDataException {
+	protected void handleSimMessage(PacketWrapping<?> pw, SimUpdateContext updateContext) throws MalformedDataException {
 		pw = wrapToAppLayer(pw, CoAPMessage.class, CoAPMessage.CODEC);
-		if( pw == null ) return world;
+		if( pw == null ) return;
 		handleRestRequest: if( pw.payload instanceof RESTMessage ) {
 			RESTMessage rm = (RESTMessage)pw.payload;
 			if( rm.getRestMessageType() != RESTMessage.RESTMessageType.REQUEST ) break handleRestRequest; 
@@ -176,29 +176,26 @@ public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregati
 				}
 			}
 		}
-		return world;
 	}
 	
-	protected World processSimMessage(World world, Message m, SimUpdateContext updateContext) {
+	protected void processSimMessage(Message m, SimUpdateContext updateContext) {
 		if( m.type == MessageType.INCOMING_PACKET ) {
 			try {
-				world = handleSimMessage(world, new PacketWrapping<Message>(m), updateContext);
+				handleSimMessage(new PacketWrapping<Message>(m), updateContext);
 			} catch( MalformedDataException e ) {
 				System.err.println("Incoming message was malformed: "+e.getMessage());
 			}
 		} else {
 			System.err.println("Simulation doesn't know how to handle message type "+m.type);
 		}
-		return world;
 	}
 	
-	protected World update( long time, int phase, World world, MessageSet incomingMessages, SimUpdateContext updateContext ) {
+	protected void update( long time, int phase, MessageSet incomingMessages, SimUpdateContext updateContext ) {
 		// Update RST when phase = 2
 		RSTNode rst;
 		if( phase == 2 ) {
 			for( Message m : Messages.subsetApplicableTo(incomingMessages, simulationBitAddress) ) {
-				System.err.println("Get some sim messages!");
-				world = processSimMessage(world, m, updateContext);
+				processSimMessage(m, updateContext);
 			}
 			
 			int rstSize = 1<<world.rstSizePower;
@@ -207,7 +204,7 @@ public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregati
 			rst = world.rst;
 		}
 		
-		return new World(
+		world = new World(
 			rst, world.rstSizePower,
 			updateNonTiles(world, time, incomingMessages, updateContext, phase),
 			world.background
@@ -219,12 +216,12 @@ public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregati
 		
 		if( needsUpdate(time, 1, world, MessageSet.EMPTY) ) {
 			SimUpdateContext updateContext = new SimUpdateContext();
-			world = update(time, 1, world, MessageSet.EMPTY, updateContext);
+			update(time, 1, MessageSet.EMPTY, updateContext);
 			incomingMessages = Messages.union(incomingMessages, updateContext.newMessages);
 		}
 		while( needsUpdate(time, 2, this, incomingMessages) ) {
 			SimUpdateContext updateContext = new SimUpdateContext();
-			world = update(time, 2, world, incomingMessages, updateContext);
+			update(time, 2, incomingMessages, updateContext);
 			incomingMessages = updateContext.newMessages;
 		}
 		this.time = time;
