@@ -58,9 +58,9 @@ public class EventLooper<EventClass> extends Thread
 	
 	public void _run() throws IOException, InterruptedException {
 		long previousTickTime = eventSource.getCurrentTime() - minStepInterval / 2;
+		long previousTick = stepper.getCurrentTime();
 		while( eventSource.hasMoreEvents() || stepper.getNextAutoUpdateTime() < AutoEventUpdatable.TIME_INFINITY ) {
 			final List<EventClass> incomingEvents;
-			final long previousTick = stepper.getCurrentTime();
 			final long waitStartTime = eventSource.getCurrentTime();
 			final long nextAutoTick = stepper.getNextAutoUpdateTime();
 			assert nextAutoTick > previousTick;
@@ -91,8 +91,10 @@ public class EventLooper<EventClass> extends Thread
 			}
 			
 			assert nextTick < Long.MAX_VALUE;
-			previousTickTime = nextTickTime;
 			stepper = stepper.update(nextTick, incomingEvents);
+			
+			previousTick = nextTick;
+			previousTickTime = nextTickTime;
 		}
 	}
 	
