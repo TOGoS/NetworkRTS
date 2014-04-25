@@ -13,6 +13,7 @@ import togos.networkrts.experimental.game19.world.Messages;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.RSTNode;
 import togos.networkrts.experimental.game19.world.World;
+import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.experimental.gameengine1.index.EntityAggregation;
 import togos.networkrts.experimental.gameengine1.index.EntityRanges;
 import togos.networkrts.experimental.gameengine1.index.EntitySpatialTreeIndex;
@@ -28,13 +29,12 @@ import togos.networkrts.experimental.packet19.PacketWrapping;
 import togos.networkrts.experimental.packet19.RESTMessage;
 import togos.networkrts.experimental.packet19.RESTRequest;
 import togos.networkrts.experimental.packet19.UDPPacket;
-import togos.networkrts.util.BitAddressRange;
 import togos.networkrts.util.BitAddressUtil;
 
 /**
  * The pure-ish, non-threaded part of the simulator
  */
-public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
+public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregation
 {
 	static class NNTLNonTileUpdateContext implements NonTileUpdateContext {
 		protected final Collection<NonTile> nonTileList;
@@ -222,7 +222,7 @@ public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
 			world = update(time, 1, world, MessageSet.EMPTY, updateContext);
 			incomingMessages = Messages.union(incomingMessages, updateContext.newMessages);
 		}
-		while( needsUpdate(time, 2, world, incomingMessages) ) {
+		while( needsUpdate(time, 2, this, incomingMessages) ) {
 			SimUpdateContext updateContext = new SimUpdateContext();
 			world = update(time, 2, world, incomingMessages, updateContext);
 			incomingMessages = updateContext.newMessages;
@@ -249,5 +249,9 @@ public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
 	
 	@Override public final long getMaxBitAddress() {
 		return BitAddressUtil.maxAddressAI(world.getMaxBitAddress(), simulationBitAddress);
+	}
+
+	@Override public AABB getAabb() {
+		return AABB.BOUNDLESS;
 	}
 }
