@@ -226,8 +226,8 @@ public class Simulation implements AutoEventUpdatable2<Message>, BitAddressRange
 			SimUpdateContext updateContext = new SimUpdateContext();
 			world = update(time, 2, world, incomingMessages, updateContext);
 			incomingMessages = updateContext.newMessages;
-			this.time = time;
 		}
+		this.time = time;
 	}
 	
 	public Simulation update( long time, Collection<Message> events ) {
