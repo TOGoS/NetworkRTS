@@ -1,11 +1,15 @@
 package togos.networkrts.experimental.game19.world.thing.jetman;
 
+import static togos.networkrts.experimental.game19.sim.Simulation.GRAVITY;
+import static togos.networkrts.experimental.game19.sim.Simulation.SIMULATED_TICK_INTERVAL;
+
 import java.util.Random;
 
 import togos.networkrts.experimental.game19.io.CerealWorldIO;
 import togos.networkrts.experimental.game19.physics.BlockCollision;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
+import togos.networkrts.experimental.game19.sim.Simulation;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.BlargNonTile;
 import togos.networkrts.experimental.game19.world.Block;
@@ -32,9 +36,7 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 	);
 	
 	protected static final AABB aabb = new AABB(-3f/16, -7f/16, -3f/16, 3f/16, 8f/16, 3f/16);
-	// TODO: Replace with a gravitational field function on world or something
-	public static final double GRAVITY = 0.002;
-
+	
 	// TODO: Control flags (as opposed to actual physical state tracking flags)
 	// should probably all belong in the head.
 	// Especially isConscious
@@ -111,11 +113,13 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		float newSuitHealth = suitHealth;
 		SubstanceContainerInternals newFuelTank = fuelTank;
 		
+		final double damageFactor = 0.001; // Damage per (m/s)**(1/2)
+		
 		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID);
 		if( c != null ) {
 			double collisionDamage;
 			if( c.correctionX != 0 && Math.abs(c.correctionX) < Math.abs(c.correctionY) ) {
-				collisionDamage = newVx*newVx;
+				collisionDamage = damageFactor * newVx*newVx;
 				newX += c.correctionX;
 				newVx *= -0.5;
 			} else {
@@ -125,12 +129,12 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 				// ground under his feet separately from collision detection.
 				newY += c.correctionY + 1d/2048;
 				newVy *= -0.5;
-				if( c.correctionY < 0 && Math.abs(newVy) < 0.1 ) {
+				if( c.correctionY < 0 && Math.abs(newVy) < 4 ) {
 					newVy = 0;
 					feetOnGround = true;
 					collisionDamage = 0;
 				} else {
-					collisionDamage = newVy*newVy;
+					collisionDamage = damageFactor * newVy*newVy;
 				}
 			}
 
@@ -310,27 +314,29 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		default:
 		}
 		
+		double backThrusterAccelleration = GRAVITY * 0.5;
+		double bottomThrusterAccelleration = GRAVITY * 1.5;
 		boolean jetForward = false, jetUp = false;
 		if( goUp && newFuelTank.contents.quantity >= 0.01 ) {
 			newFuelTank = newFuelTank.add(-0.01);
-			newVy -= 0.002;
+			newVy += (GRAVITY - bottomThrusterAccelleration) * SIMULATED_TICK_INTERVAL;
 			jetUp = true;
 		} else if( !feetOnGround ) {
-			newVy += GRAVITY;
+			newVy += GRAVITY * SIMULATED_TICK_INTERVAL;
 		}
 		if( feetOnGround ) {
-			double walkSpeed = 0.05;
+			double walkSpeed = 2;
 			if( goForward && Math.abs(newVx) <= walkSpeed ) {
 				newVx = facingLeft ? -walkSpeed : walkSpeed; 
 			} else if( !goForward && Math.abs(newVx) <= walkSpeed ) {
 				newVx = 0;
 			} else {
-				newVx *= 0.6;
+				newVx *= 0.6 * (1-Simulation.SIMULATED_TICK_INTERVAL);
 			}
 		} else {
 			if( goForward && newFuelTank.contents.quantity >= 0.01 ) {
 				newFuelTank = newFuelTank.add(-0.01);
-				newVx += 0.003 * (facingLeft ? -1 : 1);
+				newVx += (backThrusterAccelleration*SIMULATED_TICK_INTERVAL) * (facingLeft ? -1 : 1);
 				jetForward = true;
 			}
 		}

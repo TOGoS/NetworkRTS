@@ -3,6 +3,7 @@ package togos.networkrts.experimental.game19.world;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
+import togos.networkrts.experimental.game19.sim.Simulation;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.util.BitAddressUtil;
 
@@ -99,7 +100,7 @@ public class BlargNonTile implements NonTile
 	protected BlargNonTile withUpdatedPosition(long newTime) {
 		if( newTime == referenceTime || (vx == 0 && vy == 0) ) return this;
 		
-		double interval = newTime-referenceTime;
+		double interval = Simulation.SIMULATED_TICK_INTERVAL * (newTime-referenceTime);
 		return withPosition(newTime, x+vx*interval, y+vy*interval);
 	}
 	

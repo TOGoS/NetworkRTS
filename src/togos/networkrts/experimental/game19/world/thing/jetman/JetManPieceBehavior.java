@@ -1,5 +1,7 @@
 package togos.networkrts.experimental.game19.world.thing.jetman;
 
+import static togos.networkrts.experimental.game19.sim.Simulation.GRAVITY;
+import static togos.networkrts.experimental.game19.sim.Simulation.SIMULATED_TICK_INTERVAL;
 import togos.networkrts.experimental.game19.physics.BlockCollision;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
@@ -28,7 +30,7 @@ public class JetManPieceBehavior implements NonTileInternals<BlargNonTile>
 		MessageSet messages, NonTileUpdateContext updateContext
 	) {
 		double newX = nt.x, newY = nt.y;
-		double newVx = nt.vx, newVy = nt.vy + JetManInternals.GRAVITY;
+		double newVx = nt.vx, newVy = nt.vy + GRAVITY * SIMULATED_TICK_INTERVAL;
 		
 		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID);
 		if( c != null ) {

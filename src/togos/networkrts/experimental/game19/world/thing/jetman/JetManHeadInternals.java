@@ -1,5 +1,7 @@
 package togos.networkrts.experimental.game19.world.thing.jetman;
 
+import static togos.networkrts.experimental.game19.sim.Simulation.GRAVITY;
+import static togos.networkrts.experimental.game19.sim.Simulation.SIMULATED_TICK_INTERVAL;
 import togos.networkrts.experimental.game19.physics.BlockCollision;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
@@ -52,7 +54,7 @@ public class JetManHeadInternals implements NonTileInternals<BlargNonTile>
 		MessageSet messages, NonTileUpdateContext updateContext
 	) {
 		double newX = nt.x, newY = nt.y;
-		double newVx = nt.vx, newVy = nt.vy + JetManInternals.GRAVITY;
+		double newVx = nt.vx, newVy = nt.vy + GRAVITY * SIMULATED_TICK_INTERVAL;
 		float newSuitHealth = health, newBattery = battery;
 		
 		if( newBattery >= 0.0001 ) {
@@ -60,20 +62,22 @@ public class JetManHeadInternals implements NonTileInternals<BlargNonTile>
 			newBattery -= 0.0001; // These transmissions cost something!
 		}
 		
+		final double damageFactor = 0.001; // Damage per (m/s)**(1/2)
+		
 		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID);
 		if( c != null ) {
 			double collisionDamage;
 			if( c.correctionX != 0 && Math.abs(c.correctionX) < Math.abs(c.correctionY) ) {
-				collisionDamage = newVx*newVx;
+				collisionDamage = damageFactor * newVx*newVx;
 				newX += c.correctionX;
 				newVx *= -0.5;
 			} else {
-				collisionDamage = newVy*newVy;
+				collisionDamage = damageFactor * newVy*newVy;
 				newY += c.correctionY;
 				newVy *= -0.5;
 			}
 			if( Math.abs(newVy) < 0.03 ) newVx = 0;
-			if( c.correctionY < 0 && Math.abs(newVy) < 0.03 ) {
+			if( c.correctionY < 0 && Math.abs(newVy) < 1 ) {
 				newVy = 0;
 			}
 			Block b = c.block;

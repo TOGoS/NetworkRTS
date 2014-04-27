@@ -36,6 +36,10 @@ import togos.networkrts.util.BitAddressUtil;
  */
 public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregation
 {
+	public static final double SIMULATED_TICK_INTERVAL = 0.05;
+	public static final double REAL_TICK_INTERVAL_TARGET = SIMULATED_TICK_INTERVAL;
+	public static final double GRAVITY = 9.8;
+
 	static class NNTLNonTileUpdateContext implements NonTileUpdateContext {
 		protected final Collection<NonTile> nonTileList;
 		protected final UpdateContext updateContext;
@@ -55,18 +59,6 @@ public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregati
 		@Override public void addNonTile( NonTile nt ) { nonTileList.add(nt); }
 	}
 	
-	protected World world;
-	protected final ResourceContext resourceContext;
-	protected final PacketPayloadCodec<Object> cerealWorldPacketPayloadCodec;
-	protected long simulationBitAddress;
-	protected long simulationEthernetAddress;
-	protected IP6Address simulationIpAddress;
-	protected long time = 0;
-	/** Tasks to be done later will be sent here! */
-	protected final Queue<AsyncTask> asyncTaskQueue;
-	/** Messages to things outside the simulation go here! */
-	protected final Queue<Message> outgoingMessageQueue;
-	
 	/**
 	 * Update context to be used synchronously, within the simulation.
 	 */
@@ -85,6 +77,18 @@ public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregati
 			asyncTaskQueue.add(at);
 		}
 	}
+	
+	protected World world;
+	protected final ResourceContext resourceContext;
+	protected final PacketPayloadCodec<Object> cerealWorldPacketPayloadCodec;
+	protected long simulationBitAddress;
+	protected long simulationEthernetAddress;
+	protected IP6Address simulationIpAddress;
+	protected long time = 0;
+	/** Tasks to be done later will be sent here! */
+	protected final Queue<AsyncTask> asyncTaskQueue;
+	/** Messages to things outside the simulation go here! */
+	protected final Queue<Message> outgoingMessageQueue;
 	
 	public Simulation(World world, Queue<AsyncTask> asyncTaskQueue, Queue<Message> outgoingMessageQueue, ResourceContext rc) {
 		this.world = world;

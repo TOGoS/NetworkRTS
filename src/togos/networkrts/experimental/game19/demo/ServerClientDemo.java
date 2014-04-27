@@ -10,6 +10,7 @@ import togos.networkrts.cereal.SHA1ObjectReference;
 import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.extnet.Network;
 import togos.networkrts.experimental.game19.extnet.NetworkComponent;
+import togos.networkrts.experimental.game19.sim.Simulation;
 import togos.networkrts.experimental.game19.sim.Simulator;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.IDGenerator;
@@ -56,7 +57,7 @@ public class ServerClientDemo
 			final NonTile playerNonTile = JetManInternals.createJetMan(playerId, clientBa, jetManIcons);
 			initialWorld = initialWorld.withNonTile(playerNonTile);
 			server = new Network();
-			Simulator sim = new Simulator( initialWorld, 50, simBa, server.incomingMessageQueue, resourceContext );
+			Simulator sim = new Simulator( initialWorld, (long)(1000*Simulation.REAL_TICK_INTERVAL_TARGET), simBa, server.incomingMessageQueue, resourceContext );
 			sim.setDaemon(true);
 			server.addComponent(sim);
 		}
