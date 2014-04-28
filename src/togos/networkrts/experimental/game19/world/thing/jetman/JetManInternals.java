@@ -156,14 +156,14 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 						RESTRequest rr = (RESTRequest)p;
 						if( "/spew".equals(rr.getPath()) ) {
 							if( "POST".equals(rr.getMethod()) ) {
+								Random rand = new Random();
 								for( int j=0; j<4; ++j ) {
-									Random rand = new Random();
 									Icon[] pieceIcons = new Icon[] { icons.leg1, icons.leg2, icons.torso, icons.jetpack };
 
 									Icon ic = pieceIcons[j];
 									updateContext.addNonTile(new BlargNonTile(0, time, newX, newY,
-										newVx+newVx*rand.nextGaussian()+newVy*rand.nextGaussian(),
-										newVy+newVy*rand.nextGaussian()+newVx*rand.nextGaussian(),
+										newVx+10*rand.nextGaussian(),
+										newVy+10*rand.nextGaussian(),
 										new JetManPieceBehavior(ic)
 									));
 								}
