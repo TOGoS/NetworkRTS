@@ -6,19 +6,18 @@ import static togos.networkrts.experimental.game19.sim.Simulation.SIMULATED_TICK
 import java.util.Random;
 
 import togos.networkrts.experimental.game19.io.CerealWorldIO;
-import togos.networkrts.experimental.game19.physics.BlockCollision;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.game19.sim.Simulation;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.BlargNonTile;
-import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.NonTileInternals;
 import togos.networkrts.experimental.game19.world.World;
+import togos.networkrts.experimental.game19.world.thing.AbstractPhysicalNonTileInternals;
 import togos.networkrts.experimental.game19.world.thing.BlockWand;
 import togos.networkrts.experimental.game19.world.thing.Substances;
 import togos.networkrts.experimental.game19.world.thing.pickup.SubstanceContainerInternals;
@@ -29,7 +28,7 @@ import togos.networkrts.experimental.gameengine1.index.Visitor;
 import togos.networkrts.experimental.packet19.RESTRequest;
 import togos.networkrts.util.BitAddressUtil;
 
-public class JetManInternals implements NonTileInternals<BlargNonTile>
+public class JetManInternals extends AbstractPhysicalNonTileInternals
 {
 	protected static final SubstanceContainerInternals DEFAULT_FUEL_TANK = SubstanceContainerInternals.filled(
 		new SubstanceContainerType("Jetman fuel tank", new Icon[]{}, null, 0, 0.2), Substances.KEROSENE
@@ -88,63 +87,30 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		);
 	}
 	public JetManInternals(long clientId, JetManIcons icons) {
-		this(0, -1, S_CONSCIOUS, 1, DEFAULT_FUEL_TANK, new JetManHeadInternals(clientId, false, JetManHeadInternals.MAX_HEALTH, JetManHeadInternals.MAX_BATTERY, icons, 0), icons, 0);
+		this(0, -1, S_CONSCIOUS, 1, DEFAULT_FUEL_TANK, new JetManHeadInternals(clientId, false, JetManHeadInternals.MAX_HEALTH, JetManHeadInternals.MAX_BATTERY, icons, 0, 0), icons, 0);
 	}
 	
 	public static NonTile createJetMan( long id, long uplinkBitAddress, JetManIcons icons ) {
 		return new BlargNonTile(id, 0, 0, 0, 0, 0, new JetManInternals(uplinkBitAddress, icons));
 	}
 	
-	@Override public NonTile update(
-		final BlargNonTile nt, long time, final World world,
+	@Override public BlargNonTile update(
+		final BlargNonTile nt0, long time, final World world,
 		MessageSet messages, final NonTileUpdateContext updateContext
 	) {
+		final BlargNonTile nt = super.update(nt0, time, world, messages, updateContext);
+		
 		if( time < getNextAutoUpdateTime() && messages.size() == 0 ) return nt;
 		
 		boolean conscious = checkStateFlag(S_CONSCIOUS);
 		
-		if( conscious && time > lastUpdateTime ) {
-			headInternals.sendUpdate(nt, time, world, messages, updateContext, getStats());
-		}
+		JetManHeadInternals newHeadInternals = headInternals.miniUpdate(nt, time, world, messages, updateContext, getStats(), true);
 		
-		double newX = nt.x, newY = nt.y;
+		final double newX = nt.x, newY = nt.y;
 		double newVx = nt.vx, newVy = nt.vy;
 		boolean feetOnGround = false;
 		float newSuitHealth = suitHealth;
 		SubstanceContainerInternals newFuelTank = fuelTank;
-		
-		final double damageFactor = 0.001; // Damage per (m/s)**(1/2)
-		
-		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID);
-		if( c != null ) {
-			double collisionDamage;
-			if( c.correctionX != 0 && Math.abs(c.correctionX) < Math.abs(c.correctionY) ) {
-				collisionDamage = damageFactor * newVx*newVx;
-				newX += c.correctionX;
-				newVx *= -0.5;
-			} else {
-				// For now I'm embedding the dude's feet slightly in the ground
-				// so that next frame he still knows he's standing on it.
-				// An alternative (probably the right way) would be to detect
-				// ground under his feet separately from collision detection.
-				newY += c.correctionY + 1d/2048;
-				newVy *= -0.5;
-				if( c.correctionY < 0 && Math.abs(newVy) < 4 ) {
-					newVy = 0;
-					feetOnGround = true;
-					collisionDamage = 0;
-				} else {
-					collisionDamage = damageFactor * newVy*newVy;
-				}
-			}
-
-			Block b = c.block;
-			if( (b.flags & Block.FLAG_SPIKEY) == Block.FLAG_SPIKEY ) {
-				// TODO: Unless he has steel boots!
-				collisionDamage += 50;
-			}
-			newSuitHealth -= collisionDamage;
-		}
 		
 		int newThrustDir = thrustDir;
 		for( Message m : messages ) {
@@ -159,12 +125,12 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 								Random rand = new Random();
 								for( int j=0; j<4; ++j ) {
 									Icon[] pieceIcons = new Icon[] { icons.leg1, icons.leg2, icons.torso, icons.jetpack };
-
+									
 									Icon ic = pieceIcons[j];
 									updateContext.addNonTile(new BlargNonTile(0, time, newX, newY,
 										newVx+10*rand.nextGaussian(),
 										newVy+10*rand.nextGaussian(),
-										new JetManPieceBehavior(ic)
+										new DebrisInternals(ic)
 									));
 								}
 							}
@@ -257,8 +223,6 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 			}
 		});
 		
-		JetManHeadInternals newHeadInternals = headInternals;
-		
 		if( newSuitHealth < 0 ) {
 			Random rand = new Random();
 			Icon[] pieceIcons = new Icon[] { icons.leg1, icons.leg2, icons.torso, icons.jetpack };
@@ -267,13 +231,13 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 				updateContext.addNonTile(new BlargNonTile(0, time, newX, newY,
 					newVx+newVx*rand.nextGaussian()+newVy*rand.nextGaussian(),
 					newVy+newVy*rand.nextGaussian()+newVx*rand.nextGaussian(),
-					new JetManPieceBehavior(ic)
+					new DebrisInternals(ic)
 				));
 			}
 			
 			// TODO: Some amount of remaining damage goes to head
 			
-			return new BlargNonTile(nt.id, time, newX, newY, newVx, newVy, newHeadInternals);
+			return new BlargNonTile(nt.bitAddress, time, newX, newY, newVx, newVy, newHeadInternals);
 		}
 		
 		boolean facingLeft = checkStateFlag(S_FACING_LEFT);
@@ -319,10 +283,10 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 		boolean jetForward = false, jetUp = false;
 		if( goUp && newFuelTank.contents.quantity >= 0.01 ) {
 			newFuelTank = newFuelTank.add(-0.01);
-			newVy += (GRAVITY - bottomThrusterAccelleration) * SIMULATED_TICK_INTERVAL;
+			newVy -= bottomThrusterAccelleration * SIMULATED_TICK_INTERVAL;
 			jetUp = true;
 		} else if( !feetOnGround ) {
-			newVy += GRAVITY * SIMULATED_TICK_INTERVAL;
+			//newVy += GRAVITY * SIMULATED_TICK_INTERVAL;
 		}
 		if( feetOnGround ) {
 			double walkSpeed = 2;
@@ -361,7 +325,8 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 	}
 	
 	protected boolean isResting() {
-		return checkStateFlag(S_STOPPED) && !checkStateFlag(S_CONSCIOUS);  
+		return false;
+		//return checkStateFlag(S_STOPPED) && !checkStateFlag(S_CONSCIOUS);  
 	}
 	
 	@Override public Icon getIcon() {
@@ -387,6 +352,6 @@ public class JetManInternals implements NonTileInternals<BlargNonTile>
 	@Override public long getNonTileAddressFlags() {
 		return
 			BitAddresses.PHYSINTERACT |
-			(isResting() ? BitAddresses.RESTING : BitAddresses.UPPHASE2);
+			(isResting() ? BitAddresses.RESTING : 0);
 	}
 }

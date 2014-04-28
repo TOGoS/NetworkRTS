@@ -24,11 +24,13 @@ public class World implements EntityAggregation
 		
 		static final int PROP_RST_SIZE_POWER = 0x01;
 		static final int PROP_RST            = 0x02;
-		static final int KNOWN_PROP_MASK     = 0x03;
+		static final int PROP_REFERENCE_TIME = 0x04;
+		static final int KNOWN_PROP_MASK     = 0x07;
 		
 		@Override public void encode(
 			World world, byte[] constructorPrefix, OutputStream os, CerealWorldIO cwio
 		) throws IOException {
+			StandardValueOps.writeNumberCompact(world.referenceTime, os);
 			cwio.writeObjectReference(world.rst, os);
 			StandardValueOps.writeNumberCompact(world.rstSizePower, os);
 			os.write(constructorPrefix);
@@ -47,6 +49,7 @@ public class World implements EntityAggregation
 			}
 			
 			long sizePower = -1234;
+			long referenceTime = 0;
 			RSTNode rst = null;
 			EntitySpatialTreeIndex<NonTile> nonTiles = new EntitySpatialTreeIndex<NonTile>();
 			LayerLink backgroundLink = null;
@@ -57,33 +60,38 @@ public class World implements EntityAggregation
 			if( (props & PROP_RST) != 0 ) {
 				rst = context.removeStackItem(ds, -1, RSTNode.class);
 			}
+			if( (props & PROP_REFERENCE_TIME) != 0 ) {
+				referenceTime = context.removeStackItem(ds, -1, Number.class).longValue();
+			}
 			
 			if( sizePower == -1234 ) throw new InvalidEncoding("World encoded without an RST size power");
 			if( sizePower < 0 ) throw new InvalidEncoding("World encoded with negative RST size power: "+sizePower);
 			if( sizePower > 30 ) throw new InvalidEncoding("World encoded with overly large RST size power: "+sizePower);
 			if( rst == null ) throw new InvalidEncoding("World encoded with no RST");
 			
-			ds.pushStackItem(new World(rst, (int)sizePower, nonTiles, backgroundLink));
+			ds.pushStackItem(new World(referenceTime, rst, (int)sizePower, nonTiles, backgroundLink));
 			
 			return offset;
 		}
 	};
 	
+	public final long referenceTime;
 	public final RSTNode rst;
 	public final int rstSizePower;
 	public final EntitySpatialTreeIndex<NonTile> nonTiles;
 	// May need a separate index for 'watchers'
 	public final LayerLink background;
 	
-	public World(RSTNode rst, int rstSizePower, EntitySpatialTreeIndex<NonTile> nonTiles, LayerLink background ) {
+	public World(long referenceTime, RSTNode rst, int rstSizePower, EntitySpatialTreeIndex<NonTile> nonTiles, LayerLink background ) {
+		this.referenceTime = referenceTime;
 		this.rst = rst;
 		this.rstSizePower = rstSizePower;
 		this.nonTiles = nonTiles.freeze();
 		this.background = background;
 	}
 	
-	public World(RSTNode rst, int rstSizePower, EntitySpatialTreeIndex<NonTile> nonTiles ) {
-		this( rst, rstSizePower, nonTiles, null );
+	public World(long referenceTime, RSTNode rst, int rstSizePower, EntitySpatialTreeIndex<NonTile> nonTiles ) {
+		this( referenceTime, rst, rstSizePower, nonTiles, null );
 	}
 	
 	public RSTNodeInstance getRstNodeInstance() {
@@ -102,7 +110,7 @@ public class World implements EntityAggregation
 	//// Some convenience method
 	
 	public World withNonTile(NonTile nt) {
-		return new World( rst, rstSizePower, nonTiles.with(nt), background );
+		return new World( referenceTime, rst, rstSizePower, nonTiles.with(nt), background );
 	}
 	
 	// Could limit this to union of RST and node trees.

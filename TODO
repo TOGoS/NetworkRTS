@@ -1,6 +1,23 @@
 Game19 to-do list.
 i.e. things to work on when you get sick of working on some other component
 
+- Fix collision handling
+  - Make generic
+  
+  Different nontile roles:
+  - Platform
+    - can move other objects, but their movement is not influenced by others
+    - act as if they have infinite mass 
+    - when 2 platforms collide they just occupy the same space for a bit
+    - has bounciness, used by others to determine stuff
+  - Normal physical things - players, large slow projectiles, boxes
+    - Have mass, bounciness
+  - Pickups and decorations
+    - Influenced by others, but do not influence others basic physics
+    - May still cause things to happen when collided with
+  - Purely decorative
+    - Neither influenced nor influencing - ignored entirely by collision detection and physics
+
 - Include entities in world save/load
 
 Entity/entity collisions

@@ -12,14 +12,14 @@ public class BlargNonTile implements NonTile
 	public final long referenceTime;
 	public final double x, y, vx, vy; // For simplicity, velocity is meters per clock tick
 	public final AABB absolutePhysicalAabb;
-	public final long id;
+	public final long bitAddress;
 	public final NonTileInternals<? super BlargNonTile> internals;
 	
 	public BlargNonTile(
-		long id, long referenceTime, double x, double y, double vx, double vy,
+		long ba, long referenceTime, double x, double y, double vx, double vy,
 		NonTileInternals<? super BlargNonTile> internals
 	) {
-		this.id = id & BitAddresses.ID_MASK;
+		this.bitAddress = ba & BitAddresses.ID_MASK;
 		this.referenceTime = referenceTime;
 		this.x = x; this.vx = vx;
 		this.y = y; this.vy = vy;
@@ -48,9 +48,8 @@ public class BlargNonTile implements NonTile
 	@Override public long getBitAddress() {
 		return
 			BitAddresses.TYPE_NONTILE |
-			(hasVelocity() ? BitAddresses.UPPHASE1 : 0) |
 			internals.getNonTileAddressFlags() |
-			id;
+			bitAddress;
 	}
 	@Override public long getMinBitAddress() { return getBitAddress(); }
 	@Override public long getMaxBitAddress() { return getBitAddress(); }
@@ -72,7 +71,7 @@ public class BlargNonTile implements NonTile
 	
 	public BlargNonTile withInternals(NonTileInternals<? super BlargNonTile> internals) {
 		return internals == this.internals ? this :
-			new BlargNonTile(id, referenceTime, x, y, vx, vy, internals);
+			new BlargNonTile(bitAddress, referenceTime, x, y, vx, vy, internals);
 	}
 	
 	public BlargNonTile withId(int id) {
@@ -80,7 +79,7 @@ public class BlargNonTile implements NonTile
 	}
 	
 	@Override public BlargNonTile withPositionAndVelocity(long referenceTime, double x, double y, double vx, double vy) {
-		return new BlargNonTile(id, referenceTime, x, y, vx, vy, internals);
+		return new BlargNonTile(bitAddress, referenceTime, x, y, vx, vy, internals);
 	}
 	
 	public BlargNonTile withVelocity(long referenceTime, double vx, double vy) {
@@ -105,13 +104,8 @@ public class BlargNonTile implements NonTile
 	}
 	
 	@Override public NonTile update(
-		long time, int phase, World w, MessageSet incomingMessages, NonTileUpdateContext updateContext
+		long time, World w, MessageSet incomingMessages, NonTileUpdateContext updateContext
 	) {
-		switch(phase) {
-		case 1: return withUpdatedPosition(time);
-		case 2: return internals.update(this, time, w, incomingMessages, updateContext);
-		default:
-			throw new RuntimeException("Unsupported update phase: "+phase);
-		}
+		return internals.update(this, time, w, incomingMessages, updateContext);
 	}
 }

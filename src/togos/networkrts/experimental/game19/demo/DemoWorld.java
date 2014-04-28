@@ -24,6 +24,7 @@ import togos.networkrts.experimental.game19.world.RSTUtil;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.beh.BoringBlockInternals;
 import togos.networkrts.experimental.game19.world.gen.SolidNodeFiller;
+import togos.networkrts.experimental.game19.world.thing.GenericPhysicalNonTileInternals;
 import togos.networkrts.experimental.game19.world.thing.Substances;
 import togos.networkrts.experimental.game19.world.thing.pickup.SubstanceContainerInternals;
 import togos.networkrts.experimental.game19.world.thing.pickup.SubstanceContainerType;
@@ -133,21 +134,32 @@ public class DemoWorld
 		}
 	}
 	
+	protected static GenericPhysicalNonTileInternals getCrateInternals( ResourceContext rc ) throws IOException {
+		Icon crateIcon = loadIcon(rc, "tile-images/crate0.png", 1);
+		return new GenericPhysicalNonTileInternals(crateIcon, new AABB(
+			crateIcon.imageX, crateIcon.imageY, crateIcon.imageX,
+			crateIcon.imageX + crateIcon.imageWidth,
+			crateIcon.imageY + crateIcon.imageHeight,
+			crateIcon.imageX + crateIcon.imageWidth
+		));
+	}
+	
+	protected static SubstanceContainerInternals getFuelCanInternals( ResourceContext rc ) throws IOException {
+		Icon[] fuelCanIcons = new Icon[4];
+		for( int i=0; i<fuelCanIcons.length; ++i ) {
+			fuelCanIcons[i] = loadIcon(rc, "tile-images/FuelCan/FuelCan"+i+".png", 0.5f);
+		}
+		AABB fuelCanAabb = new AABB(-0.125, -0.125, -0.125, 0.25, 0.25, 0.25);
+		SubstanceContainerType fuelCanType = new SubstanceContainerType(
+			"Fuel can", fuelCanIcons, fuelCanAabb, 1, 0.01
+		);
+		return SubstanceContainerInternals.filled(fuelCanType, Substances.KEROSENE);
+	}
+	
 	public static World initLittleWorld( ResourceContext rc ) throws IOException {
 		final DemoBlocks blocks = DemoBlocks.load(rc);
 		
-		final SubstanceContainerInternals fuelCanInternals;
-		{
-			Icon[] fuelCanIcons = new Icon[4];
-			for( int i=0; i<fuelCanIcons.length; ++i ) {
-				fuelCanIcons[i] = loadIcon(rc, "tile-images/FuelCan/FuelCan"+i+".png", 0.5f);
-			}
-			AABB fuelCanAabb = new AABB(-0.125, -0.125, -0.125, 0.25, 0.25, 0.25);
-			SubstanceContainerType fuelCanType = new SubstanceContainerType(
-				"Fuel can", fuelCanIcons, fuelCanAabb, 1, 0.01
-			);
-			fuelCanInternals = SubstanceContainerInternals.filled(fuelCanType, Substances.KEROSENE);
-		}
+		final SubstanceContainerInternals fuelCanInternals = getFuelCanInternals(rc);
 		
 		int worldSizePower = 24;
 		int worldDataOrigin = -(1<<(worldSizePower-1));
@@ -174,7 +186,7 @@ public class DemoWorld
 		
 		nonTiles = nonTiles.with( new BlargNonTile(0, 0, -5, 0, 0, 0, fuelCanInternals) );
 		
-		return new World(n, worldSizePower, nonTiles,
+		return new World(0, n, worldSizePower, nonTiles,
 			new LayerLink(true, new SoftResourceHandle<Layer>("urn:sha1:blah"), 0, 0, 0, 0xFF001122)
 		);
 	}
@@ -182,18 +194,8 @@ public class DemoWorld
 	public static World initWorld( ResourceContext rc ) throws IOException {
 		final DemoBlocks blocks = DemoBlocks.load(rc);
 		
-		final SubstanceContainerInternals fuelCanInternals;
-		{
-			Icon[] fuelCanIcons = new Icon[4];
-			for( int i=0; i<fuelCanIcons.length; ++i ) {
-				fuelCanIcons[i] = loadIcon(rc, "tile-images/FuelCan/FuelCan"+i+".png", 0.5f);
-			}
-			AABB fuelCanAabb = new AABB(-0.125, -0.125, -0.125, 0.25, 0.25, 0.25);
-			SubstanceContainerType fuelCanType = new SubstanceContainerType(
-				"Fuel can", fuelCanIcons, fuelCanAabb, 1, 0.01
-			);
-			fuelCanInternals = SubstanceContainerInternals.filled(fuelCanType, Substances.KEROSENE);
-		}
+		final GenericPhysicalNonTileInternals crateInternals = getCrateInternals(rc);
+		final SubstanceContainerInternals fuelCanInternals = getFuelCanInternals(rc);
 		
 		int worldSizePower = 24;
 		int worldDataOrigin = -(1<<(worldSizePower-1));
@@ -231,9 +233,15 @@ public class DemoWorld
 			nonTiles = nonTiles.with( new BlargNonTile(0, 0, sx, sy, 0, 0, fuelCanInternals) );
 		}
 		
+		for( int i=0; i<20; ++i ) {
+			double sx = r.nextGaussian() * 10;
+			double sy = r.nextGaussian() * 10;
+			nonTiles = nonTiles.with( new BlargNonTile(0, 0, sx, sy, 0, 0, crateInternals) );
+		}
+		
 		nonTiles = nonTiles.with( new BlargNonTile(0, 0, -5, 0, 0, 0, fuelCanInternals) );
 		
-		return new World(n, worldSizePower, nonTiles,
+		return new World(0, n, worldSizePower, nonTiles,
 			new LayerLink(true, new SoftResourceHandle<Layer>("urn:sha1:blah"), 0, 0, 0, 0xFF001122)
 		);
 	}

@@ -1,93 +1,68 @@
 package togos.networkrts.experimental.game19.world.thing.jetman;
 
-import static togos.networkrts.experimental.game19.sim.Simulation.GRAVITY;
-import static togos.networkrts.experimental.game19.sim.Simulation.SIMULATED_TICK_INTERVAL;
-import togos.networkrts.experimental.game19.physics.BlockCollision;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.game19.sim.UpdateContext;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.BlargNonTile;
-import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.MessageSet;
-import togos.networkrts.experimental.game19.world.NonTile;
-import togos.networkrts.experimental.game19.world.NonTileInternals;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.msg.UploadSceneTask;
+import togos.networkrts.experimental.game19.world.thing.AbstractPhysicalNonTileInternals;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 
-public class JetManHeadInternals implements NonTileInternals<BlargNonTile>
+public class JetManHeadInternals extends AbstractPhysicalNonTileInternals
 {
 	public static final float MAX_HEALTH = 0.25f;
 	public static final float MAX_BATTERY = 1;
 	protected static final AABB aabb = new AABB(-3f/16, -2.5f/16, -3f/16, 3f/16, 2.5f/16, 3f/16);
 	
 	final long lastUpdateTime;
+	final long lastViewSendTime;
 	final long uplinkBitAddress;
 	final boolean facingLeft;
 	final float health;
 	final float battery;
 	final JetManIcons icons;
 	
-	public JetManHeadInternals(long uplinkBitAddress, boolean facingLeft, float health, float battery, JetManIcons icons, long lastUpdateTime) {
+	public JetManHeadInternals(long uplinkBitAddress, boolean facingLeft, float health, float battery, JetManIcons icons, long lastUpdateTime, long lastViewSendTime) {
 		this.uplinkBitAddress = uplinkBitAddress;
 		this.facingLeft = facingLeft;
 		this.health = health;
 		this.battery = battery;
 		this.icons = icons;
 		this.lastUpdateTime = lastUpdateTime;
+		this.lastViewSendTime = lastViewSendTime;
 	}
 	
 	public void sendUpdate(
 		final BlargNonTile nt, long time, final World world,
 		MessageSet messages, NonTileUpdateContext updateContext,
-		JetManCoreStats stats
+		JetManCoreStats stats, boolean drainBattery
 	) {
-		updateContext.startAsyncTask(new UploadSceneTask(nt, world, uplinkBitAddress));
-		updateContext.sendMessage(Message.create(uplinkBitAddress, uplinkBitAddress, MessageType.INCOMING_PACKET, stats));
 	}
 	
-	@Override public NonTile update(
+	protected JetManHeadInternals miniUpdate(
 		final BlargNonTile nt, long time, final World world,
-		MessageSet messages, NonTileUpdateContext updateContext
+		MessageSet messages, NonTileUpdateContext updateContext,
+		JetManCoreStats stats, boolean externallyPowered
 	) {
-		double newX = nt.x, newY = nt.y;
-		double newVx = nt.vx, newVy = nt.vy + GRAVITY * SIMULATED_TICK_INTERVAL;
-		float newSuitHealth = health, newBattery = battery;
+		float newBattery = battery;
+		boolean viewSendAttempted = false;
 		
-		if( newBattery >= 0.0001 ) {
-			sendUpdate(nt, time, world, messages, updateContext, getStats());
-			newBattery -= 0.0001; // These transmissions cost something!
+		if( time == lastUpdateTime ) {
+			double viewUpdateWork = externallyPowered ? 0 : 0.0001;
+			if( newBattery >= viewUpdateWork ) {
+				updateContext.startAsyncTask(new UploadSceneTask(nt, world, uplinkBitAddress));
+				updateContext.sendMessage(Message.create(uplinkBitAddress, uplinkBitAddress, MessageType.INCOMING_PACKET, stats));
+				newBattery -= viewUpdateWork; // These transmissions cost something!
+			}
+			viewSendAttempted = true;
+		} else if( lastViewSendTime < time ) {
+			updateContext.sendMessage(Message.create(nt.bitAddress, MessageType.UPDATE, null));
 		}
-		
-		final double damageFactor = 0.001; // Damage per (m/s)**(1/2)
-		
-		BlockCollision c = BlockCollision.findCollisionWithRst(nt, world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID);
-		if( c != null ) {
-			double collisionDamage;
-			if( c.correctionX != 0 && Math.abs(c.correctionX) < Math.abs(c.correctionY) ) {
-				collisionDamage = damageFactor * newVx*newVx;
-				newX += c.correctionX;
-				newVx *= -0.5;
-			} else {
-				collisionDamage = damageFactor * newVy*newVy;
-				newY += c.correctionY;
-				newVy *= -0.5;
-			}
-			if( Math.abs(newVy) < 0.03 ) newVx = 0;
-			if( c.correctionY < 0 && Math.abs(newVy) < 1 ) {
-				newVy = 0;
-			}
-			Block b = c.block;
-			if( (b.flags & Block.FLAG_SPIKEY) == Block.FLAG_SPIKEY ) {
-				collisionDamage += 50;
-			}
-			newSuitHealth -= collisionDamage;
-		}
-		
-		if( newSuitHealth < 0 ) return null; // Immediate death!
 		
 		for( Message m : messages ) {
 			if( m.isApplicableTo(nt) ) {
@@ -97,9 +72,16 @@ public class JetManHeadInternals implements NonTileInternals<BlargNonTile>
 			}
 		}
 		
-		return nt.withPositionAndVelocity(time, newX, newY, newVx, newVy).withInternals(
-			new JetManHeadInternals(uplinkBitAddress, facingLeft, newSuitHealth, newBattery, icons, time)
-		);
+		return new JetManHeadInternals(uplinkBitAddress, facingLeft, health, newBattery, icons, time, viewSendAttempted ? time : lastViewSendTime);
+	}
+	
+	@Override public BlargNonTile update(
+		final BlargNonTile nt0, long time, final World world,
+		MessageSet messages, NonTileUpdateContext updateContext
+	) {
+		final BlargNonTile nt = super.update(nt0, time, world, messages, updateContext);
+		
+		return nt.withInternals( miniUpdate(nt, time, world, messages, updateContext, getStats(), false) );
 	}
 	
 	public JetManCoreStats getStats() {
@@ -122,11 +104,11 @@ public class JetManHeadInternals implements NonTileInternals<BlargNonTile>
 		return isResting() ? Long.MAX_VALUE : lastUpdateTime+1;
 	}
 	@Override public long getNonTileAddressFlags() {
-		return BitAddresses.PHYSINTERACT|BitAddresses.PICKUP|BitAddresses.UPPHASE2;
+		return BitAddresses.PHYSINTERACT|BitAddresses.PICKUP;
 	}
 	
 	protected JetManHeadInternals batteryDrained(float amount) {
-		return new JetManHeadInternals(uplinkBitAddress, facingLeft, health, battery-amount, icons, lastUpdateTime);
+		return new JetManHeadInternals(uplinkBitAddress, facingLeft, health, battery-amount, icons, lastUpdateTime, lastViewSendTime);
 	}
 	
 	public JetManHeadInternals sendToClient(long myAddress, Object payload, UpdateContext ctx) {

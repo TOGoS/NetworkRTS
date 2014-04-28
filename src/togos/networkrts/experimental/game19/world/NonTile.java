@@ -51,5 +51,5 @@ public interface NonTile extends EntityAggregation, HasPositionAndVelocity
 	 * several times in one tick, and it might pass messages in in multiple
 	 * batches.
 	 */
-	public NonTile update( long time, int phase, World w, MessageSet incomingMessages, NonTileUpdateContext updateContext );
+	public NonTile update( long time, World w, MessageSet incomingMessages, NonTileUpdateContext updateContext );
 }

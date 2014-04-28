@@ -36,8 +36,8 @@ import togos.networkrts.util.BitAddressUtil;
  */
 public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregation
 {
-	public static final double SIMULATED_TICK_INTERVAL = 0.05;
-	public static final double REAL_TICK_INTERVAL_TARGET = SIMULATED_TICK_INTERVAL;
+	public static final double SIMULATED_TICK_INTERVAL = 0.01;
+	public static final double REAL_TICK_INTERVAL_TARGET = 0.01;
 	public static final double GRAVITY = 9.8;
 
 	static class NNTLNonTileUpdateContext implements NonTileUpdateContext {
@@ -79,19 +79,20 @@ public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregati
 	}
 	
 	protected World world;
+	protected long lastUpdateTick = 0;
+	protected long worldTimeOffset = 0;
 	protected final ResourceContext resourceContext;
 	protected final PacketPayloadCodec<Object> cerealWorldPacketPayloadCodec;
 	protected long simulationBitAddress;
 	protected long simulationEthernetAddress;
 	protected IP6Address simulationIpAddress;
-	protected long time = 0;
 	/** Tasks to be done later will be sent here! */
 	protected final Queue<AsyncTask> asyncTaskQueue;
 	/** Messages to things outside the simulation go here! */
 	protected final Queue<Message> outgoingMessageQueue;
 	
 	public Simulation(World world, Queue<AsyncTask> asyncTaskQueue, Queue<Message> outgoingMessageQueue, ResourceContext rc) {
-		this.world = world;
+		this.setWorld(world);
 		this.asyncTaskQueue = asyncTaskQueue;
 		this.outgoingMessageQueue = outgoingMessageQueue;
 		this.resourceContext = rc;
@@ -102,13 +103,17 @@ public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregati
 		return world;
 	}
 	
-	protected boolean needsUpdate( long time, int phase, EntityAggregation er, MessageSet messages ) {
-		return
-			(phase == 2 && Messages.isApplicableTo(messages, er)) ||
-			(er.getNextAutoUpdateTime() <= time && BitAddresses.containsFlag(er.getMaxBitAddress(), BitAddresses.phaseUpdateFlag(phase)));
+	public void setWorld( World w ) {
+		this.world = w;
+		this.worldTimeOffset = world.referenceTime - lastUpdateTick;
+		System.err.println("World replaced with "+world);
 	}
 	
-	protected EntitySpatialTreeIndex<NonTile> updateNonTiles( final World world, final long time, final MessageSet incomingMessages, final UpdateContext updateContext, final int phase ) {
+	protected boolean needsUpdate( long time, EntityAggregation er, MessageSet messages ) {
+		return Messages.isApplicableTo(messages, er) || er.getNextAutoUpdateTime() <= time;
+	}
+	
+	protected EntitySpatialTreeIndex<NonTile> updateNonTiles( final World world, final long time, final MessageSet incomingMessages, final UpdateContext updateContext) {
 		return world.nonTiles.updateEntities(EntityRanges.BOUNDLESS, new EntityUpdater<NonTile>() {
 			// TODO: this is very unoptimized
 			// it doesn't take advantage of the tree structure at all
@@ -118,7 +123,7 @@ public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregati
 			NNTLNonTileUpdateContext nntlntuc;
 			
 			@Override public NonTile update(NonTile nt, Collection<NonTile> generatedNonTiles) {
-				return nt.update( time, phase, world, incomingMessages,
+				return nt.update( time, world, incomingMessages,
 					NNTLNonTileUpdateContext.get(nntlntuc, updateContext, generatedNonTiles));
 			}
 		});
@@ -165,8 +170,7 @@ public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregati
 			
 			if( "/world".equals(rm.getPath()) ) {
 				if( RESTRequest.PUT.equals(rm.getMethod()) ) {
-					world = (World)rm.getPayload().getPayload(Object.class, cerealWorldPacketPayloadCodec);
-					System.err.println("World replaced with "+world);
+					setWorld( (World)rm.getPayload().getPayload(Object.class, cerealWorldPacketPayloadCodec) );
 				}
 			} else if( "/world/saves".equals(rm.getPath()) ) {
 				final World w = world;
@@ -194,23 +198,21 @@ public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregati
 		}
 	}
 	
-	protected void update( long time, int phase, MessageSet incomingMessages, SimUpdateContext updateContext ) {
+	protected void update( long time, MessageSet incomingMessages, SimUpdateContext updateContext ) {
+		this.lastUpdateTick = time;
+		
 		// Update RST when phase = 2
 		RSTNode rst;
-		if( phase == 2 ) {
-			for( Message m : Messages.subsetApplicableTo(incomingMessages, simulationBitAddress) ) {
-				processSimMessage(m, updateContext);
-			}
-			
-			int rstSize = 1<<world.rstSizePower;
-			rst = world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, incomingMessages, updateContext );
-		} else {
-			rst = world.rst;
+		for( Message m : Messages.subsetApplicableTo(incomingMessages, simulationBitAddress) ) {
+			processSimMessage(m, updateContext);
 		}
 		
+		int rstSize = 1<<world.rstSizePower;
+		rst = world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, incomingMessages, updateContext );
+		
 		world = new World(
-			rst, world.rstSizePower,
-			updateNonTiles(world, time, incomingMessages, updateContext, phase),
+			time, rst, world.rstSizePower,
+			updateNonTiles(world, time + worldTimeOffset, incomingMessages, updateContext),
 			world.background
 		);
 	}
@@ -218,17 +220,11 @@ public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregati
 	protected void update( long time, MessageSet incomingMessages ) {
 		assert time < Long.MAX_VALUE;
 		
-		if( needsUpdate(time, 1, world, MessageSet.EMPTY) ) {
+		while( needsUpdate(time, this, incomingMessages) ) {
 			SimUpdateContext updateContext = new SimUpdateContext();
-			update(time, 1, MessageSet.EMPTY, updateContext);
-			incomingMessages = Messages.union(incomingMessages, updateContext.newMessages);
-		}
-		while( needsUpdate(time, 2, this, incomingMessages) ) {
-			SimUpdateContext updateContext = new SimUpdateContext();
-			update(time, 2, incomingMessages, updateContext);
+			update(time, incomingMessages, updateContext);
 			incomingMessages = updateContext.newMessages;
 		}
-		this.time = time;
 	}
 	
 	public Simulation update( long time, Collection<Message> events ) {
@@ -237,12 +233,11 @@ public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregati
 	}
 	
 	@Override public long getNextAutoUpdateTime() {
-		// TODO: nextAutoUpdateTime interacts with phase flags in weird ways.  Refactor or deal with it. 
-		if( world.getNextAutoUpdateTime() <= time ) return time+1;
+		if( world.getNextAutoUpdateTime() <= lastUpdateTick ) return lastUpdateTick+1;
 		return world.getNextAutoUpdateTime();
 	}
 	
-	@Override public long getCurrentTime() { return time; }
+	@Override public long getCurrentTime() { return lastUpdateTick; }
 	
 	@Override public final long getMinBitAddress() {
 		return BitAddressUtil.minAddressAI(world.getMinBitAddress(), simulationBitAddress);

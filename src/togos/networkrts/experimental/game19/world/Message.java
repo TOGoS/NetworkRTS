@@ -15,10 +15,10 @@ public class Message implements BitAddressRange, MessageSet
 	public static final Message[] EMPTY_LIST = new Message[0];
 	
 	public enum MessageType {
+		UPDATE, // Used to force an update
 		INCOMING_PACKET,
 		REQUEST_PICKUP, // Somebody wants to take you!  Remove self and respond with INCOMING_ITEM if successful
 		INCOMING_ITEM, // Payload will be a NonTileInternals
-		NEIGHBOR_UPDATED,
 		ADD_BLOCKS,
 		REPLACE_BLOCKS,
 	}
