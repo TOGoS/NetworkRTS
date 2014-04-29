@@ -36,8 +36,8 @@ import togos.networkrts.util.BitAddressUtil;
  */
 public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregation
 {
-	public static final double SIMULATED_TICK_INTERVAL = 0.01;
-	public static final double REAL_TICK_INTERVAL_TARGET = 0.01;
+	public static final double SIMULATED_TICK_INTERVAL = 0.05;
+	public static final double REAL_TICK_INTERVAL_TARGET = 0.05;
 	public static final double GRAVITY = 9.8;
 
 	static class NNTLNonTileUpdateContext implements NonTileUpdateContext {

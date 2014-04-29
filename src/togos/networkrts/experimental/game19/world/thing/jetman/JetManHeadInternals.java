@@ -37,11 +37,8 @@ public class JetManHeadInternals extends AbstractPhysicalNonTileInternals
 		this.lastViewSendTime = lastViewSendTime;
 	}
 	
-	public void sendUpdate(
-		final BlargNonTile nt, long time, final World world,
-		MessageSet messages, NonTileUpdateContext updateContext,
-		JetManCoreStats stats, boolean drainBattery
-	) {
+	protected JetManHeadInternals withHealth( float h ) {
+		return h == health ? this : new JetManHeadInternals(uplinkBitAddress, facingLeft, h, battery, icons, lastUpdateTime, lastViewSendTime);
 	}
 	
 	protected JetManHeadInternals miniUpdate(
@@ -79,9 +76,15 @@ public class JetManHeadInternals extends AbstractPhysicalNonTileInternals
 		final BlargNonTile nt0, long time, final World world,
 		MessageSet messages, NonTileUpdateContext updateContext
 	) {
-		final BlargNonTile nt = super.update(nt0, time, world, messages, updateContext);
+		final PhysicsResult pr = super.updatePhysics(nt0, time, world);
 		
-		return nt.withInternals( miniUpdate(nt, time, world, messages, updateContext, getStats(), false) );
+		double damageFactor = 0.001;
+		float newHealth = health - (float)(pr.collisionSpeed*pr.collisionSpeed*damageFactor);
+		if( newHealth < 0 ) return null;
+		
+		return pr.nt.withInternals(
+			withHealth(newHealth).miniUpdate(pr.nt, time, world, messages, updateContext, getStats(), false)
+		);
 	}
 	
 	public JetManCoreStats getStats() {

@@ -6,11 +6,13 @@ import static togos.networkrts.experimental.game19.sim.Simulation.SIMULATED_TICK
 import java.util.Random;
 
 import togos.networkrts.experimental.game19.io.CerealWorldIO;
+import togos.networkrts.experimental.game19.physics.BlockCollision;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.sim.NonTileUpdateContext;
 import togos.networkrts.experimental.game19.sim.Simulation;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.BlargNonTile;
+import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.MessageSet;
@@ -34,6 +36,7 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 		new SubstanceContainerType("Jetman fuel tank", new Icon[]{}, null, 0, 0.2), Substances.KEROSENE
 	);
 	
+	protected static final int ticksPerWalkFrame = (int)(Math.ceil(1.0/4/SIMULATED_TICK_INTERVAL));
 	protected static final AABB aabb = new AABB(-3f/16, -7f/16, -3f/16, 3f/16, 8f/16, 3f/16);
 	
 	// TODO: Control flags (as opposed to actual physical state tracking flags)
@@ -98,7 +101,15 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 		final BlargNonTile nt0, long time, final World world,
 		MessageSet messages, final NonTileUpdateContext updateContext
 	) {
-		final BlargNonTile nt = super.update(nt0, time, world, messages, updateContext);
+		final PhysicsResult pr = super.updatePhysics(nt0, time, world);
+		final BlargNonTile nt = pr.nt;
+		
+		AABB ntraabb = nt.getRelativePhysicalAabb();
+		AABB underFeet = new AABB(
+			nt.x+ntraabb.minX, nt.y+ntraabb.maxY, ntraabb.minZ,
+			nt.x+ntraabb.maxX, nt.y+ntraabb.maxY+(ntraabb.maxY-ntraabb.minY)/16, ntraabb.maxZ
+		);
+		boolean feetOnGround = BlockCollision.findCollisionWithRst(underFeet, world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID) != null;   
 		
 		if( time < getNextAutoUpdateTime() && messages.size() == 0 ) return nt;
 		
@@ -108,7 +119,6 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 		
 		final double newX = nt.x, newY = nt.y;
 		double newVx = nt.vx, newVy = nt.vy;
-		boolean feetOnGround = false;
 		float newSuitHealth = suitHealth;
 		SubstanceContainerInternals newFuelTank = fuelTank;
 		
@@ -223,6 +233,11 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 			}
 		});
 		
+		if( pr.collisionSpeed > 4 ) {
+			double damageFactor = 0.001;
+			newSuitHealth -= pr.collisionSpeed*pr.collisionSpeed*damageFactor;
+		}
+		
 		if( newSuitHealth < 0 ) {
 			Random rand = new Random();
 			Icon[] pieceIcons = new Icon[] { icons.leg1, icons.leg2, icons.torso, icons.jetpack };
@@ -306,7 +321,7 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 		}
 		
 		int newWalkState = walkFrame + ((feetOnGround && newVx != 0) ? 1 : 0);
-		if( (newWalkState>>2) >= icons.walking.length ) {
+		if( (newWalkState/ticksPerWalkFrame) >= icons.walking.length ) {
 			newWalkState = 0;
 		}
 		
@@ -338,7 +353,7 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 		Icon icon =
 			jetUp && jetForward ? icons.jetUpAndForward :
 			jetUp               ? icons.jetUp :
-			feetOnGround        ? icons.walking[walkFrame>>2] :
+			feetOnGround        ? icons.walking[walkFrame/ticksPerWalkFrame] :
 			jetForward          ? icons.jetForward :
 			icons.fall0;
 		if( facingLeft ) icon = JetManIcons.flipped(icon);
