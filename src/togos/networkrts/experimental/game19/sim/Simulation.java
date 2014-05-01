@@ -109,7 +109,7 @@ public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregati
 		System.err.println("World replaced with "+world);
 	}
 	
-	protected boolean needsUpdate( long time, EntityAggregation er, MessageSet messages ) {
+	protected static boolean needsUpdate( long time, EntityAggregation er, MessageSet messages ) {
 		return Messages.isApplicableTo(messages, er) || er.getNextAutoUpdateTime() <= time;
 	}
 	
@@ -201,14 +201,12 @@ public class Simulation implements AutoEventUpdatable2<Message>, EntityAggregati
 	protected void update( long time, MessageSet incomingMessages, SimUpdateContext updateContext ) {
 		this.lastUpdateTick = time;
 		
-		// Update RST when phase = 2
-		RSTNode rst;
 		for( Message m : Messages.subsetApplicableTo(incomingMessages, simulationBitAddress) ) {
 			processSimMessage(m, updateContext);
 		}
 		
 		int rstSize = 1<<world.rstSizePower;
-		rst = world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, incomingMessages, updateContext );
+		RSTNode rst = world.rst.update( -rstSize/2, -rstSize/2, world.rstSizePower, time, incomingMessages, updateContext );
 		
 		world = new World(
 			time, rst, world.rstSizePower,
