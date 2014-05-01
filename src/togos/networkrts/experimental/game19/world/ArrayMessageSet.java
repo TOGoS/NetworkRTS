@@ -7,6 +7,8 @@ import togos.networkrts.experimental.game19.util.MessageSender;
 import togos.networkrts.experimental.shape.RectIntersector;
 import togos.networkrts.util.BitAddressUtil;
 
+// TODO: Unit tests.
+// Bugs in this are really tricky to track down.
 public class ArrayMessageSet extends ArrayList<Message> implements MessageSet, MessageSender
 {
 	private static final long serialVersionUID = 1L;
@@ -42,7 +44,7 @@ public class ArrayMessageSet extends ArrayList<Message> implements MessageSet, M
 			if( !BitAddressUtil.rangesIntersect(m.minBitAddress, m.maxBitAddress, minBitAddress, maxBitAddress) ) continue;
 			newMs.add(m);
 		}
-		return MessageSet.EMPTY;
+		return newMs;
 	}
 	
 	@Override public synchronized void sendMessage( Message m ) {
