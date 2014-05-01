@@ -80,6 +80,7 @@ public class ServerClientDemo
 		c.loadWandBlock(3, new File("things/blocks/grass0.block"));
 		c.loadWandBlock(4, new File("things/blocks/small-tree0.block"));
 		c.loadWandBlock(5, new File("things/blocks/big-gray-spikes0.block"));
+		c.loadWandBlock(6, new File("things/blocks/grating0-forward.block"));
 		
 		c.simulationBitAddress = simBa;
 		c.clientBitAddress = clientBa;
