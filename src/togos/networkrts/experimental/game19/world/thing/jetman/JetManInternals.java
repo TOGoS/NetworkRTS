@@ -177,18 +177,19 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 									
 									PositionInWorld targetPos = (PositionInWorld)o;
 									
-									double bvx = targetPos.x - newX; 
-									double bvy = targetPos.y - newY;
-									double dist = Math.sqrt(bvx*bvx+bvy*bvy);
+									double dirx = targetPos.x - newX; 
+									double diry = targetPos.y - newY;
+									double dist = Math.sqrt(dirx*dirx+diry*diry);
 									if( dist == 0 ) continue;
+									dirx /= dist;
+									diry /= dist;
 									
 									double vel = 100;
-									bvx = vel * bvx / dist;
-									bvy = vel * bvy / dist;
 									
 									Icon ic = pieceIcons[0];
-									updateContext.addNonTile(new BlargNonTile(0, time, newX, newY,
-										bvx, bvy,
+									updateContext.addNonTile(new BlargNonTile(0, time,
+										newX + dirx/2, newY + diry,
+										dirx*vel, diry*vel,
 										new DebrisInternals(ic)
 									));
 								}
