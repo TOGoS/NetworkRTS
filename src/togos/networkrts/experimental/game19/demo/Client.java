@@ -39,6 +39,7 @@ import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
+import togos.networkrts.experimental.game19.world.PositionInWorld;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.thing.BlockWand;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManCoreStats;
@@ -367,13 +368,27 @@ class Client
 		wandBlocks[index] = loaded;
 	}
 	
+	// TODO: Make this into some polymorphic thingy
+	enum Tool {
+		GUN,
+		BLOCK_WAND
+	}
+	
+	Tool currentTool = Tool.GUN;
 	protected int cursorX, cursorY;
 	protected boolean firing;
 	protected boolean altIsDown = false, controlIsDown = false, shiftIsDown = false;
 	protected void updateMouseDrivenStuff() {
 		if( firing ) {
 			Point2D.Double p  = sceneCanvas.screenToWorldPoint(cursorX, cursorY);
-			sendPlayerMessage("POST", "/block-wand/applications", new BlockWand.Application(p.getX(), p.getY(), 0.25, controlIsDown, wandBlocks[currentWandBlockIndex]));
+			switch( currentTool ) {
+			case BLOCK_WAND:
+				sendPlayerMessage("POST", "/block-wand/applications", new BlockWand.Application(p.getX(), p.getY(), 0.25, controlIsDown, wandBlocks[currentWandBlockIndex]));
+				break;
+			case GUN:
+				sendPlayerMessage("POST", "/gun/fire-at", new PositionInWorld(p.getX(), p.getY(), 0));
+				break;
+			}
 		}
 	}
 	

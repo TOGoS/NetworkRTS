@@ -18,6 +18,7 @@ import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.NonTileInternals;
+import togos.networkrts.experimental.game19.world.PositionInWorld;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.thing.AbstractPhysicalNonTileInternals;
 import togos.networkrts.experimental.game19.world.thing.BlockWand;
@@ -166,6 +167,30 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 								Object o = rr.getPayload().getPayload(Object.class, CerealWorldIO.DISCONNECTED.packetPayloadCodec);
 								if( o instanceof BlockWand.Application ) {
 									BlockWand.apply( (BlockWand.Application)o, updateContext );
+								}
+							}
+						} else if( "/gun/fire-at".equals(rr.getPath()) ) {
+							if( "POST".equals(rr.getMethod()) ) {
+								Object o = rr.getPayload().getPayload(Object.class, CerealWorldIO.DISCONNECTED.packetPayloadCodec);
+								if( o instanceof PositionInWorld ) {
+									Icon[] pieceIcons = new Icon[] { icons.leg1, icons.leg2, icons.torso, icons.jetpack };
+									
+									PositionInWorld targetPos = (PositionInWorld)o;
+									
+									double bvx = targetPos.x - newX; 
+									double bvy = targetPos.y - newY;
+									double dist = Math.sqrt(bvx*bvx+bvy*bvy);
+									if( dist == 0 ) continue;
+									
+									double vel = 100;
+									bvx = vel * bvx / dist;
+									bvy = vel * bvy / dist;
+									
+									Icon ic = pieceIcons[0];
+									updateContext.addNonTile(new BlargNonTile(0, time, newX, newY,
+										bvx, bvy,
+										new DebrisInternals(ic)
+									));
 								}
 							}
 						}
