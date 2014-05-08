@@ -1,6 +1,7 @@
 package togos.networkrts.experimental.game19.world.thing;
 
 import togos.networkrts.experimental.game19.scene.Icon;
+import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 
 public class GenericPhysicalNonTileInternals extends AbstractPhysicalNonTileInternals
@@ -18,7 +19,9 @@ public class GenericPhysicalNonTileInternals extends AbstractPhysicalNonTileInte
 	@Override public AABB getRelativePhysicalAabb() { return relativePhysicalAabb; }
 	
 	@Override public long getNonTileAddressFlags() {
-		return 0;
+		return
+			BitAddresses.PHYSINTERACT |
+			BitAddresses.RIGIDBODY;
 	}
 	
 	@Override public long getNextAutoUpdateTime() {

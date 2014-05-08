@@ -47,7 +47,7 @@ public class BitAddresses
 	public static final long PICKUP       = 0x0004000000000000l; // May be picked up
 	// Indicates that this nontile should be treated as a regular
 	// rigid body by other nontiles
-	public static final long RIGIDBODY    = 0x0008000000000000l; // May be picked up
+	public static final long RIGIDBODY    = 0x0008000000000000l;
 	
 	public static final int  TYPE_SHIFT   = 44;
 	public static final long TYPE_MASK    = 0x0000F00000000000l;

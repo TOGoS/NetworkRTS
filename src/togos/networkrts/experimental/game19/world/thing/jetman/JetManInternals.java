@@ -367,6 +367,7 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 	@Override public long getNonTileAddressFlags() {
 		return
 			BitAddresses.PHYSINTERACT |
+			BitAddresses.RIGIDBODY |
 			(isResting() ? BitAddresses.RESTING : 0);
 	}
 }
