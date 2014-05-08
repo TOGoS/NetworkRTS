@@ -123,6 +123,10 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 				}
 				newVx = newVx*ofx + bfx*(nt.vx*(ma - mb) + 2*mb*ntb.getVelocityX())/(ma+mb);
 				newVy = newVy*ofy + bfy*(nt.vy*(ma - mb) + 2*mb*ntb.getVelocityY())/(ma+mb);
+				double meanVx = (ntb.getVelocityX()+newVx)/2;
+				double meanVy = (ntb.getVelocityY()+newVy)/2;
+				if( Math.abs(newVx - meanVx) < 0.1 ) newVx = meanVx;
+				if( Math.abs(newVy - meanVy) < 0.1 ) newVy = meanVy;
 			}
 		}
 		

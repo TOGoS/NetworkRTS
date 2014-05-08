@@ -105,12 +105,29 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 		final PhysicsResult pr = super.updatePhysics(nt0, time, world);
 		final BlargNonTile nt = pr.nt;
 		
-		AABB ntraabb = nt.getRelativePhysicalAabb();
-		AABB underFeet = new AABB(
+		final AABB ntraabb = nt.getRelativePhysicalAabb();
+		final AABB underFeet = new AABB(
 			nt.x+ntraabb.minX, nt.y+ntraabb.maxY, ntraabb.minZ,
 			nt.x+ntraabb.maxX, nt.y+ntraabb.maxY+(ntraabb.maxY-ntraabb.minY)/16, ntraabb.maxZ
 		);
-		boolean feetOnGround = BlockCollision.findCollisionWithRst(underFeet, world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID) != null;   
+		boolean feetOnGround;
+		if( BlockCollision.findCollisionWithRst(underFeet, world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID) != null ) {
+			feetOnGround = true;
+		} else {
+			class GroundNonTileFinder implements Visitor<NonTile> {
+				public NonTile underfootNonTile = null;
+				@Override public void visit(NonTile v) {
+					if( v != nt0 && underFeet.intersects(v.getAabb()) && v.getVelocityY() <= nt.getVelocityY() ) {
+						underfootNonTile = v;
+					}
+				}
+			}
+			GroundNonTileFinder groundNtFinder = new GroundNonTileFinder();
+			world.nonTiles.forEachEntity(EntityRanges.create(
+				underFeet, BitAddresses.TYPE_NONTILE|BitAddresses.RIGIDBODY, BitAddresses.maxForType(BitAddresses.TYPE_NONTILE) 
+			), groundNtFinder);
+			feetOnGround = groundNtFinder.underfootNonTile != null;
+		}
 		
 		if( time < getNextAutoUpdateTime() && messages.size() == 0 ) return nt;
 		
