@@ -374,7 +374,7 @@ class Client
 		BLOCK_WAND
 	}
 	
-	Tool currentTool = Tool.GUN;
+	Tool currentTool = Tool.BLOCK_WAND;
 	protected int cursorX, cursorY;
 	protected boolean firing;
 	protected boolean altIsDown = false, controlIsDown = false, shiftIsDown = false;

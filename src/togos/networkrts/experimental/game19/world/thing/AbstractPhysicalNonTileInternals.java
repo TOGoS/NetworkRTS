@@ -52,8 +52,8 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 		//   are the ultimate authority on position correction
 		
 		class InterNonTileForceAggregator implements Visitor<NonTile> {
-			public double xCorrection, yCorrection;
-			protected double xCorrectionPeerMass, yCorrectionPeerMass;
+			public double correctionX, correctionY;
+			protected NonTile collideeX, collideeY;
 			public double newVx, newVy;
 			
 			public InterNonTileForceAggregator(NonTile nt) {
@@ -99,45 +99,52 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 						cy = 0;
 					}
 				}
-				if( smaller )  {
-					if( Math.abs(cx) > Math.abs(xCorrection) ) {
-						xCorrection = cx;
+				if( true /*smaller*/ )  {
+					if( Math.abs(cx) > Math.abs(correctionX) ) {
+						correctionX = cx;
 					}
-					if( Math.abs(cy) > Math.abs(yCorrection) ) {
-						yCorrection = cy;
+					if( Math.abs(cy) > Math.abs(correctionY) ) {
+						correctionY = cy;
 					}
 				}
+				
+				// Fake some friction
+				double ofx, ofy, bfx, bfy;
 				if( cx != 0 ) {
-					newVx = (nt.vx*(ma - mb) + 2*mb*ntb.getVelocityX())/(ma+mb);
+					collideeX = ntb;
+					bfx = 0.6; ofx = 0.0;
+					bfy = 0.1; ofy = 0.9; 
+				} else if( cy != 0 ) {
+					collideeY = ntb;
+					bfy = 0.6; ofy = 0.0;
+					bfx = 0.1; ofx = 0.9; 
+				} else {
+					return;
 				}
-				if( cy != 0 ) {
-					newVy = (nt.vy*(ma - mb) + 2*mb*ntb.getVelocityY())/(ma+mb);
-				}
-				
-				// TODO: Force should be proportional to overlap, I guess
-				
-				/*
-				double vx = nt.getX()-v.getX();
-				double vy = nt.getY()-v.getY();
-				
-				if( vx == 0 && vy == 0 ) return;
-				
-				double rat = 1/(vx*vx + vy*vy);
-				fx += rat * vx;
-				fy += rat * vy;
-				*/
+				newVx = newVx*ofx + bfx*(nt.vx*(ma - mb) + 2*mb*ntb.getVelocityX())/(ma+mb);
+				newVy = newVy*ofy + bfy*(nt.vy*(ma - mb) + 2*mb*ntb.getVelocityY())/(ma+mb);
 			}
 		}
-		// Excessive object allocation happens here
-		InterNonTileForceAggregator fa = new InterNonTileForceAggregator(nt);
-		world.nonTiles.forEachEntity(
-			EntityRanges.create(
-				nt.getAabb(), BitAddresses.TYPE_NONTILE|BitAddresses.RIGIDBODY, BitAddresses.maxForType(BitAddresses.TYPE_NONTILE) 
-			), fa);
-		newX += fa.xCorrection;
-		newY += fa.yCorrection;
-		double newVx = fa.newVx;
-		double newVy = fa.newVy;
+		
+		double newVx, newVy;
+		// RIGIDBODY indicates that it physically interacts
+		// with other NonTiles.  Without it, skip detection
+		// of collisions with them.
+		if( (nt.getBitAddress() & BitAddresses.RIGIDBODY) != 0 ) {
+			// Excessive object allocation happens here
+			InterNonTileForceAggregator fa = new InterNonTileForceAggregator(nt);
+			world.nonTiles.forEachEntity(
+				EntityRanges.create(
+					nt.getAabb(), BitAddresses.TYPE_NONTILE|BitAddresses.RIGIDBODY, BitAddresses.maxForType(BitAddresses.TYPE_NONTILE) 
+				), fa);
+			newX += fa.correctionX;
+			newY += fa.correctionY;
+			newVx = fa.newVx;
+			newVy = fa.newVy;
+		} else {
+			newVx = nt.vx;
+			newVy = nt.vy;
+		}
 		
 		AABB relAabb = this.getRelativePhysicalAabb();
 		final BlockCollision c = BlockCollision.findCollisionWithRst(relAabb.shiftedBy(newX, newY, 0), world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID);

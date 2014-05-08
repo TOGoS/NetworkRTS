@@ -58,7 +58,7 @@ public class JetManHeadInternals extends AbstractPhysicalNonTileInternals
 			}
 			viewSendAttempted = true;
 		} else if( lastViewSendTime < time ) {
-			updateContext.sendMessage(Message.create(nt.bitAddress, MessageType.UPDATE, null));
+			updateContext.sendMessage(Message.create(nt.baseBitAddress, MessageType.UPDATE, null));
 		}
 		
 		for( Message m : messages ) {

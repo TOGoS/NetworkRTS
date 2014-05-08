@@ -278,7 +278,7 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 			
 			// TODO: Some amount of remaining damage goes to head
 			
-			return new BlargNonTile(nt.bitAddress, time, newX, newY, newVx, newVy, newHeadInternals);
+			return new BlargNonTile(nt.baseBitAddress, time, newX, newY, newVx, newVy, newHeadInternals);
 		}
 		
 		boolean facingLeft = checkStateFlag(S_FACING_LEFT);

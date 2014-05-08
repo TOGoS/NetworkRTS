@@ -12,14 +12,14 @@ public class BlargNonTile implements NonTile
 	public final long referenceTime;
 	public final double x, y, vx, vy; // For simplicity, velocity is meters per clock tick
 	public final AABB absolutePhysicalAabb;
-	public final long bitAddress;
+	public final long baseBitAddress;
 	public final NonTileInternals<? super BlargNonTile> internals;
 	
 	public BlargNonTile(
 		long ba, long referenceTime, double x, double y, double vx, double vy,
 		NonTileInternals<? super BlargNonTile> internals
 	) {
-		this.bitAddress = ba & BitAddresses.ID_MASK;
+		this.baseBitAddress = ba & BitAddresses.ID_MASK;
 		this.referenceTime = referenceTime;
 		this.x = x; this.vx = vx;
 		this.y = y; this.vy = vy;
@@ -49,7 +49,7 @@ public class BlargNonTile implements NonTile
 		return
 			BitAddresses.TYPE_NONTILE |
 			internals.getNonTileAddressFlags() |
-			bitAddress;
+			baseBitAddress;
 	}
 	@Override public long getMinBitAddress() { return getBitAddress(); }
 	@Override public long getMaxBitAddress() { return getBitAddress(); }
@@ -71,7 +71,7 @@ public class BlargNonTile implements NonTile
 	
 	public BlargNonTile withInternals(NonTileInternals<? super BlargNonTile> internals) {
 		return internals == this.internals ? this :
-			new BlargNonTile(bitAddress, referenceTime, x, y, vx, vy, internals);
+			new BlargNonTile(baseBitAddress, referenceTime, x, y, vx, vy, internals);
 	}
 	
 	public BlargNonTile withId(int id) {
@@ -79,7 +79,7 @@ public class BlargNonTile implements NonTile
 	}
 	
 	@Override public BlargNonTile withPositionAndVelocity(long referenceTime, double x, double y, double vx, double vy) {
-		return new BlargNonTile(bitAddress, referenceTime, x, y, vx, vy, internals);
+		return new BlargNonTile(baseBitAddress, referenceTime, x, y, vx, vy, internals);
 	}
 	
 	public BlargNonTile withVelocity(long referenceTime, double vx, double vy) {
