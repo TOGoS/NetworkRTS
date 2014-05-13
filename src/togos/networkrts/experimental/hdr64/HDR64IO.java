@@ -17,9 +17,9 @@ public class HDR64IO
 		return hdrBuf;
 	}
 
-	public static BufferedImage toBufferedImage( HDR64Buffer img, int shift, BufferedImage buf ) {
-		if( buf == null || buf.getWidth() != img.width || buf.getHeight() != img.height || buf.getType() != BufferedImage.TYPE_INT_RGB) {
-			buf = new BufferedImage(img.width, img.height, BufferedImage.TYPE_INT_RGB);
+	public static BufferedImage toBufferedImage( HDR64Buffer img, int shift, BufferedImage buf, int mode ) {
+		if( buf == null || buf.getWidth() != img.width || buf.getHeight() != img.height || buf.getType() != mode) {
+			buf = new BufferedImage(img.width, img.height, mode);
 		}
 		int[] row = new int[img.width];
 		for( int y=img.height-1; y>=0; --y ) {

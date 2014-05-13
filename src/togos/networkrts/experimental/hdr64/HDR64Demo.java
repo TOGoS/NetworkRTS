@@ -102,6 +102,7 @@ public class HDR64Demo
 		
 		BufferedImage jetManImage = ImageIO.read(new File("tile-images/JetMan/JetUp.png"));
 		HDR64Drawable jetManDrawable = HDR64IO.toHdr64Drawable(jetManImage, 0);
+		HDR64Drawable jetManBrightDrawable = HDR64IO.toHdr64Drawable(jetManImage, 8);
 		
 		Random r = new Random();
 		Sprite[] sprites = new Sprite[100];
@@ -158,7 +159,9 @@ public class HDR64Demo
 					s.dy += 0.1;
 					
 					//long color = bounce ? HDR64Util.hdr(500,100,10) : s.color;
-					s.icon.draw(drawBuf, (int)s.x-8, (int)s.y-8, 0, 0, drawBuf.width, drawBuf.height);
+					
+					HDR64Drawable drawable = bounce ? jetManBrightDrawable : s.icon;
+					drawable.draw(drawBuf, (int)s.x-8, (int)s.y-8, 0, 0, drawBuf.width, drawBuf.height);
 					//HDR64Util.fillRect( drawBuf, (int)s.x, (int)s.y, (int)s.w, (int)s.h, color, 0);
 				}
 				HDR64Util.add( drawBuf.data, accBuf.data );
@@ -167,7 +170,7 @@ public class HDR64Demo
 			bleed( accBuf, drawBuf );
 			radBleed( drawBuf, accBuf );
 			
-			bufImg = HDR64IO.toBufferedImage(accBuf, iterPow, bufImg);
+			bufImg = HDR64IO.toBufferedImage(accBuf, iterPow, bufImg, BufferedImage.TYPE_INT_RGB);
 			leCanv.setImage(bufImg);
 			
 			long targetEndTime = startTime + tickLen;

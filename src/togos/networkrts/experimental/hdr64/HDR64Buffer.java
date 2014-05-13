@@ -46,7 +46,10 @@ public class HDR64Buffer implements HDR64Drawable
 				++sx, ++dx, ++si, ++di
 			) {
 				long v = data[si];
-				dest.data[di] = v;
+				// TODO: Handle alpha better!
+				if( (v & 0x8000000000000000l) == 0x8000000000000000l ) {
+					dest.data[di] = v;
+				}
 			}
 		}
 	}
