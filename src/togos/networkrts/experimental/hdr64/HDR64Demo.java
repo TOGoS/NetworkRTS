@@ -9,32 +9,8 @@ import java.util.Random;
 
 import togos.networkrts.ui.ImageCanvas;
 
-/**
- * Represents an image using 64-bit integers
- * each component (R,G,B) is up to 20 bits.
- * Adding can be done to the entire long at once
- */
 public class HDR64Demo
 {
-	static class HDR64Image {
-		final int width, height;
-		final long[] data;
-		
-		public HDR64Image( int w, int h ) {
-			this.width = w;
-			this.height = h;
-			this.data = new long[w*h];
-		}
-		
-		public static HDR64Image get( HDR64Image buf, int w, int h ) {
-			if( buf == null || buf.width != w || buf.height != h ) {
-				return new HDR64Image(w, h);
-			} else {
-				return buf;
-			}
-		}
-	}
-
 	enum DrawMode {
 		REPLACE,
 		ADD
@@ -44,11 +20,11 @@ public class HDR64Demo
 		for( int i=src.length-1; i>=0; --i ) dest[i] += src[i];
 	}
 	
-	public static void fill( HDR64Image img, long v ) {
+	public static void fill( HDR64Buffer img, long v ) {
 		for( int i=img.height*img.width-1; i>=0; --i ) img.data[i] = v;
 	}
 	
-	public static void fillRect( HDR64Image img, int x, int y, int w, int h, long v, long oldFac ) {
+	public static void fillRect( HDR64Buffer img, int x, int y, int w, int h, long v, long oldFac ) {
 		for( int dy=y+h-1; dy>=y; --dy ) {
 			if( dy < 0 || dy >= img.height ) continue;
 			for( int dx=x+w-1, off=dy*img.width+dx; dx>=x; --dx, --off ) {
@@ -58,7 +34,7 @@ public class HDR64Demo
 		}
 	}
 	
-	public void draw( HDR64Image src, HDR64Image dst, int x, int y, DrawMode mode ) {
+	public void draw( HDR64Buffer src, HDR64Buffer dst, int x, int y, DrawMode mode ) {
 		for( int sy=0; sy<src.height; ++sy ) {
 			int dy = y+sy;
 			if( dy < 0 || dy >= dst.height ) continue;
@@ -113,7 +89,7 @@ public class HDR64Demo
 			(clampToByte(hdrComponent(hdr, 0) >> shift) <<  0);
 	}
 	
-	public static BufferedImage toBufferedImage( HDR64Image img, BufferedImage buf, int shift ) {
+	public static BufferedImage toBufferedImage( HDR64Buffer img, BufferedImage buf, int shift ) {
 		if( buf == null || buf.getWidth() != img.width || buf.getHeight() != img.height || buf.getType() != BufferedImage.TYPE_INT_RGB) {
 			buf = new BufferedImage(img.width, img.height, BufferedImage.TYPE_INT_RGB);
 		}
@@ -140,7 +116,7 @@ public class HDR64Demo
 		return (hdr >> shift) & componentMask(20-shift);
 	}
 	
-	public static void bleed( HDR64Image src, HDR64Image dest ) {
+	public static void bleed( HDR64Buffer src, HDR64Buffer dest ) {
 		for( int x=0; x<src.width; ++x ) {
 			long val = 0;
 			for( int y=0; y<src.height; ++y ) {
@@ -158,7 +134,7 @@ public class HDR64Demo
 		}
 	}
 	
-	public static void radBleed( HDR64Image src, HDR64Image dest ) {
+	public static void radBleed( HDR64Buffer src, HDR64Buffer dest ) {
 		for( int y=0; y<src.height; ++y ) {
 			long val = 0;
 			for( int x=0, idx=src.width*y; x<src.width; ++x, ++idx ) {
@@ -191,12 +167,12 @@ public class HDR64Demo
 			float y = 0;
 			float dx = 1;
 			float dy = 1;
-			int w = 8;
-			int h = 8;
+			float w = 3;
+			float h = 3;
 		}
 		
 		Random r = new Random();
-		Sprite[] sprites = new Sprite[20];
+		Sprite[] sprites = new Sprite[100];
 		for( int i=0; i<sprites.length; ++i ) {
 			sprites[i] = new Sprite();
 			sprites[i].x = r.nextInt(300);
@@ -204,10 +180,16 @@ public class HDR64Demo
 			sprites[i].dy = r.nextFloat()*10;
 			sprites[i].dx = r.nextFloat()*10;
 			sprites[i].color = hdr(r.nextFloat()*r.nextFloat()*2, r.nextFloat(), 0.5f);
+			while( r.nextBoolean() ) {
+				sprites[i].dx *= 0.5f;
+				sprites[i].dy *= 0.5f;
+				sprites[i].w *= 1.2f;
+				sprites[i].h *= 1.2f;
+			}
 		}
 		
-		HDR64Image drawBuf = null;
-		HDR64Image accBuf = null;
+		HDR64Buffer drawBuf = null;
+		HDR64Buffer accBuf = null;
 		BufferedImage bufImg = null;
 		
 		long tickLen = 20;
@@ -215,12 +197,16 @@ public class HDR64Demo
 		while( true ) {
 			long startTime = System.currentTimeMillis(); 
 			
-			int w = Math.min(320, leCanv.getWidth());
-			int h = Math.min(240, leCanv.getHeight());
+			int w = leCanv.getWidth();
+			int h = leCanv.getHeight();
+			while( w*h > 400*300 ) {
+				w >>= 1;
+				h >>= 1;
+			}
 			
 			//System.err.println(w+","+h);
-			drawBuf = HDR64Image.get(drawBuf, w, h);
-			accBuf = HDR64Image.get(accBuf, w, h);
+			drawBuf = HDR64Buffer.get(drawBuf, w, h);
+			accBuf = HDR64Buffer.get(accBuf, w, h);
 			
 			int iters = 1<<iterPow;
 			
@@ -236,8 +222,10 @@ public class HDR64Demo
 					if( s.x+s.w > w && s.dx > 0 ) { s.dx = -s.dx; bounce = true; }
 					if( s.y+s.h > h && s.dy > 0 ) { s.dy = -s.dy; bounce = true; }
 					
+					s.dy += 0.1;
+					
 					long color = bounce ? hdr(500,100,10) : s.color;
-					fillRect( drawBuf, (int)s.x, (int)s.y, s.w, s.h, color, 0);
+					fillRect( drawBuf, (int)s.x, (int)s.y, (int)s.w, (int)s.h, color, 0);
 				}
 				add( drawBuf.data, accBuf.data );
 			}

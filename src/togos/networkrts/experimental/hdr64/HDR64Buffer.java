@@ -1,0 +1,29 @@
+package togos.networkrts.experimental.hdr64;
+
+/**
+ * Represents an image using 64-bit integers
+ * each component (R,G,B) is up to 20 bits.
+ * As long as upper bits are zero, certain operations
+ * (adding, multiplying or dividing by powers of 2)
+ * can be done using a single operation to the entire
+ * pixel.
+ */
+public class HDR64Buffer
+{
+	final int width, height;
+	final long[] data;
+	
+	public HDR64Buffer( int w, int h ) {
+		this.width = w;
+		this.height = h;
+		this.data = new long[w*h];
+	}
+	
+	public static HDR64Buffer get( HDR64Buffer buf, int w, int h ) {
+		if( buf == null || buf.width != w || buf.height != h ) {
+			return new HDR64Buffer(w, h);
+		} else {
+			return buf;
+		}
+	}
+}
