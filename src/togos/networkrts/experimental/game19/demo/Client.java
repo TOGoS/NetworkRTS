@@ -27,13 +27,13 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 
-import togos.networkrts.experimental.game19.Renderer;
-import togos.networkrts.experimental.game19.ResourceContext;
+import togos.networkrts.experimental.game19.graphics.Renderer;
 import togos.networkrts.experimental.game19.io.CerealWorldIO;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
 import togos.networkrts.experimental.game19.scene.Scene;
+import togos.networkrts.experimental.game19.util.ResourceContext;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.BlockStackRSTNode;

@@ -1,4 +1,4 @@
-package togos.networkrts.experimental.game19;
+package togos.networkrts.experimental.game19.util;
 
 import java.awt.image.BufferedImage;
 import java.io.File;

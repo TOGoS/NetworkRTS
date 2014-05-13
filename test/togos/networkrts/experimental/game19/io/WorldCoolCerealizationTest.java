@@ -4,8 +4,8 @@ import java.io.File;
 import java.io.IOException;
 
 import junit.framework.TestCase;
-import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.demo.DemoWorld;
+import togos.networkrts.experimental.game19.util.ResourceContext;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.util.HasURI;
 

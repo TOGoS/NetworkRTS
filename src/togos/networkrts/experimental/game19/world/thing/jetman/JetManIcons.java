@@ -6,8 +6,8 @@ import java.util.WeakHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.scene.Icon;
+import togos.networkrts.experimental.game19.util.ResourceContext;
 
 public class JetManIcons
 {

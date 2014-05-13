@@ -3,8 +3,8 @@ package togos.networkrts.experimental.game19.sim;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.extnet.NetworkComponent;
+import togos.networkrts.experimental.game19.util.ResourceContext;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.World;

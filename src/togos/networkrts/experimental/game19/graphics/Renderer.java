@@ -1,4 +1,4 @@
-package togos.networkrts.experimental.game19;
+package togos.networkrts.experimental.game19.graphics;
 
 import java.awt.Color;
 import java.awt.Graphics;
@@ -14,6 +14,7 @@ import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
 import togos.networkrts.experimental.game19.scene.QuadTreeLayerData;
 import togos.networkrts.experimental.game19.scene.Scene;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
+import togos.networkrts.experimental.game19.util.ResourceContext;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.NonTile;

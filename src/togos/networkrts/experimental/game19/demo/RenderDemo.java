@@ -10,11 +10,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
-import togos.networkrts.experimental.game19.Renderer;
-import togos.networkrts.experimental.game19.ResourceContext;
+import togos.networkrts.experimental.game19.graphics.Renderer;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.scene.Layer;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
+import togos.networkrts.experimental.game19.util.ResourceContext;
 import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.BlockStackRSTNode;

@@ -3,7 +3,7 @@ package togos.networkrts.experimental.game19.sim;
 import java.util.Collection;
 import java.util.Queue;
 
-import togos.networkrts.experimental.game19.ResourceContext;
+import togos.networkrts.experimental.game19.util.ResourceContext;
 import togos.networkrts.experimental.game19.world.ArrayMessageSet;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.Message;

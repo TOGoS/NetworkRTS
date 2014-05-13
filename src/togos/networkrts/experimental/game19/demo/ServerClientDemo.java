@@ -7,11 +7,11 @@ import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import togos.networkrts.cereal.SHA1ObjectReference;
-import togos.networkrts.experimental.game19.ResourceContext;
 import togos.networkrts.experimental.game19.extnet.Network;
 import togos.networkrts.experimental.game19.extnet.NetworkComponent;
 import togos.networkrts.experimental.game19.sim.Simulation;
 import togos.networkrts.experimental.game19.sim.Simulator;
+import togos.networkrts.experimental.game19.util.ResourceContext;
 import togos.networkrts.experimental.game19.world.BitAddresses;
 import togos.networkrts.experimental.game19.world.IDGenerator;
 import togos.networkrts.experimental.game19.world.Message;
