@@ -15,7 +15,7 @@ import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.RSTNode;
-import togos.networkrts.experimental.hdr64.HDR64Demo;
+import togos.networkrts.experimental.hdr64.HDR64Util;
 
 public class Renderer
 {
@@ -50,7 +50,7 @@ public class Renderer
 			for( int x=0; x<tileData.width; ++x, sx += tileSize, ++shadeIndex ) {
 				
 				if( shades[shadeIndex] == TileLayerData.SHADE_NONE ) {
-					g.fillRect( sx, sy, tileSize, tileSize, HDR64Demo.hdr(0, 0, 0) );
+					g.fillRect( sx, sy, tileSize, tileSize, HDR64Util.hdr(1, 0, 0, 0) );
 					continue;
 				}
 				
@@ -150,12 +150,12 @@ public class Renderer
 					}
 				}
 				
-				fillClip(g, HDR64Demo.intToHdr(next.altColor, 0));
+				fillClip(g, HDR64Util.intToHdr(next.altColor, 0));
 				break drawBackground;
 			}
 			
 			// Draw the background a solid color:
-			fillClip(g, HDR64Demo.hdr(0, 0, 1));
+			fillClip(g, HDR64Util.hdr(1, 0, 0, 1));
 		}
 		
 		_drawLayerData( layer, lx, ly, ldist, g, scale, scx, scy, minZ, maxZ );

@@ -7,7 +7,7 @@ import java.awt.image.BufferedImage;
 
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.util.ResourceContext;
-import togos.networkrts.experimental.hdr64.HDR64Demo;
+import togos.networkrts.experimental.hdr64.HDR64Util;
 import togos.networkrts.util.Getter;
 import togos.networkrts.util.ResourceNotFound;
 
@@ -48,7 +48,7 @@ public class AWTSurface implements Surface
 	}
 	
 	@Override public void fillRect(int x, int y, int w, int h, long hdr64Color) {
-		g.setColor(new Color(HDR64Demo.hdrToInt(hdr64Color, 0)));
+		g.setColor(new Color(HDR64Util.hdrToInt(hdr64Color, 0)));
 		g.fillRect(x, y, w, h);
 	}
 	

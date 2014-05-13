@@ -1,11 +1,15 @@
 package togos.networkrts.experimental.hdr64;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.Random;
+
+import javax.imageio.ImageIO;
 
 import togos.networkrts.ui.ImageCanvas;
 
@@ -14,24 +18,6 @@ public class HDR64Demo
 	enum DrawMode {
 		REPLACE,
 		ADD
-	}
-	
-	public static void add( long[] src, long[] dest ) {
-		for( int i=src.length-1; i>=0; --i ) dest[i] += src[i];
-	}
-	
-	public static void fill( HDR64Buffer img, long v ) {
-		for( int i=img.height*img.width-1; i>=0; --i ) img.data[i] = v;
-	}
-	
-	public static void fillRect( HDR64Buffer img, int x, int y, int w, int h, long v, long oldFac ) {
-		for( int dy=y+h-1; dy>=y; --dy ) {
-			if( dy < 0 || dy >= img.height ) continue;
-			for( int dx=x+w-1, off=dy*img.width+dx; dx>=x; --dx, --off ) {
-				if( dx < 0 || dx >= img.width ) continue;
-				img.data[off] = oldFac*img.data[off] + v;
-			}
-		}
 	}
 	
 	public void draw( HDR64Buffer src, HDR64Buffer dst, int x, int y, DrawMode mode ) {
@@ -57,80 +43,19 @@ public class HDR64Demo
 		}
 	}
 	
-	static final int HDR_COMPONENT_MASK = (1<<20)-1;
-
-	public static final int hdrComponent( long hdr, int shift ) {
-		return (int)(hdr >> shift) & HDR_COMPONENT_MASK;
-	}
-	
-	public static final int clampToByte( int v ) {
-		return v < 0 ? 0 : v > 255 ? 255 : v;
-	}
-	
-	public static long hdr( float r, float g, float b ) {
-		// TODO: Include alpha
-		return
-			((long)(r * 255) << 40) |
-			((long)(g * 255) << 20) |
-			((long)(b * 255) <<  0);
-	}
-	
-	public static long intToHdr( int rgb, int shift ) {
-		// TODO: Include alpha
-		return
-			((long)(((rgb >> 16)&0xFF) << shift) << 40) |
-			((long)(((rgb >>  8)&0xFF) << shift) << 20) |
-			((long)(((rgb >>  0)&0xFF) << shift) <<  0);
-	}
-	
-	public static int hdrToInt( long hdr, int shift ) {
-		return
-			0xFF000000 | // TODO: get alpha from hdr
-			(clampToByte(hdrComponent(hdr,40) >> shift) << 16) |
-			(clampToByte(hdrComponent(hdr,20) >> shift) <<  8) |
-			(clampToByte(hdrComponent(hdr, 0) >> shift) <<  0);
-	}
-	
-	public static BufferedImage toBufferedImage( HDR64Buffer img, BufferedImage buf, int shift ) {
-		if( buf == null || buf.getWidth() != img.width || buf.getHeight() != img.height || buf.getType() != BufferedImage.TYPE_INT_RGB) {
-			buf = new BufferedImage(img.width, img.height, BufferedImage.TYPE_INT_RGB);
-		}
-		int[] row = new int[img.width];
-		for( int y=img.height-1; y>=0; --y ) {
-			for( int x=img.width-1, idx=y*img.width+x; x>=0; --x, --idx ) {
-				row[x] = hdrToInt(img.data[idx], shift);
-			}
-			buf.setRGB(0, y, img.width, 1, row, 0, row.length);
-		}
-		return buf;
-	}
-	
-	protected static long componentMask( int bitsPerComponent ) {
-		long cmask = (1<<bitsPerComponent)-1;
-		
-		return
-			(cmask << 40) |
-			(cmask << 20) |
-			(cmask <<  0);
-	}
-	
-	public static long shiftDown( long hdr, int shift ) {
-		return (hdr >> shift) & componentMask(20-shift);
-	}
-	
 	public static void bleed( HDR64Buffer src, HDR64Buffer dest ) {
 		for( int x=0; x<src.width; ++x ) {
 			long val = 0;
 			for( int y=0; y<src.height; ++y ) {
 				int idx=x+src.width*y;
 				val += src.data[idx];
-				val = shiftDown(val, 1);
+				val = HDR64Util.shiftDown(val, 1);
 				dest.data[idx] += val;
 			}
 			for( int y=src.height-1; y>=0; --y ) {
 				int idx=x+src.width*y;
 				val += src.data[idx];
-				val = shiftDown(val, 1);
+				val = HDR64Util.shiftDown(val, 1);
 				dest.data[idx] += val;
 			}
 		}
@@ -140,9 +65,9 @@ public class HDR64Demo
 		for( int y=0; y<src.height; ++y ) {
 			long val = 0;
 			for( int x=0, idx=src.width*y; x<src.width; ++x, ++idx ) {
-				val += shiftDown(src.data[idx], 4);
+				val += HDR64Util.shiftDown(src.data[idx], 4);
 			}
-			val = shiftDown(val, 7);
+			val = HDR64Util.shiftDown(val, 7);
 			for( int x=src.width-1, idx=src.width*y+x; x>=0; --x, --idx ) {
 				dest.data[idx] = src.data[idx] + val;
 			}
@@ -158,20 +83,25 @@ public class HDR64Demo
 				System.exit(0);
 			}
 		});
+		leCanv.setBackground(Color.BLACK);
 		leCanv.setPreferredSize(new Dimension(640,480));
 		f.add(leCanv);
 		f.pack();
 		f.setVisible(true);
 		
 		class Sprite {
-			long color = 0;
+			//long color = 0;
 			float x = 0;
 			float y = 0;
 			float dx = 1;
 			float dy = 1;
-			float w = 3;
-			float h = 3;
+			HDR64Drawable icon;
+			//float w = 3;
+			//float h = 3;
 		}
+		
+		BufferedImage jetManImage = ImageIO.read(new File("tile-images/JetMan/JetUp.png"));
+		HDR64Drawable jetManDrawable = HDR64IO.toHdr64Drawable(jetManImage, 0);
 		
 		Random r = new Random();
 		Sprite[] sprites = new Sprite[100];
@@ -181,12 +111,13 @@ public class HDR64Demo
 			sprites[i].y = r.nextInt(300);
 			sprites[i].dy = r.nextFloat()*10;
 			sprites[i].dx = r.nextFloat()*10;
-			sprites[i].color = hdr(r.nextFloat()*r.nextFloat()*2, r.nextFloat(), 0.5f);
+			//sprites[i].color = HDR64Util.hdr(r.nextFloat()*r.nextFloat()*2, r.nextFloat(), 0.5f);
+			sprites[i].icon = jetManDrawable;
 			while( r.nextBoolean() ) {
 				sprites[i].dx *= 0.5f;
 				sprites[i].dy *= 0.5f;
-				sprites[i].w *= 1.2f;
-				sprites[i].h *= 1.2f;
+				//sprites[i].w *= 1.2f;
+				//sprites[i].h *= 1.2f;
 			}
 		}
 		
@@ -212,30 +143,31 @@ public class HDR64Demo
 			
 			int iters = 1<<iterPow;
 			
-			fill( accBuf, 0 );
+			HDR64Util.fill( accBuf, 0 );
 			for( int i=0; i<iters; ++i ) {
-				fill( drawBuf, 0 );
+				HDR64Util.fill( drawBuf, 0 );
 				for( Sprite s : sprites ) {
 					s.x += 0.05 * s.dx * tickLen / iters;
 					s.y += 0.05 * s.dy * tickLen / iters;
 					boolean bounce = false;
 					if( s.x < 0 && s.dx < 0 ) { s.dx = -s.dx; bounce = true; }
 					if( s.y < 0 && s.dy < 0 ) { s.dy = -s.dy; bounce = true; }
-					if( s.x+s.w > w && s.dx > 0 ) { s.dx = -s.dx; bounce = true; }
-					if( s.y+s.h > h && s.dy > 0 ) { s.dy = -s.dy; bounce = true; }
+					if( s.x > w && s.dx > 0 ) { s.dx = -s.dx; bounce = true; }
+					if( s.y > h && s.dy > 0 ) { s.dy = -s.dy; bounce = true; }
 					
 					s.dy += 0.1;
 					
-					long color = bounce ? hdr(500,100,10) : s.color;
-					fillRect( drawBuf, (int)s.x, (int)s.y, (int)s.w, (int)s.h, color, 0);
+					//long color = bounce ? HDR64Util.hdr(500,100,10) : s.color;
+					s.icon.draw(drawBuf, (int)s.x-8, (int)s.y-8, 0, 0, drawBuf.width, drawBuf.height);
+					//HDR64Util.fillRect( drawBuf, (int)s.x, (int)s.y, (int)s.w, (int)s.h, color, 0);
 				}
-				add( drawBuf.data, accBuf.data );
+				HDR64Util.add( drawBuf.data, accBuf.data );
 			}
 			
 			bleed( accBuf, drawBuf );
 			radBleed( drawBuf, accBuf );
 			
-			bufImg = toBufferedImage(accBuf, bufImg, iterPow);
+			bufImg = HDR64IO.toBufferedImage(accBuf, iterPow, bufImg);
 			leCanv.setImage(bufImg);
 			
 			long targetEndTime = startTime + tickLen;
