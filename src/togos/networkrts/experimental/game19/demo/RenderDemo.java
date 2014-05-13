@@ -10,7 +10,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
+import togos.networkrts.experimental.game19.graphics.AWTSurface;
 import togos.networkrts.experimental.game19.graphics.Renderer;
+import togos.networkrts.experimental.game19.graphics.Surface;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.scene.Layer;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
@@ -55,7 +57,9 @@ public class RenderDemo
 		Graphics sceneGraphics = sceneBuffer.getGraphics();
 		sceneGraphics.setColor(Color.BLACK);
 		sceneGraphics.fillRect(0, 0, 512, 384);
-		renderer.draw( layer, 0, 0, 1, sceneGraphics, 32, 256, 192 );
+		Surface sceneSurface = new AWTSurface(sceneGraphics, rc); 
+		
+		renderer.draw( layer, 0, 0, 1, sceneSurface, 32, 256, 192 );
 		
 		final Frame f = new Frame("Game19 Render Demo");
 		ImageCanvas ic = new ImageCanvas();

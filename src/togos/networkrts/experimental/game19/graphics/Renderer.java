@@ -1,13 +1,9 @@
 package togos.networkrts.experimental.game19.graphics;
 
 import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Rectangle;
-import java.awt.Shape;
 import java.awt.image.BufferedImage;
 
 import togos.networkrts.experimental.game19.scene.Icon;
-import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.Layer;
 import togos.networkrts.experimental.game19.scene.Layer.LayerLink;
 import togos.networkrts.experimental.game19.scene.Layer.VisibilityClip;
@@ -19,8 +15,7 @@ import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.RSTNode;
-import togos.networkrts.util.Getter;
-import togos.networkrts.util.ResourceNotFound;
+import togos.networkrts.experimental.hdr64.HDR64Demo;
 
 public class Renderer
 {
@@ -31,17 +26,7 @@ public class Renderer
 		this.resourceContext = resourceContext;
 	}
 	
-	protected void draw( ImageHandle ih, int x, int y, int width, int height, Graphics g ) {
-		try {
-			g.drawImage( ih.getScaled(resourceContext.imageGetter, width, height), x, y, null );
-		} catch( ResourceNotFound e ) {
-			System.err.println("Couldn't load image "+ih.original.getUri());
-			g.setColor( Color.PINK );
-			g.fillRect( x+1, y+1, width-2, height-2 );
-		}
-	}
-	
-	protected void _drawLayerData( TileLayerData tileData, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy, float minZ, float maxZ ) {
+	protected void _drawLayerData( TileLayerData tileData, double lx, double ly, double ldist, Surface g, double scale, double scx, double scy, float minZ, float maxZ ) {
 		double dTileSize = scale / ldist;
 		int osx = (int)Math.round(scx + lx * dTileSize);
 		int osy = (int)Math.round(scy + ly * dTileSize);
@@ -55,7 +40,6 @@ public class Renderer
 		}
 		
 		int[] shades = tileData.getShades(0); // TODO: need to determine reference layer somehow
-		final Getter<BufferedImage> imageGetter = resourceContext.imageGetter;
 		final BufferedImage[] shadeImages = resourceContext.getShadeOverlays(tileSize); 
 		
 		// Left-handed coordinate system FTW
@@ -66,8 +50,7 @@ public class Renderer
 			for( int x=0; x<tileData.width; ++x, sx += tileSize, ++shadeIndex ) {
 				
 				if( shades[shadeIndex] == TileLayerData.SHADE_NONE ) {
-					g.setColor( Color.BLACK );
-					g.fillRect( sx, sy, tileSize, tileSize );
+					g.fillRect( sx, sy, tileSize, tileSize, HDR64Demo.hdr(0, 0, 0) );
 					continue;
 				}
 				
@@ -77,28 +60,19 @@ public class Renderer
 					if( cc != null ) for( Block b : cc.getBlocks() ) {
 						Icon ic = b.icon;
 						if( ic.imageZ <= minZ || ic.imageZ > maxZ ) continue;
-						ImageHandle ih = resourceContext.getImageHandle(ic.imageUri);
-						if( ih.isCompletelyTransparent ) continue;
-						try {
-							// TODO: Scale and place according to icon x, y, w, h, where
-							// -0.5 = top/left edge of cell, +0.5 = bottom/right edge of cell
-							g.drawImage( ih.getScaled(imageGetter,tileSize,tileSize), sx, sy, null );
-						} catch( ResourceNotFound e ) {
-							System.err.println("Couldn't load image "+ih.original.getUri());
-							g.setColor( Color.PINK );
-							g.fillRect( sx+1, sy+1, tileSize-2, tileSize-2 );
-						}
+						g.drawImage(sx, sy, tileSize, tileSize, ic.imageUri);
 					}
 				}
 				
 				if( shades[shadeIndex] != TileLayerData.SHADE_ALL ) {
-					g.drawImage( shadeImages[shades[shadeIndex]], sx, sy, null );
+					// TODO: Fix somehow
+					//g.drawImage( shadeImages[shades[shadeIndex]], sx, sy, null );
 				}
 			}
 		}
 	}
 	
-	protected void drawRstNode( RSTNode node, double x, double y, double size, Graphics g, int clipMinX, int clipMinY, int clipMaxX, int clipMaxY ) {
+	protected void drawRstNode( RSTNode node, double x, double y, double size, Surface g, int clipMinX, int clipMinY, int clipMaxX, int clipMaxY ) {
 		if( x >= clipMaxX || y >= clipMaxY || x+size <= clipMinX || y+size <= clipMinY ) return;
 		
 		switch( node.getNodeType() ) {
@@ -115,20 +89,9 @@ public class Renderer
 			int iy = (int)Math.floor(y);
 			int isize = (int)Math.ceil(size);
 			
-			final Getter<BufferedImage> imageGetter = resourceContext.imageGetter;
 			for( Block b : node.getBlocks() ) {
 				Icon ic = b.icon;
-				ImageHandle ih = resourceContext.getImageHandle(ic.imageUri);
-				if( ih.isCompletelyTransparent ) continue;
-				try {
-					// TODO: Scale and place according to icon x, y, w, h, where
-					// -0.5 = top/left edge of cell, +0.5 = bottom/right edge of cell
-					g.drawImage( ih.getScaled(imageGetter,isize,isize), ix, iy, null );
-				} catch( ResourceNotFound e ) {
-					System.err.println("Couldn't load image "+ih.original.getUri());
-					g.setColor( Color.PINK );
-					g.fillRect( ix+1, iy+1, isize-2, isize-2 );
-				}
+				g.drawImage(ix, iy, isize, isize, ic.imageUri);
 			}
 			break;
 		default:
@@ -136,7 +99,7 @@ public class Renderer
 		}
 	}
 	
-	protected void _drawLayerData( Layer layer, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy, float minZ, float maxZ ) {
+	protected void _drawLayerData( Layer layer, double lx, double ly, double ldist, Surface g, double scale, double scx, double scy, float minZ, float maxZ ) {
 		Object ld = layer.data;
 		if( ld instanceof TileLayerData ) {
 			_drawLayerData( (TileLayerData)ld, lx+layer.dataOffsetX, ly+layer.dataOffsetY, ldist, g, scale, scx, scy, minZ, maxZ );
@@ -145,8 +108,8 @@ public class Renderer
 			int x = (int)Math.round(scx + (lx + layer.dataOffsetX) * dscale);
 			int y = (int)Math.round(scy + (ly + layer.dataOffsetY) * dscale);
 			int nodeSize = (int)Math.round( ((QuadTreeLayerData)ld).size * dscale );
-			Rectangle r = g.getClipBounds();
-			drawRstNode( ((QuadTreeLayerData)ld).node, x, y, nodeSize, g, r.x, r.y, r.x+r.width, r.y+r.height );
+			drawRstNode( ((QuadTreeLayerData)ld).node, x, y, nodeSize, g,
+				g.getClipLeft(), g.getClipTop(), g.getClipRight(), g.getClipBottom() );
 		} else {
 			System.err.println("Don't know how to draw "+(ld == null ? "null" : ld.getClass())+" layer data");
 		}
@@ -157,7 +120,16 @@ public class Renderer
 		return new Color(color);
 	}
 	
-	public void draw( Layer layer, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy, float minZ, float maxZ ) {
+	protected void fillClip( Surface g, long hdr64Color ) {
+		g.fillRect(
+			g.getClipLeft(), g.getClipTop(),
+			g.getClipRight()-g.getClipLeft(),
+			g.getClipBottom()-g.getClipTop(),
+			hdr64Color
+		);
+	}
+	
+	public void draw( Layer layer, double lx, double ly, double ldist, Surface g, double scale, double scx, double scy, float minZ, float maxZ ) {
 		// Draw everything at z such that minZ <= z < maxZ
 		if( minZ == maxZ ) return;
 		
@@ -178,26 +150,22 @@ public class Renderer
 					}
 				}
 				
-				Rectangle r = g.getClipBounds();
-				g.setColor(awtColor(next.altColor));
-				g.fillRect(r.x, r.y, r.width, r.height);
+				fillClip(g, HDR64Demo.intToHdr(next.altColor, 0));
 				break drawBackground;
 			}
 			
 			// Draw the background a solid color:
-			Rectangle r = g.getClipBounds();
-			g.setColor(Color.BLUE);
-			g.fillRect(r.x, r.y, r.width, r.height);
+			fillClip(g, HDR64Demo.hdr(0, 0, 1));
 		}
 		
 		_drawLayerData( layer, lx, ly, ldist, g, scale, scx, scy, minZ, maxZ );
 	}
 	
-	public void draw( Layer layer, double lx, double ly, double ldist, Graphics g, double scale, double scx, double scy ) {
+	public void draw( Layer layer, double lx, double ly, double ldist, Surface g, double scale, double scx, double scy ) {
 		draw( layer, lx, ly, ldist, g, scale, scx, scy, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY );
 	}
 	
-	protected void _draw( Scene s, double x, double y, double dist, Graphics g, double scale, double scx, double scy ) {
+	protected void _draw( Scene s, double x, double y, double dist, Surface g, double scale, double scx, double scy ) {
 		double sscale = scale/dist;
 		float prevZ = Float.NEGATIVE_INFINITY;
 		for( NonTile nt : s.nonTiles ) {
@@ -207,15 +175,12 @@ public class Renderer
 				draw( s.layer, x, y, dist, g, scale, scx, scy, prevZ, icon.imageZ );
 			}
 			
-			ImageHandle ih = resourceContext.getImageHandle(icon.imageUri);
-			
-			draw(
-				ih,
+			g.drawImage(
 				(int)(scx+sscale*(x+nt.getX()+icon.imageX)),
 				(int)(scy+sscale*(y+nt.getY()+icon.imageY)),
 				(int)Math.ceil(sscale*icon.imageWidth),
 				(int)Math.ceil(sscale*icon.imageHeight),
-				g
+				icon.imageUri
 			);
 			
 			prevZ = icon.imageZ;
@@ -223,27 +188,23 @@ public class Renderer
 		draw( s.layer, x, y, dist, g, scale, scx, scy, prevZ, Float.POSITIVE_INFINITY );
 	}
 	
-	public void draw( Scene s, double x, double y, double dist, Graphics g, double scale, double scx, double scy ) {
+	public void draw( Scene s, double x, double y, double dist, Surface g, double scale, double scx, double scy ) {
 		if( s.visibilityClip != null ) {
-			Shape oldClip = g.getClipBounds();
-			
 			double scaleOnScreen = scale / dist;
 			
 			VisibilityClip vc = s.visibilityClip;
 			
 			int sx = (int)Math.round((x+vc.minX)*scaleOnScreen+scx);
 			int sy = (int)Math.round((y+vc.minY)*scaleOnScreen+scy);
-			g.clipRect(
+			g = g.intersectClip(
 				sx, sy,
 				(int)Math.round((x+vc.maxX)*scaleOnScreen+scx) - sx,
 				(int)Math.round((y+vc.maxY)*scaleOnScreen+scy) - sy
 			);
 			
 			_draw( s, x, y, dist, g, scale, scx, scy );
-			
-			g.setClip(oldClip);
-		} else {
-			_draw( s, x, y, dist, g, scale, scx, scy );
 		}
+		
+		_draw( s, x, y, dist, g, scale, scx, scy );
 	}
 }

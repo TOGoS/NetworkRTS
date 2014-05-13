@@ -68,6 +68,7 @@ public class HDR64Demo
 	}
 	
 	public static long hdr( float r, float g, float b ) {
+		// TODO: Include alpha
 		return
 			((long)(r * 255) << 40) |
 			((long)(g * 255) << 20) |
@@ -75,6 +76,7 @@ public class HDR64Demo
 	}
 	
 	public static long intToHdr( int rgb, int shift ) {
+		// TODO: Include alpha
 		return
 			((long)(((rgb >> 16)&0xFF) << shift) << 40) |
 			((long)(((rgb >>  8)&0xFF) << shift) << 20) |

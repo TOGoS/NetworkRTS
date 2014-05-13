@@ -27,7 +27,9 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 
+import togos.networkrts.experimental.game19.graphics.AWTSurface;
 import togos.networkrts.experimental.game19.graphics.Renderer;
+import togos.networkrts.experimental.game19.graphics.Surface;
 import togos.networkrts.experimental.game19.io.CerealWorldIO;
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
@@ -121,10 +123,12 @@ class Client
 		Color sceneBackgroundColor = new Color(0.2f, 0, 0);
 		Client.UIState uiState = new UIState(null, null, Collections.<Client.TextMessage>emptyList(), false);
 		
+		protected final ResourceContext resourceContext;
 		protected final Renderer renderer;
 		
 		public SceneCanvas( ResourceContext resourceContext ) {
-			renderer = new Renderer(resourceContext);
+			this.resourceContext = resourceContext;
+			this.renderer = new Renderer(resourceContext);
 			addComponentListener(new ComponentAdapter() {
 				@Override public void componentResized(ComponentEvent e) { redrawBuffer(); }
 			});
@@ -213,8 +217,10 @@ class Client
 					g.setClip(0, 0, sb.getWidth(), sb.getHeight());
 					g.setColor( sceneBackgroundColor );
 					g.fillRect( 0, 0, sb.getWidth(), sb.getHeight() );
+					Surface surface = new AWTSurface(g, resourceContext);
+					
 					if( scene != null ) {
-						renderer.draw( scene, -scene.poiX, -scene.poiY, distance, g, pixelsPerMeter, sb.getWidth()/2, sb.getHeight()/2 );
+						renderer.draw( scene, -scene.poiX, -scene.poiY, distance, surface, pixelsPerMeter, sb.getWidth()/2, sb.getHeight()/2 );
 					}
 					for( UIOverlay o : overlays ) o.draw(g, sb.getWidth(), sb.getHeight());
 					
