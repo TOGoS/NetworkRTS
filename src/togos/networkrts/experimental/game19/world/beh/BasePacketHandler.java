@@ -170,6 +170,9 @@ public class BasePacketHandler
 				return handleEthernetFrame( new PacketWrapping<EthernetFrame>(pw, (EthernetFrame)m.payload), ctx );
 			}
 			break;
+		default:
+			// I don't care about anything else!
+			break;
 		}
 		
 		return this;
