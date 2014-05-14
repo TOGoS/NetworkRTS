@@ -29,19 +29,6 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 	}
 	
 	protected PhysicsResult updatePhysics(final BlargNonTile nt, long newTime, World world) {
-		//double duration = newTime - referenceTime;
-		//BlockCollision.findCollisionWithRst(this, world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID);
-		double interval = Simulation.SIMULATED_TICK_INTERVAL * (newTime-nt.referenceTime);
-		
-		// TODO: more accurately find point of collision by ray-casting from origin
-		
-		double newX = nt.x+nt.vx*interval;
-		double newY = nt.y+nt.vy*interval;
-		//double newVx = nt.vx;
-		//double newVy = nt.vy;
-		double collisionSpeed = 0;
-		boolean onGround = false;
-		
 		// Handle NonTile-NonTile collisions
 		// Less massive NonTile (or the one farther up or to the right
 		//   if they have the same mass) will adjust its position.
@@ -130,6 +117,59 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 			}
 		}
 		
+		//double duration = newTime - referenceTime;
+		//BlockCollision.findCollisionWithRst(this, world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID);
+		double interval = Simulation.SIMULATED_TICK_INTERVAL * (newTime-nt.referenceTime);
+		assert interval != 0;
+		
+		// TODO: more accurately find point of collision by ray-casting from origin
+		
+		//double newX = nt.x+nt.vx*interval;
+		//double newY = nt.y+nt.vy*interval;
+		//double newVx = nt.vx;
+		//double newVy = nt.vy;
+		double collisionSpeed = 0;
+		boolean onGround = false;
+		
+		
+		final AABB relAabb = this.getRelativePhysicalAabb();
+		
+		// Step until there's a collision
+		double newX = nt.x, newY = nt.y;
+		
+		boolean findCollisionsAReallySlowWay = true;
+		if( findCollisionsAReallySlowWay ) {
+			double stepDx = nt.vx;
+			double stepDy = nt.vy;
+			double stepInterval = interval;
+			double width = relAabb.maxX - relAabb.minX;
+			double height = relAabb.maxY - relAabb.minY;
+			if( stepDx > width ) {
+				stepInterval *= width/stepDx;
+			} else if( stepDx < -width ) {
+				stepInterval *= -width/stepDx;
+			}
+			if( stepDy > width ) {
+				stepInterval *= height/stepDy;
+			} else if( stepDy < -height ) {
+				stepInterval *= -height/stepDy;
+			}
+			
+			assert stepInterval != 0;
+			
+			double steppedInterval = 0;
+			findCollision: while( steppedInterval < interval ) {
+				double dt = Math.min(interval - steppedInterval, stepInterval);
+				newX += stepDx * dt;
+				newY += stepDy * dt;
+				steppedInterval += stepInterval; // Not dt!
+				BlockCollision c = BlockCollision.findCollisionWithRst(relAabb.shiftedBy(newX, newY, 0), world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID);
+				if( c != null ) {
+					break findCollision;
+				}
+			}
+		}
+		
 		double newVx, newVy;
 		// RIGIDBODY indicates that it physically interacts
 		// with other NonTiles.  Without it, skip detection
@@ -150,7 +190,6 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 			newVy = nt.vy;
 		}
 		
-		AABB relAabb = this.getRelativePhysicalAabb();
 		final BlockCollision c = BlockCollision.findCollisionWithRst(relAabb.shiftedBy(newX, newY, 0), world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID);
 		correctPosition: if( c != null ) {
 			boolean xFirst;
