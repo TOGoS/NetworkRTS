@@ -514,6 +514,10 @@ class Client
 						FakeCoAPMessage.request((byte)0, 0, "POST", "/spew", null)
 					));
 					break;
+				case KeyEvent.VK_T:
+					currentTool = Tool.values()[(currentTool.ordinal() + 1) % Tool.values().length];
+					addTextMessage(new Client.TextMessage(System.currentTimeMillis(), currentTool.name()));
+					break;
 				case KeyEvent.VK_R:
 					// TODO: ethernet frames, etc etc
 					FakeCoAPMessage fcm = FakeCoAPMessage.request((byte)0, 0, RESTRequest.PUT, "/world", new WackPacket(initialWorld, Object.class, cerealWorldIo.packetPayloadCodec));
