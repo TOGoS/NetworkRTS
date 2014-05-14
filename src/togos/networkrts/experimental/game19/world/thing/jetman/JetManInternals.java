@@ -279,9 +279,10 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 			}
 		});
 		
-		if( pr.getCollisionSpeed() > 4 ) {
+		double collisionSpeed = pr.getCollisionSpeed(); 
+		if( collisionSpeed > 4 ) {
 			double damageFactor = 0.001;
-			newSuitHealth -= pr.collisionVx*pr.collisionVx*damageFactor;
+			newSuitHealth -= collisionSpeed*collisionSpeed * damageFactor;
 		}
 		
 		if( newSuitHealth < 0 ) {
