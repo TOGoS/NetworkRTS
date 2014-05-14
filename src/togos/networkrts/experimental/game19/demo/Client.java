@@ -41,9 +41,9 @@ import togos.networkrts.experimental.game19.world.BlockStack;
 import togos.networkrts.experimental.game19.world.BlockStackRSTNode;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
-import togos.networkrts.experimental.game19.world.PositionInWorld;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.thing.BlockWand;
+import togos.networkrts.experimental.game19.world.thing.ProjectileLauncher;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManCoreStats;
 import togos.networkrts.experimental.packet19.FakeCoAPMessage;
 import togos.networkrts.experimental.packet19.RESTRequest;
@@ -135,6 +135,18 @@ class Client
 		}
 		
 		public void addOverlay( UIOverlay overlay ) { overlays.add(overlay); }
+		
+		public Point2D.Double screenToRelativeWorldPoint( int x, int y ) {
+			UIState u = uiState;
+			if( u == null ) return UNKNOWN_POINT;
+			Scene s = u.scene;
+			if( s == null ) return UNKNOWN_POINT;
+			// renderer.draw( scene, -scene.poiX, -scene.poiY, distance, g, pixelsPerMeter, sb.getWidth()/2, sb.getHeight()/2 );
+			return new Point2D.Double(
+				(x - getWidth()/2) / scale / pixelsPerMeter / distance,
+				(y - getHeight()/2) / scale / pixelsPerMeter / distance
+			);
+		}
 		
 		/**
 		 * Translate the screen coordinate x, y
@@ -386,13 +398,14 @@ class Client
 	protected boolean altIsDown = false, controlIsDown = false, shiftIsDown = false;
 	protected void updateMouseDrivenStuff() {
 		if( firing ) {
-			Point2D.Double p  = sceneCanvas.screenToWorldPoint(cursorX, cursorY);
 			switch( currentTool ) {
 			case BLOCK_WAND:
+				Point2D.Double p  = sceneCanvas.screenToWorldPoint(cursorX, cursorY);
 				sendPlayerMessage("POST", "/block-wand/applications", new BlockWand.Application(p.getX(), p.getY(), 0.25, controlIsDown, wandBlocks[currentWandBlockIndex]));
 				break;
 			case GUN:
-				sendPlayerMessage("POST", "/gun/fire-at", new PositionInWorld(p.getX(), p.getY(), 0));
+				Point2D.Double v  = sceneCanvas.screenToRelativeWorldPoint(cursorX, cursorY);
+				sendPlayerMessage("POST", "/gun/firings", new ProjectileLauncher.Firing(v.getX(), v.getY(), 0));
 				break;
 			}
 		}

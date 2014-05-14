@@ -18,11 +18,12 @@ import togos.networkrts.experimental.game19.world.Message.MessageType;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.NonTileInternals;
-import togos.networkrts.experimental.game19.world.PositionInWorld;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.thing.AbstractPhysicalNonTileInternals;
 import togos.networkrts.experimental.game19.world.thing.BlockWand;
+import togos.networkrts.experimental.game19.world.thing.ProjectileLauncher;
 import togos.networkrts.experimental.game19.world.thing.Substances;
+import togos.networkrts.experimental.game19.world.thing.bomb.OMGBombInternals;
 import togos.networkrts.experimental.game19.world.thing.pickup.SubstanceContainerInternals;
 import togos.networkrts.experimental.game19.world.thing.pickup.SubstanceContainerType;
 import togos.networkrts.experimental.gameengine1.index.AABB;
@@ -186,16 +187,16 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 									BlockWand.apply( (BlockWand.Application)o, updateContext );
 								}
 							}
-						} else if( "/gun/fire-at".equals(rr.getPath()) ) {
+						} else if( "/gun/firings".equals(rr.getPath()) ) {
 							if( "POST".equals(rr.getMethod()) ) {
 								Object o = rr.getPayload().getPayload(Object.class, CerealWorldIO.DISCONNECTED.packetPayloadCodec);
-								if( o instanceof PositionInWorld ) {
+								if( o instanceof ProjectileLauncher.Firing ) {
 									Icon[] pieceIcons = new Icon[] { icons.leg1, icons.leg2, icons.torso, icons.jetpack };
 									
-									PositionInWorld targetPos = (PositionInWorld)o;
+									ProjectileLauncher.Firing firing = (ProjectileLauncher.Firing)o;
 									
-									double dirx = targetPos.x - newX; 
-									double diry = targetPos.y - newY;
+									double dirx = firing.vx; 
+									double diry = firing.vy;
 									double dist = Math.sqrt(dirx*dirx+diry*diry);
 									if( dist == 0 ) continue;
 									dirx /= dist;
@@ -205,9 +206,11 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 									
 									Icon ic = pieceIcons[0];
 									updateContext.addNonTile(new BlargNonTile(0, time,
-										newX + dirx/2, newY + diry,
-										dirx*vel, diry*vel,
-										new DebrisInternals(ic)
+										newX + dirx/2, // Because JetMan is skinny
+										newY + diry,
+										newVx + dirx*vel,
+										newVy + diry*vel,
+										new OMGBombInternals(ic)
 									));
 								}
 							}
@@ -276,9 +279,9 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 			}
 		});
 		
-		if( pr.collisionSpeed > 4 ) {
+		if( pr.getCollisionSpeed() > 4 ) {
 			double damageFactor = 0.001;
-			newSuitHealth -= pr.collisionSpeed*pr.collisionSpeed*damageFactor;
+			newSuitHealth -= pr.collisionVx*pr.collisionVx*damageFactor;
 		}
 		
 		if( newSuitHealth < 0 ) {

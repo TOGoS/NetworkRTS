@@ -24,11 +24,16 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 {
 	protected static class PhysicsResult {
 		public final BlargNonTile nt;
-		public final double collisionSpeed;
+		public final double collisionVx, collisionVy;
 		
-		public PhysicsResult( BlargNonTile nt, double collisionSpeed ) {
+		public PhysicsResult( BlargNonTile nt, double cvx, double cvy ) {
 			this.nt = nt;
-			this.collisionSpeed = collisionSpeed;
+			this.collisionVx = cvx;
+			this.collisionVy = cvy;
+		}
+
+		public double getCollisionSpeed() {
+			return Math.sqrt(collisionVx*collisionVx+collisionVy*collisionVy);
 		}
 	}
 	
@@ -226,7 +231,7 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 		//double newY = nt.y+nt.vy*interval;
 		//double newVx = nt.vx;
 		//double newVy = nt.vy;
-		double collisionSpeed = 0;
+		double collisionVx = 0, collisionVy = 0;
 		boolean onGround = false;
 		
 		final AABB relAabb = this.getRelativePhysicalAabb();
@@ -307,26 +312,26 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 			xFirst = Math.abs(c.correctionX) < Math.abs(c.correctionY);
 			if( xFirst ) {
 				if( BlockCollision.findCollisionWithRst(relAabb.shiftedBy(newX + c.correctionX, newY, 0), world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID) == null ) {
-					collisionSpeed = nt.vx;
+					collisionVx = nt.vx;
 					newX += c.correctionX;
 					newVx *= -0.6;
 					break correctPosition;
 				}
 				if( BlockCollision.findCollisionWithRst(relAabb.shiftedBy(newX, newY + c.correctionY, 0), world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID) == null ) {
-					collisionSpeed = nt.vy;
+					collisionVy = nt.vy;
 					newY += c.correctionY;
 					newVy *= -0.6;
 					break correctPosition;
 				}
 			} else {
 				if( BlockCollision.findCollisionWithRst(relAabb.shiftedBy(newX, newY + c.correctionY, 0), world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID) == null ) {
-					collisionSpeed = nt.vy;
+					collisionVy = nt.vy;
 					newY += c.correctionY;
 					newVy *= -0.6;
 					break correctPosition;
 				}
 				if( BlockCollision.findCollisionWithRst(relAabb.shiftedBy(newX + c.correctionX, newY, 0), world, BitAddresses.PHYSINTERACT, Block.FLAG_SOLID) == null ) {
-					collisionSpeed = nt.vx;
+					collisionVx = nt.vx;
 					newX += c.correctionX;
 					newVx *= -0.6;
 					break correctPosition;
@@ -334,7 +339,8 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 			}
 			
 			// WHATEVER JUST GET THEM OUT
-			collisionSpeed = nt.vx + nt.vy;
+			collisionVx = nt.vx;
+			collisionVy = nt.vy;
 			newX += c.correctionX;
 			newY += c.correctionY;
 			newVx *= -0.6;
@@ -356,7 +362,8 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 		
 		return new PhysicsResult(
 			nt.withPositionAndVelocity(newTime, newX, newY, newVx, resting ? newVy : newVy + interval*GRAVITY),
-			collisionSpeed
+			collisionVx,
+			collisionVy
 		);
 	}
 	

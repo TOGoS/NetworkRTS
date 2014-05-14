@@ -230,13 +230,13 @@ public class DemoWorld
 				dir += r.nextGaussian() * 0.1;
 				rad *= (0.996 + r.nextGaussian()*0.02);
 			}
-			nonTiles = nonTiles.with( new BlargNonTile(0, 0, sx, sy, 0, 0, fuelCanInternals) );
+			//nonTiles = nonTiles.with( new BlargNonTile(0, 0, sx, sy, 0, 0, fuelCanInternals) );
 		}
 		
 		for( int i=0; i<20; ++i ) {
 			double sx = r.nextGaussian() * 10;
 			double sy = r.nextGaussian() * 10;
-			nonTiles = nonTiles.with( new BlargNonTile(0, 0, sx, sy, 0, 0, crateInternals) );
+			//nonTiles = nonTiles.with( new BlargNonTile(0, 0, sx, sy, 0, 0, crateInternals) );
 		}
 		
 		nonTiles = nonTiles.with( new BlargNonTile(0, 0, -5, 0, 0, 0, fuelCanInternals) );
