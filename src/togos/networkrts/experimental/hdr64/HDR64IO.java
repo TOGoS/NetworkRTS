@@ -17,14 +17,14 @@ public class HDR64IO
 		return hdrBuf;
 	}
 
-	public static BufferedImage toBufferedImage( HDR64Buffer img, int shift, BufferedImage buf, int mode ) {
+	public static BufferedImage toBufferedImage( HDR64Buffer img, int divide, BufferedImage buf, int mode ) {
 		if( buf == null || buf.getWidth() != img.width || buf.getHeight() != img.height || buf.getType() != mode) {
 			buf = new BufferedImage(img.width, img.height, mode);
 		}
 		int[] row = new int[img.width];
 		for( int y=img.height-1; y>=0; --y ) {
 			for( int x=img.width-1, idx=y*img.width+x; x>=0; --x, --idx ) {
-				row[x] = HDR64Util.hdrToInt(img.data[idx], shift);
+				row[x] = HDR64Util.hdrToInt(HDR64Util.divide(img.data[idx], divide), 0);
 			}
 			buf.setRGB(0, y, img.width, 1, row, 0, row.length);
 		}

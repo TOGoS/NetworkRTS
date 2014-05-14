@@ -3,6 +3,7 @@ package togos.networkrts.experimental.hdr64;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Frame;
+import java.awt.Graphics;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
@@ -12,6 +13,7 @@ import java.util.Random;
 import javax.imageio.ImageIO;
 
 import togos.networkrts.ui.ImageCanvas;
+import togos.networkrts.util.RealTimeKeeper;
 
 public class HDR64Demo
 {
@@ -50,7 +52,7 @@ public class HDR64Demo
 				int idx=x+src.width*y;
 				val += src.data[idx];
 				val = HDR64Util.shiftDown(val, 1);
-				dest.data[idx] += val;
+				dest.data[idx] = val;
 			}
 			for( int y=src.height-1; y>=0; --y ) {
 				int idx=x+src.width*y;
@@ -90,12 +92,13 @@ public class HDR64Demo
 		f.setVisible(true);
 		
 		class Sprite {
-			//long color = 0;
+			long color = 0;
 			float x = 0;
 			float y = 0;
 			float dx = 1;
 			float dy = 1;
 			HDR64Drawable icon;
+			boolean bounced;
 			//float w = 3;
 			//float h = 3;
 		}
@@ -105,15 +108,15 @@ public class HDR64Demo
 		HDR64Drawable jetManBrightDrawable = HDR64IO.toHdr64Drawable(jetManImage, 8);
 		
 		Random r = new Random();
-		Sprite[] sprites = new Sprite[100];
+		final Sprite[] sprites = new Sprite[100];
 		for( int i=0; i<sprites.length; ++i ) {
 			sprites[i] = new Sprite();
 			sprites[i].x = r.nextInt(300);
 			sprites[i].y = r.nextInt(300);
 			sprites[i].dy = r.nextFloat()*10;
 			sprites[i].dx = r.nextFloat()*10;
-			//sprites[i].color = HDR64Util.hdr(r.nextFloat()*r.nextFloat()*2, r.nextFloat(), 0.5f);
-			sprites[i].icon = jetManDrawable;
+			sprites[i].color = HDR64Util.hdr(1, r.nextFloat()*r.nextFloat()*2, r.nextFloat(), 0.5f);
+			sprites[i].icon = r.nextBoolean() ? null : jetManDrawable;
 			while( r.nextBoolean() ) {
 				sprites[i].dx *= 0.5f;
 				sprites[i].dy *= 0.5f;
@@ -122,66 +125,76 @@ public class HDR64Demo
 			}
 		}
 		
+		final double simulatedTickLength = 1;
+		
+		AdaptiveMotionBlurrer.Renderer renderer = new AdaptiveMotionBlurrer.Renderer() {
+			@Override public void render(double t, HDR64Buffer into) {
+				HDR64Util.fill( into, HDR64Util.BLACK );
+				double tick = simulatedTickLength * t;
+				for( Sprite s : sprites ) {
+					if( s.icon != null ) {
+						s.icon.draw(into, (int)(s.x+s.dx*tick)-8, (int)(s.y+s.dy*tick)-8, 0, 0, into.width, into.height);
+					} else {
+						int sqRad = 8;
+						long color = s.bounced ? HDR64Util.hdr(1, 100, 100, 100) : s.color;
+						HDR64Util.fillRect(into, (int)(s.x+s.dx*tick)-sqRad, (int)(s.y+s.dy*tick)-sqRad, sqRad*2, sqRad*2, color, 0);
+					}
+				}
+			}
+		};
+		
 		HDR64Buffer drawBuf = null;
 		HDR64Buffer accBuf = null;
 		BufferedImage bufImg = null;
 		
-		long tickLen = 20;
-		int iterPow = 4;
+		RealTimeKeeper tk = RealTimeKeeper.SYSTEM_NANOTIME;
+		
+		long realTickTargetLength = 20000000;
+		long startTime = tk.currentTime();
+		long targetEndTime = startTime + realTickTargetLength;
+		int maxArea = 400*600;
 		while( true ) {
-			long startTime = System.currentTimeMillis(); 
-			
 			int w = leCanv.getWidth();
 			int h = leCanv.getHeight();
-			while( w*h > 400*300 ) {
+			while( w*h > maxArea ) {
 				w >>= 1;
 				h >>= 1;
+			}
+			for( Sprite s : sprites ) {
+				s.x += simulatedTickLength * s.dx;
+				s.y += simulatedTickLength * s.dy;
+				boolean bounce = false;
+				if( s.x < 0 && s.dx < 0 ) { s.dx = -s.dx; bounce = true; }
+				if( s.y < 0 && s.dy < 0 ) { s.dy = -s.dy; bounce = true; }
+				if( s.x > w && s.dx > 0 ) { s.dx = -s.dx; bounce = true; }
+				if( s.y > h && s.dy > 0 ) { s.dy = -s.dy; bounce = true; }
+				s.bounced = bounce;
+				s.icon = s.icon == null ? null : bounce ? jetManBrightDrawable : jetManDrawable;
+				
+				s.dy += 0.1;
 			}
 			
 			//System.err.println(w+","+h);
 			drawBuf = HDR64Buffer.get(drawBuf, w, h);
 			accBuf = HDR64Buffer.get(accBuf, w, h);
-			
-			int iters = 1<<iterPow;
-			
-			HDR64Util.fill( accBuf, 0 );
-			for( int i=0; i<iters; ++i ) {
-				HDR64Util.fill( drawBuf, 0 );
-				for( Sprite s : sprites ) {
-					s.x += 0.05 * s.dx * tickLen / iters;
-					s.y += 0.05 * s.dy * tickLen / iters;
-					boolean bounce = false;
-					if( s.x < 0 && s.dx < 0 ) { s.dx = -s.dx; bounce = true; }
-					if( s.y < 0 && s.dy < 0 ) { s.dy = -s.dy; bounce = true; }
-					if( s.x > w && s.dx > 0 ) { s.dx = -s.dx; bounce = true; }
-					if( s.y > h && s.dy > 0 ) { s.dy = -s.dy; bounce = true; }
-					
-					s.dy += 0.1;
-					
-					//long color = bounce ? HDR64Util.hdr(500,100,10) : s.color;
-					
-					HDR64Drawable drawable = bounce ? jetManBrightDrawable : s.icon;
-					drawable.draw(drawBuf, (int)s.x-8, (int)s.y-8, 0, 0, drawBuf.width, drawBuf.height);
-					//HDR64Util.fillRect( drawBuf, (int)s.x, (int)s.y, (int)s.w, (int)s.h, color, 0);
-				}
-				HDR64Util.add( drawBuf.data, accBuf.data );
-			}
+			AdaptiveMotionBlurrer amb = new AdaptiveMotionBlurrer(tk, drawBuf, accBuf);
+			int iterations = amb.render(renderer, targetEndTime);
+			// If too fast or slow, adjust max area
+			if( iterations < 2 ) maxArea = Math.max(320*240, maxArea * 2 / 3);
+			else if( iterations > 50 ) maxArea = maxArea * 3 / 2;
 			
 			bleed( accBuf, drawBuf );
 			radBleed( drawBuf, accBuf );
 			
-			bufImg = HDR64IO.toBufferedImage(accBuf, iterPow, bufImg, BufferedImage.TYPE_INT_RGB);
+			bufImg = HDR64IO.toBufferedImage(accBuf, 2*iterations, bufImg, BufferedImage.TYPE_INT_RGB);
+			{
+				Graphics g = bufImg.getGraphics();
+				g.setColor(Color.WHITE);
+				g.drawString(iterations+" samples; max area = "+maxArea, 4, 16);
+			}
 			leCanv.setImage(bufImg);
 			
-			long targetEndTime = startTime + tickLen;
-			long curTime = System.currentTimeMillis();
-			long sleepTime = targetEndTime - curTime;
-			if( sleepTime > 0 ) {
-				Thread.sleep(sleepTime);
-				if( sleepTime > tickLen * 2 / 3 ) ++iterPow;
-			} else if( iterPow > 0 ) {
-				--iterPow;
-			}
+			targetEndTime += realTickTargetLength;
 		}
 	}
 }

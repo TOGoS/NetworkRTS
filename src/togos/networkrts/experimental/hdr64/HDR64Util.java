@@ -4,7 +4,10 @@ public class HDR64Util
 {
 	static final int HDR_COMPONENT_MASK = (1<<20)-1;
 	static final long HDR_RGB_MASK = 0x0FFFFFFFFFFFFFFFl;
-
+	static final long HDR_ALPHA_MASK = 0xF000000000000000l;
+	
+	static final long BLACK = HDR_ALPHA_MASK;
+	
 	public static final int hdrComponent( long hdr, int shift ) {
 		return (int)(hdr >> shift) & HDR_COMPONENT_MASK;
 	}
@@ -52,8 +55,18 @@ public class HDR64Util
 			(cmask <<  0);
 	}
 	
+	public static long divide( long hdr, int div ) {
+		return
+			//(hdr & HDR_ALPHA_MASK) |
+			((long)(hdrComponent(hdr, 40) / div) << 40) |
+			((long)(hdrComponent(hdr, 20) / div) << 20) |
+			((long)(hdrComponent(hdr,  0) / div) <<  0);
+	}
+	
 	public static long shiftDown( long hdr, int shift ) {
-		return (hdr >> shift) & componentMask(20-shift);
+		return
+			// (hdr & HDR_ALPHA_MASK) |
+			((hdr >> shift) & componentMask(20-shift));
 	}
 	
 	public static void fill( HDR64Buffer img, long v ) {
