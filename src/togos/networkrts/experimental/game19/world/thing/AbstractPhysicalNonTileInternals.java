@@ -11,10 +11,14 @@ import togos.networkrts.experimental.game19.world.Block;
 import togos.networkrts.experimental.game19.world.MessageSet;
 import togos.networkrts.experimental.game19.world.NonTile;
 import togos.networkrts.experimental.game19.world.NonTileInternals;
+import togos.networkrts.experimental.game19.world.PositionInWorld;
+import togos.networkrts.experimental.game19.world.RSTNode;
+import togos.networkrts.experimental.game19.world.RSTNode.NodeType;
 import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.gameengine1.index.AABB;
 import togos.networkrts.experimental.gameengine1.index.EntityRanges;
 import togos.networkrts.experimental.gameengine1.index.Visitor;
+import togos.networkrts.util.BitAddressUtil;
 
 public abstract class AbstractPhysicalNonTileInternals implements NonTileInternals<BlargNonTile>
 {
@@ -26,6 +30,100 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 			this.nt = nt;
 			this.collisionSpeed = collisionSpeed;
 		}
+	}
+	
+	protected PositionInWorld findNearestSolidIntersectionAlongPath( double x0, double y0, double x1, double y1, RSTNode rst, int rstX0, int rstY0, int rstSizePower ) {
+		// TODO: Change to use a SOLID flag,
+		// which should used by both nontiles (instead of RIGIDBODY)
+		// and blocks
+		if( BitAddressUtil.rangesIntersect(rst, BitAddresses.PHYSINTERACT, BitAddressUtil.MAX_ADDRESS ) ) {
+			int size = 1<<rstSizePower;
+			int rstX1 = rstX0 + size;
+			int rstY1 = rstY0 + size;
+			
+			// Put x0, y0 at the first intersection with this square
+			
+			if(
+				(x1 < rstX0 && x0 < rstX0) ||
+				(x1 > rstX1 && x0 > rstX1) ||
+				(y1 < rstY0 && y0 < rstY0) ||
+				(y1 > rstY1 && y0 > rstY1)
+			) return null;
+			
+			narrowX: {
+				double xEdge0, xEdge1;
+				if( x1 > x0 ) {
+					xEdge0 = Math.max(x0, rstX0);
+					xEdge1 = Math.min(x1, rstX1);
+				} else if( x0 > x1 ) {
+					xEdge0 = Math.min(x0, rstX1);
+					xEdge1 = Math.max(x1, rstX0);
+				} else {
+					break narrowX;
+				}
+				double ydist = y1 - y0;
+				y1 = y0 + ydist * (xEdge1-x0)/(x1-x0);
+				y0 = y0 + ydist * (xEdge0-x0)/(x1-x0);
+				
+				if(
+					(y1 < rstY0 && y0 < rstY0) ||
+					(y1 > rstY1 && y0 > rstY1)
+				) return null;
+				
+				x0 = xEdge0; x1 = xEdge1;
+			}
+			
+			narrowY: {
+				double yEdge0, yEdge1;
+				if( y1 > y0 ) {
+					yEdge0 = Math.max(y0, rstY0);
+					yEdge1 = Math.min(y1, rstY1);
+				} else if( y0 > y1 ) {
+					yEdge0 = Math.min(y0, rstY1);
+					yEdge1 = Math.max(y1, rstY0);
+				} else {
+					break narrowY;
+				}
+				double xdist = x1 - x0;
+				x1 = x0 + xdist * (yEdge1-y0)/(y1-y0);
+				x0 = x0 + xdist * (yEdge0-y0)/(y1-y0);
+				
+				if(
+					(x1 < rstX0 && x0 < rstX0) ||
+					(x1 > rstX1 && x0 > rstX1)
+				) return null;
+				
+				y0 = yEdge0; y1 = yEdge1;
+			}
+			
+			if( rst.getNodeType() == NodeType.BLOCKSTACK ) {
+				return new PositionInWorld(x0, y0, 0);
+			} else {
+				int subSizePower = rstSizePower-1;
+				int subSize = 1<<subSizePower;
+				RSTNode[] subNodes = rst.getSubNodes();
+				
+				int subx0, subx1, suby0, suby1;
+				if( x1 - x0 > 0 ) { subx0 = 0; subx1 = 1; }
+				else { subx0 = 1; subx1 = 0; }
+				if( y1 - y0 > 0 ) { suby0 = 0; suby1 = 1; }
+				else { suby0 = 1; suby1 = 0; }
+				
+				PositionInWorld p;
+				if( (p = findNearestSolidIntersectionAlongPath(x0, y0, x1, y1, subNodes[subx0+suby0*2], rstX0+subx0*subSize, rstY0+suby0*subSize, subSizePower)) != null ) return p;
+				if( (p = findNearestSolidIntersectionAlongPath(x0, y0, x1, y1, subNodes[subx1+suby0*2], rstX0+subx1*subSize, rstY0+suby0*subSize, subSizePower)) != null ) return p;
+				if( (p = findNearestSolidIntersectionAlongPath(x0, y0, x1, y1, subNodes[subx0+suby1*2], rstX0+subx0*subSize, rstY0+suby1*subSize, subSizePower)) != null ) return p;
+				if( (p = findNearestSolidIntersectionAlongPath(x0, y0, x1, y1, subNodes[subx1+suby1*2], rstX0+subx1*subSize, rstY0+suby1*subSize, subSizePower)) != null ) return p;
+			}
+		}
+		
+		return null;
+	}
+	
+	protected PositionInWorld findNearestSolidIntersectionAlongPath( double x0, double y0, double x1, double y1, World world ) {
+		int rad = 1<<(world.rstSizePower-1);
+		// TODO: Also detect intersections with other solid nontiles
+		return findNearestSolidIntersectionAlongPath( x0, y0, x1, y1, world.rst, -rad, -rad, world.rstSizePower );
 	}
 	
 	protected PhysicsResult updatePhysics(final BlargNonTile nt, long newTime, World world) {
@@ -131,14 +229,24 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 		double collisionSpeed = 0;
 		boolean onGround = false;
 		
-		
 		final AABB relAabb = this.getRelativePhysicalAabb();
 		
 		// Step until there's a collision
 		double newX = nt.x, newY = nt.y;
 		
-		boolean findCollisionsAReallySlowWay = true;
-		if( findCollisionsAReallySlowWay ) {
+		boolean findCollisionsALessSlowWay = true;
+		boolean findCollisionsAReallySlowWay = false;
+		
+		if( findCollisionsALessSlowWay ) {
+			PositionInWorld newPos = findNearestSolidIntersectionAlongPath( newX, newY, newX+nt.vx*interval, newY+nt.vy*interval, world );
+			if( newPos != null ) {
+				newX = newPos.x;
+				newY = newPos.y;
+			} else {
+				newX += nt.vx*interval;
+				newY += nt.vy*interval;
+			}
+		} else if( findCollisionsAReallySlowWay ) {
 			double stepDx = nt.vx;
 			double stepDy = nt.vy;
 			double stepInterval = interval;
@@ -168,6 +276,9 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 					break findCollision;
 				}
 			}
+		} else {
+			newX += nt.vx*interval;
+			newY += nt.vy*interval;
 		}
 		
 		double newVx, newVy;
