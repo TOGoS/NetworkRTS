@@ -103,8 +103,8 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 		final BlargNonTile nt0, long time, final World world,
 		MessageSet messages, final NonTileUpdateContext updateContext
 	) {
-		final PhysicsResult pr = super.updatePhysics(nt0, time, world);
-		final BlargNonTile nt = pr.nt;
+		final PhysicsResult pr = time == nt0.referenceTime ? null : super.updatePhysics(nt0, time, world);
+		final BlargNonTile nt = pr == null ? nt0 : pr.nt;
 		
 		final AABB ntraabb = nt.getRelativePhysicalAabb();
 		final AABB underFeet = new AABB(
@@ -279,10 +279,12 @@ public class JetManInternals extends AbstractPhysicalNonTileInternals
 			}
 		});
 		
-		double collisionSpeed = pr.getCollisionSpeed(); 
-		if( collisionSpeed > 4 ) {
-			double damageFactor = 0.001;
-			newSuitHealth -= collisionSpeed*collisionSpeed * damageFactor;
+		if( pr != null ) {
+			double collisionSpeed = pr.getCollisionSpeed(); 
+			if( collisionSpeed > 4 ) {
+				double damageFactor = 0.001;
+				newSuitHealth -= collisionSpeed*collisionSpeed * damageFactor;
+			}
 		}
 		
 		if( newSuitHealth < 0 ) {

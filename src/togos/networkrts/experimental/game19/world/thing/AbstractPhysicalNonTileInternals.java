@@ -132,6 +132,8 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 	}
 	
 	protected PhysicsResult updatePhysics(final BlargNonTile nt, long newTime, World world) {
+		assert nt.referenceTime < newTime;
+		
 		// Handle NonTile-NonTile collisions
 		// Less massive NonTile (or the one farther up or to the right
 		//   if they have the same mass) will adjust its position.
@@ -368,6 +370,7 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 	}
 	
 	@Override public BlargNonTile update(BlargNonTile nt, long time, World world, MessageSet messages, NonTileUpdateContext updateContext) {
+		if( time == nt.referenceTime ) return nt;
 		return updatePhysics(nt, time, world).nt;
 	}
 }
