@@ -10,8 +10,8 @@ package togos.networkrts.experimental.hdr64;
  */
 public class HDR64Buffer implements HDR64Drawable
 {
-	final int width, height;
-	final long[] data;
+	public final int width, height;
+	public final long[] data;
 	
 	public HDR64Buffer( int w, int h ) {
 		this.width = w;

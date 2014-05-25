@@ -7,11 +7,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import togos.blob.InputStreamable;
 import togos.networkrts.experimental.game19.io.CerealWorldIO;
 import togos.networkrts.experimental.game19.scene.ImageHandle;
 import togos.networkrts.experimental.game19.scene.TileLayerData;
 import togos.networkrts.experimental.qt2drender.Blackifier;
 import togos.networkrts.repo.BitprintFileRepository;
+import togos.networkrts.util.Getter;
 import togos.networkrts.util.ImageGetter;
 import togos.networkrts.util.Repository;
 import togos.networkrts.util.ResourceHandlePool;
@@ -39,6 +41,10 @@ public class ResourceContext
 	
 	public Repository<byte[]> getByteArrayRepository() {
 		return repo.toByteArrayRepository();
+	}
+	
+	public Getter<InputStreamable> getBlobGetter() {
+		return repo.toBlobGetter();
 	}
 	
 	//// Image stuff; maybe belongs in a subclass?

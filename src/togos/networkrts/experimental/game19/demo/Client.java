@@ -28,6 +28,7 @@ import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 
 import togos.networkrts.experimental.game19.graphics.AWTSurface;
+import togos.networkrts.experimental.game19.graphics.HDR64Surface;
 import togos.networkrts.experimental.game19.graphics.Renderer;
 import togos.networkrts.experimental.game19.graphics.Surface;
 import togos.networkrts.experimental.game19.io.CerealWorldIO;
@@ -45,6 +46,9 @@ import togos.networkrts.experimental.game19.world.World;
 import togos.networkrts.experimental.game19.world.thing.BlockWand;
 import togos.networkrts.experimental.game19.world.thing.ProjectileLauncher;
 import togos.networkrts.experimental.game19.world.thing.jetman.JetManCoreStats;
+import togos.networkrts.experimental.hdr64.HDR64Buffer;
+import togos.networkrts.experimental.hdr64.HDR64IO;
+import togos.networkrts.experimental.hdr64.HDR64Util;
 import togos.networkrts.experimental.packet19.FakeCoAPMessage;
 import togos.networkrts.experimental.packet19.RESTRequest;
 import togos.networkrts.experimental.packet19.WackPacket;
@@ -202,6 +206,11 @@ class Client
 			}
 		}
 		
+		enum RenderSystem {
+			AWT,
+			HDR64
+		};
+		
 		public void redrawLoop() throws InterruptedException {
 			Client.UIState u = null;
 			while( true ) {
@@ -224,16 +233,41 @@ class Client
 				if( wid <= 0 || hei <= 0 ) continue;
 				
 				BufferedImage sb = getSceneBuffer(wid, hei);
+				Graphics g = sb.getGraphics();
+				HDR64Buffer hdr64Buffer = null; 
 				synchronized( sb ) {
-					Graphics g = sb.getGraphics();
-					g.setClip(0, 0, sb.getWidth(), sb.getHeight());
-					g.setColor( sceneBackgroundColor );
-					g.fillRect( 0, 0, sb.getWidth(), sb.getHeight() );
-					Surface surface = new AWTSurface(g, resourceContext);
+					RenderSystem rs = RenderSystem.HDR64;
+					Surface surface;
+					switch( rs ) {
+					case HDR64:
+						hdr64Buffer = HDR64Buffer.get(hdr64Buffer, sb.getWidth(), sb.getHeight());
+						surface = HDR64Surface.create(hdr64Buffer, resourceContext.getBlobGetter());
+						surface.fillRect(0, 0, sb.getWidth(), sb.getHeight(), HDR64Util.intToHdr(sceneBackgroundColor.getRGB(), 0));
+						break;
+					case AWT:
+						g.setClip(0, 0, sb.getWidth(), sb.getHeight());
+						g.setColor( sceneBackgroundColor );
+						g.fillRect( 0, 0, sb.getWidth(), sb.getHeight() );
+						surface = new AWTSurface(g, resourceContext);
+						break;
+					default:
+						throw new RuntimeException("Unrecognized render system: "+rs);
+					}
 					
 					if( scene != null ) {
 						renderer.draw( scene, -scene.poiX, -scene.poiY, distance, surface, pixelsPerMeter, sb.getWidth()/2, sb.getHeight()/2 );
 					}
+					
+					switch( rs ) {
+					case HDR64:
+						if( HDR64IO.toBufferedImage(hdr64Buffer, 1, sb, BufferedImage.TYPE_INT_RGB) != sb ) throw new RuntimeException("Buffer unexpectedly replaced");
+						break;
+					case AWT:
+						break;
+					default:
+						throw new RuntimeException("Unrecognized render system: "+rs);
+					}
+					
 					for( UIOverlay o : overlays ) o.draw(g, sb.getWidth(), sb.getHeight());
 					
 					{

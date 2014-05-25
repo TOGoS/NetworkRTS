@@ -4,7 +4,7 @@ import java.awt.image.BufferedImage;
 
 public class HDR64IO
 {
-	public static HDR64Drawable toHdr64Drawable( BufferedImage img, int shift ) {
+	public static HDR64Buffer toHdr64Buffer( BufferedImage img, int shift ) {
 		int width = img.getWidth(), height = img.getHeight();
 		int[] argbRow = new int[width];
 		HDR64Buffer hdrBuf = new HDR64Buffer(width,height);

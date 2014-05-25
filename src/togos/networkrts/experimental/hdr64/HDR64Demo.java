@@ -104,8 +104,8 @@ public class HDR64Demo
 		}
 		
 		BufferedImage jetManImage = ImageIO.read(new File("tile-images/JetMan/JetUp.png"));
-		HDR64Drawable jetManDrawable = HDR64IO.toHdr64Drawable(jetManImage, 0);
-		HDR64Drawable jetManBrightDrawable = HDR64IO.toHdr64Drawable(jetManImage, 8);
+		HDR64Drawable jetManDrawable = HDR64IO.toHdr64Buffer(jetManImage, 0);
+		HDR64Drawable jetManBrightDrawable = HDR64IO.toHdr64Buffer(jetManImage, 8);
 		
 		Random r = new Random();
 		final Sprite[] sprites = new Sprite[100];
