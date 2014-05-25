@@ -132,7 +132,9 @@ public abstract class AbstractPhysicalNonTileInternals implements NonTileInterna
 	}
 	
 	protected PhysicsResult updatePhysics(final BlargNonTile nt, long newTime, World world) {
-		assert nt.referenceTime < newTime;
+		if( nt.referenceTime == newTime ) {
+			return new PhysicsResult(nt, 0, 0);
+		}
 		
 		// Handle NonTile-NonTile collisions
 		// Less massive NonTile (or the one farther up or to the right
