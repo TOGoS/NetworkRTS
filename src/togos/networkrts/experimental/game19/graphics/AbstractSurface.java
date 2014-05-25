@@ -21,10 +21,10 @@ public abstract class AbstractSurface implements Surface
 	@Override public Surface intersectClip(int x, int y, int w, int h) {
 		if( x <= clipLeft && y <= clipTop && x+w >= clipRight && y+h >= clipBottom ) return this;
 		return withClip(
-			Math.min(x, clipLeft),
-			Math.min(y, clipTop),
-			Math.max(x+w, clipRight),
-			Math.max(y+h, clipBottom)
+			Math.max(x, clipLeft),
+			Math.max(y, clipTop),
+			Math.min(x+w, clipRight),
+			Math.min(y+h, clipBottom)
 		);
 	}
 }
