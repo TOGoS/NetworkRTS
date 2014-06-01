@@ -75,6 +75,7 @@ public class UBTPPacketHandler implements PacketHandler
 					blockIdx = nextBlockSlot++;
 					if( nextBlockSlot >= blockCrcs.length ) nextBlockSlot = 0;
 					blockOffsets[blockIdx] = 0;
+					blockCrcs[blockIdx] = crc;
 					blockData[blockIdx] = new byte[blockLength];
 				}
 				if( blockOffsets[blockIdx] != segmentOffset ) {
@@ -86,7 +87,7 @@ public class UBTPPacketHandler implements PacketHandler
 					return;
 				}
 				byte[] theBlockData = blockData[blockIdx];
-				for( int i=segmentOffset, destOffset=segmentOffset; i<segmentLength; ++i, ++destOffset, ++offset ) {
+				for( int i=0, destOffset=segmentOffset; i<segmentLength; ++i, ++destOffset, ++offset ) {
 					theBlockData[destOffset] = data[offset];
 				}
 				blockOffsets[blockIdx] = segmentOffset+segmentLength;
