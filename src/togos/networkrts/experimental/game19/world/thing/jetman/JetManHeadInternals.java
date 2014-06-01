@@ -79,7 +79,7 @@ public class JetManHeadInternals extends AbstractPhysicalNonTileInternals
 		final PhysicsResult pr = super.updatePhysics(nt0, time, world);
 		
 		double damageFactor = 0.001;
-		float newHealth = health - (float)(pr.collisionVx*pr.collisionVx*damageFactor);
+		float newHealth = health - (float)((pr.collisionVy*pr.collisionVy+pr.collisionVx*pr.collisionVx)*damageFactor);
 		if( newHealth < 0 ) return null;
 		
 		return pr.nt.withInternals(
