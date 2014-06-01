@@ -1,18 +1,16 @@
 package togos.networkrts.experimental.ubtp;
 
 import java.util.Random;
-import java.util.zip.CRC32;
-
-import togos.networkrts.experimental.tcp1.PacketHandler;
 
 import junit.framework.TestCase;
+import togos.networkrts.experimental.tcp1.PacketHandler;
 
 public class UBTPTest extends TestCase
 {
-	byte[] writeBuffer = new byte[2048];
+	byte[] writeBuffer = new byte[65535];
 	int writtenSegOff, writtenSegLen;
 	
-	byte[] readBuffer = new byte[2048];
+	byte[] readBuffer = new byte[65535];
 	int readSegOff, readSegLen;
 	
 	PacketHandler blockHandler;
@@ -69,6 +67,10 @@ public class UBTPTest extends TestCase
 	}
 	
 	public void testTxRxLargeBlocks() {
-		testTxRx(1025-3+1, 65535);
+		testTxRx(1025-3+1, writeBuffer.length);
+	}
+	
+	public void testTxRxDiffBlocks() {
+		testTxRx(0, writeBuffer.length);
 	}
 }

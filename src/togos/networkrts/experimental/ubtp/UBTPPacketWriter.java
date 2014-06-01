@@ -2,7 +2,6 @@ package togos.networkrts.experimental.ubtp;
 
 import java.util.zip.CRC32;
 
-import togos.networkrts.cereal.NumberEncoding;
 import togos.networkrts.experimental.tcp1.PacketHandler;
 
 public class UBTPPacketWriter
@@ -23,6 +22,10 @@ public class UBTPPacketWriter
 	}
 	
 	public void write( byte[] data, int off, int len ) {
+		assert data != null;
+		assert off >= 0;
+		assert data.length >= off+len;
+		
 		int wLen = len+3; // Total length of block+framing if written as a WHOLEBLOCK 
 		
 		// If it would fit in a single packet, but not in the current one, flush first.
@@ -38,7 +41,7 @@ public class UBTPPacketWriter
 			
 			int wrote = 0;
 			while( wrote < len ) {
-				int segLen = Math.min(wrote-len, buffer.length-bufPos-hLen);
+				int segLen = Math.min(len-wrote, buffer.length-bufPos-hLen);
 				
 				buffer[bufPos++] = UBTP.OP_SEGMENT;
 				buffer[bufPos++] = (byte)(crc >> 24);
@@ -59,6 +62,7 @@ public class UBTPPacketWriter
 				flush();
 			}
 		} else {
+			assert bufPos+len+3 <= buffer.length;
 			buffer[bufPos++] = UBTP.OP_WHOLEBLOCK;
 			buffer[bufPos++] = (byte)(len >> 8);
 			buffer[bufPos++] = (byte)(len >> 0);
