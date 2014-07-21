@@ -9,6 +9,7 @@ import java.util.WeakHashMap;
 import javax.imageio.ImageIO;
 
 import togos.blob.InputStreamable;
+import togos.networkrts.experimental.game19.util.ResourceContext;
 import togos.networkrts.experimental.hdr64.HDR64Buffer;
 import togos.networkrts.experimental.hdr64.HDR64Drawable;
 import togos.networkrts.experimental.hdr64.HDR64IO;
@@ -99,6 +100,8 @@ public class HDR64Surface extends AbstractSurface
 	protected final long notFoundColor = HDR64Util.hdr(1, 1, 0, 1); 
 	
 	@Override public void drawImage( int x, int y, int w, int h, String imageUrn ) {
+		int shadeImageIndex = ResourceContext.parseShadeImageUrn(imageUrn);
+		if( shadeImageIndex != -1 ) return;
 		try {
 			imageLoader.getImage(imageUrn, w, h).draw(buffer, x, y, clipLeft, clipTop, clipRight, clipBottom );
 		} catch( ResourceNotFound e ) {
