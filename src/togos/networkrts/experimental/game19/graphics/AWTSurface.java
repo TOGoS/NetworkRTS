@@ -53,16 +53,22 @@ public class AWTSurface implements Surface
 	}
 	
 	@Override public void drawImage(int x, int y, int w, int h, String imageUrn) {
-		ImageHandle ih = ctx.getImageHandle(imageUrn);
-		if( ih.isCompletelyTransparent ) return;
-		try {
-			// TODO: Scale and place according to icon x, y, w, h, where
-			// -0.5 = top/left edge of cell, +0.5 = bottom/right edge of cell
-			g.drawImage( ih.getScaled(imageGetter,w,h), x, y, null );
-		} catch( ResourceNotFound e ) {
-			System.err.println("Couldn't load image "+ih.original.getUri());
-			g.setColor( Color.PINK );
-			g.fillRect( x+1, y+1, w-2, h-2 );
+		int shadeImageIndex = ResourceContext.parseShadeImageUrn(imageUrn);
+		BufferedImage img;
+		if( shadeImageIndex != -1 ) {
+			img = ctx.getShadeOverlays(w)[shadeImageIndex];
+		} else {
+			ImageHandle ih = ctx.getImageHandle(imageUrn);
+			if( ih.isCompletelyTransparent ) return;
+			try {
+				img = ih.getScaled(imageGetter,w,h);
+			} catch( ResourceNotFound e ) {
+				System.err.println("Couldn't load image "+ih.original.getUri());
+				g.setColor( Color.PINK );
+				g.fillRect( x+1, y+1, w-2, h-2 );
+				return;
+			}
 		}
+		g.drawImage( img, x, y, null );
 	}
 }

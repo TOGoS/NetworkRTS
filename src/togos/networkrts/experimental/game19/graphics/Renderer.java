@@ -1,7 +1,6 @@
 package togos.networkrts.experimental.game19.graphics;
 
 import java.awt.Color;
-import java.awt.image.BufferedImage;
 
 import togos.networkrts.experimental.game19.scene.Icon;
 import togos.networkrts.experimental.game19.scene.Layer;
@@ -40,7 +39,6 @@ public class Renderer
 		}
 		
 		int[] shades = tileData.getShades(0); // TODO: need to determine reference layer somehow
-		final BufferedImage[] shadeImages = resourceContext.getShadeOverlays(tileSize); 
 		
 		// Left-handed coordinate system FTW
 		
@@ -65,8 +63,7 @@ public class Renderer
 				}
 				
 				if( shades[shadeIndex] != TileLayerData.SHADE_ALL ) {
-					// TODO: Fix somehow
-					//g.drawImage( shadeImages[shades[shadeIndex]], sx, sy, null );
+					g.drawImage(sx, sy, tileSize, tileSize, ResourceContext.SHADE_IMAGE_URIS[shades[shadeIndex]]);
 				}
 			}
 		}

@@ -60,6 +60,20 @@ public class ResourceContext
 		return ih;
 	}
 	
+	protected static final String SHADE_IMAGE_URI_PREFIX = "corner-blackener:";
+	
+	public static final String[] SHADE_IMAGE_URIS = new String[16];
+	static {
+		for( int i=0; i<SHADE_IMAGE_URIS.length; ++i ) {
+			SHADE_IMAGE_URIS[i] = SHADE_IMAGE_URI_PREFIX+i;
+		}
+	}
+	
+	public static int parseShadeImageUrn(String urn) {
+		return urn.startsWith(SHADE_IMAGE_URI_PREFIX) ?
+			Integer.parseInt(urn.substring(SHADE_IMAGE_URI_PREFIX.length())) : -1;
+	}
+	
 	protected BufferedImage[] shadeOverlays;
 	protected int shadeOverlaySize;
 	public synchronized BufferedImage[] getShadeOverlays( int size ) {
@@ -71,7 +85,8 @@ public class ResourceContext
 				(i & TileLayerData.SHADE_TR) != 0 ? 1 : 0,
 				(i & TileLayerData.SHADE_BL) != 0 ? 1 : 0,
 				(i & TileLayerData.SHADE_BR) != 0 ? 1 : 0
-			); 
+			);
+			shadeOverlaySize = size;
 		}
 		return shadeOverlays;
 	}

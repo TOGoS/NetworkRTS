@@ -236,7 +236,7 @@ class Client
 				Graphics g = sb.getGraphics();
 				HDR64Buffer hdr64Buffer = null; 
 				synchronized( sb ) {
-					RenderSystem rs = RenderSystem.HDR64;
+					RenderSystem rs = RenderSystem.AWT;
 					Surface surface;
 					switch( rs ) {
 					case HDR64:
