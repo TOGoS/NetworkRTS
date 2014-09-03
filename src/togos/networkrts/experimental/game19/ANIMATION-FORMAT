@@ -1,19 +1,37 @@
 {
-	"classUri": "http://ns.nuke24.net/NetworkRTS/Graphics/Animation",
-	"length": 8,
-	"timeUnit": "s/8",
-	"frames": [
+	"classUri": "http://ns.nuke24.net/NetworkRTS/Graphics/CompositeIcon",
+	"drawables": [
 		{
-			"startTime": 250,
-			"endTime": 500,
-			"drawables": [
+			"class": "http://ns.nuke24.net/NetworkRTS/Graphics/ImageIcon"
+			"x": -0.5, "y": -0.5,
+			"width": 1, "height": 1,
+			"imageUri": "..."
+		},
+		{
+			"classUri": "http://ns.nuke24.net/NetworkRTS/Graphics/DiscreteAnimation",
+			"length": 8,
+			"timeUnit": "s/8",
+			"frames": [
 				{
-					"class": "http://ns.nuke24.net/NetworkRTS/Graphics/Icon"
-					"x": 0, "y": 0,
-					"width": 1, "height": 1,
-					"imageUri": "...."
-					"cropX": 0, "cropY": 0,
-					"cropWidth": 16, "cropHeight": 16 
+					"startTime": 0,
+					"endTime": 1,
+					"drawable": {
+						"class": "http://ns.nuke24.net/NetworkRTS/Graphics/ImageIcon"
+						"x": -0.2, "y": -0.2,
+						"width": 0.4, "height": 0.4,
+						"image": {
+							"class": "http://ns.nuke24.net/NetworkRTS/Graphics/ScaleComponents",
+							"red": 2.5,
+							"green": 5,
+							"blue": 2.5,
+							"sourceImage": {
+								"class": "http://ns.nuke24.net/NetworkRTS/Graphics/Crop",
+								"cropX": 0, "cropY": 0,
+								"cropWidth": 16, "cropHeight": 16,
+								"sourceImageUri": "...."
+							}
+						}
+					}
 				}
 			]
 		}
