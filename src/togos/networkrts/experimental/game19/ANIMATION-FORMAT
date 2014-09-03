@@ -1,0 +1,21 @@
+{
+	"classUri": "http://ns.nuke24.net/NetworkRTS/Graphics/Animation",
+	"length": 8,
+	"timeUnit": "s/8",
+	"frames": [
+		{
+			"startTime": 250,
+			"endTime": 500,
+			"drawables": [
+				{
+					"class": "http://ns.nuke24.net/NetworkRTS/Graphics/Icon"
+					"x": 0, "y": 0,
+					"width": 1, "height": 1,
+					"imageUri": "...."
+					"cropX": 0, "cropY": 0,
+					"cropWidth": 16, "cropHeight": 16 
+				}
+			]
+		}
+	]
+}
