@@ -10,6 +10,9 @@ import togos.networkrts.util.BitAddressRange;
  */
 public interface BlockInternals extends BitAddressRange, HasAutoUpdateTime
 {
+	public int getNonTileCollisionInteraction(
+		Block b, long collisionTime, double x, double y, double w, double h, NonTile nt);
+	
 	// TODO: Replace action list with message list
 	// TODO: May want to update parameter types to be more specific:
 	// - take a (read-only) MessageCollection of incoming messages

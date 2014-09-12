@@ -93,6 +93,7 @@ public class Block implements BitAddressRange, HasAutoUpdateTime
 	public static final long FLAG_SOLID  = 0x0000000000000001l; 
 	public static final long FLAG_OPAQUE = 0x0000000000000002l;
 	// TODO: Replace spikey with some more flexible mechanism
+	// See getNonTileCollisionInteraction
 	public static final long FLAG_SPIKEY = 0x0000000000000004l;
 	
 	public final BlockStackRSTNode stack;
@@ -129,5 +130,17 @@ public class Block implements BitAddressRange, HasAutoUpdateTime
 	
 	@Override public long getNextAutoUpdateTime() {
 		return internals.getNextAutoUpdateTime();
+	}
+	
+	public static final int INTERACTION_SA_PASS   = 0x00;
+	public static final int INTERACTION_SA_BOUNCE = 0x01;
+	public static final int INTERACTION_SA_ABSORB = 0x02;
+	public static final int INTERACTION_SA_MASK   = 0x03;
+	
+	// Flag to indicate if the object of the interaction requires notification
+	public static final int INTERACTION_NOTIFY = 0x10;
+	
+	public int getNonTileCollisionInteraction( long collisionTime, double x, double y, double w, double h, NonTile nt ) {
+		return internals.getNonTileCollisionInteraction(this, collisionTime, x, y, w, h, nt);
 	}
 }
