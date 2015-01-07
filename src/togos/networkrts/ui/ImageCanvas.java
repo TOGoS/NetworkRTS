@@ -44,7 +44,7 @@ public class ImageCanvas extends Canvas
 		while( img.getWidth() * (scale+1) <= getWidth() && img.getHeight() * (scale+1) <= getHeight() ) {
 			++scale;
 		}
-		while( img.getWidth() * scale > getWidth() || img.getHeight() * scale > getHeight() ) {
+		while( scale > 1 && (img.getWidth() * scale > getWidth() || img.getHeight() * scale > getHeight()) ) {
 			--scale;
 		}
 		
