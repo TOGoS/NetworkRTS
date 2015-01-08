@@ -217,7 +217,7 @@ public class PolyDemo {
 		final Thread renderThread = new Thread() {
 			final ArrayList<BouncingSquare> objects = new ArrayList<BouncingSquare>();
 			final Eye[] eyes = new Eye[2];
-			final int d = 100;
+			final int d = w, dist = w * 2;
 			
 			@Override public void run() {
 				eyes[0] = new Eye();
@@ -227,11 +227,12 @@ public class PolyDemo {
 				eyes[1].dx = +20;
 				eyes[1].setFilter((short)0,(short)2,(short)2, 1);
 				
-				for( int i=0; i<10; ++i ) {
+				for( int i=0; i<5; ++i ) {
 					BouncingSquare object = new BouncingSquare();
 					object.x = (float)Math.random()*w;
 					object.y = (float)Math.random()*h;
 					object.z = (float)Math.random()*d;
+					object.rad = 30;
 					object.dx = (float)Math.random();
 					object.dy = (float)Math.random();
 					object.dz = (float)Math.random();
@@ -240,24 +241,42 @@ public class PolyDemo {
 					object.b = (short)(128+Math.random()*127);
 					objects.add(object);
 				}
+				for( int i=0; i<70; ++i ) {
+					BouncingSquare object = new BouncingSquare();
+					object.x = (float)Math.random()*w;
+					object.y = (float)h;
+					object.z = (float)Math.random()*d;
+					object.rad = 2;
+					object.r = (short)(128+Math.random()*127);
+					object.g = (short)(128);
+					object.b = (short)(128);
+					object.dx = (float)Math.random() * 0.1f;
+					object.dy = (float)Math.random() * 0.1f;
+					object.dz = (float)Math.random() * 0.1f;
+					objects.add(object);
+				}
+				
 				
 				while( !Thread.interrupted() ) {
 					compositor.fill((short)0, (short)0, (short)0);
-					float speed = 20;
+					float speed = 15;
 					int subframes = 4;
 					for( int f=0; f<subframes; ++f ) {
 						for( Eye e : eyes ) {
-							renderer.fill((short)0, (short)0, (short)0);
+							renderer.fill((short)32, (short)48, (short)32);
 							
-							renderer.setPerspectiveOrigin(w/2 + e.dx, h/2, 100);
-							renderer.drawLine(0  , 0  , 0, 0  , 0  , 100, (short)255, (short)255, (short)255);
-							renderer.drawLine(w-1, 0  , 0, w-1, 0  , 100, (short)255, (short)255, (short)255);
-							renderer.drawLine(0  , h-1, 0, 0  , h-1, 100, (short)255, (short)255, (short)255);
-							renderer.drawLine(w-1, h-1, 0, w-1, h-1, 100, (short)255, (short)255, (short)255);
-							renderer.drawLine(0  , 0  , 100, w-1, 0  , 100, (short)255, (short)255, (short)255);
-							renderer.drawLine(0  , h-1, 100, w-1, h-1, 100, (short)255, (short)255, (short)255);
-							renderer.drawLine(0  , 0  , 100, 0  , h-1, 100, (short)255, (short)255, (short)255);
-							renderer.drawLine(w-1, 0  , 100, w-1, h-1, 100, (short)255, (short)255, (short)255);
+							// Draw walls
+							renderer.setPerspectiveOrigin(w/2 + e.dx, h/2, dist);
+							renderer.drawLine(0  , 0  , 0, 0  , 0  , d, (short)255, (short)255, (short)255);
+							renderer.drawLine(w-1, 0  , 0, w-1, 0  , d, (short)255, (short)255, (short)255);
+							renderer.drawLine(0  , h-1, 0, 0  , h-1, d, (short)255, (short)255, (short)255);
+							renderer.drawLine(w-1, h-1, 0, w-1, h-1, d, (short)255, (short)255, (short)255);
+							renderer.drawLine(0  , 0  , d, w-1, 0  , d, (short)255, (short)255, (short)255);
+							renderer.drawLine(0  , h-1, d, w-1, h-1, d, (short)255, (short)255, (short)255);
+							renderer.drawLine(0  , 0  , d, 0  , h-1, d, (short)255, (short)255, (short)255);
+							renderer.drawLine(w-1, 0  , d, w-1, h-1, d, (short)255, (short)255, (short)255);
+							
+							// Draw floor dots
 							
 							Collections.sort(objects, new Comparator<BouncingSquare>() {
 								@Override public int compare(BouncingSquare o1, BouncingSquare o2) {
@@ -277,10 +296,10 @@ public class PolyDemo {
 									(int)(drawX-scale*s.rad), (int)(drawX+scale*s.rad),
 									s.r, s.g, s.b);
 								renderer.drawAATrapezoid(
-									(int)(drawY-scale*s.rad)+2, (int)(drawY+scale*s.rad)-2,
-									(int)(drawX-scale*s.rad)+2, (int)(drawX+scale*s.rad)-2,
-									(int)(drawX-scale*s.rad)+2, (int)(drawX+scale*s.rad)-2,
-									(short)0, (short)0, (short)0);
+									(int)(drawY-scale*s.rad)+5, (int)(drawY+scale*s.rad)-5,
+									(int)(drawX-scale*s.rad)+5, (int)(drawX+scale*s.rad)-5,
+									(int)(drawX-scale*s.rad)+5, (int)(drawX+scale*s.rad)-5,
+									(short)64, (short)64, (short)0);
 							}
 							compositor.add(renderer, e.r, e.g, e.b, e.div);
 						}
