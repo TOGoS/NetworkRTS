@@ -37,8 +37,8 @@ public class PolyDemo {
 			assert dest.length >= w * h;
 			for (int i = w * h - 1; i >= 0; --i) {
 				short sr = (short) (this.r[i] * r / div);
-				short sg = (short) (this.g[i] * r / div);
-				short sb = (short) (this.b[i] * r / div);
+				short sg = (short) (this.g[i] * g / div);
+				short sb = (short) (this.b[i] * b / div);
 				if( sr < 0 || sr > 255 ) sr = 255;
 				if( sg < 0 || sg > 255 ) sg = 255;
 				if( sb < 0 || sb > 255 ) sb = 255;
