@@ -165,10 +165,10 @@ public class PolyDemo {
 			drawLine( px0, py0, px1, py1 );
 		}
 		
-		public void drawAATrapezoid(int line0, int line1, int x0, int x1, int x2, int x3 ) {
-			for (int y = line0 < 0 ? 0 : line0; y < line1 && y < h; ++y) {
-				int lx0 = x0 + (y - line0) * (x2 - x0) / (line1 - line0);
-				int lx1 = x1 + (y - line0) * (x3 - x1) / (line1 - line0);
+		public void drawAATrapezoid(float line0, float line1, float x0, float x1, float x2, float x3 ) {
+			for (int y = (int)line0 < 0 ? 0 : (int)line0; y < line1 && y < h; ++y) {
+				int lx0 = (int)(x0 + (y - line0) * (x2 - x0) / (line1 - line0));
+				int lx1 = (int)(x1 + (y - line0) * (x3 - x1) / (line1 - line0));
 				if( lx0 <  0 ) lx0 = 0;
 				if( lx1 >= w ) lx1 = w;
 				for( int i = y * w + lx0, i1 = y * w + lx1; i < i1; ++i ) {
@@ -179,10 +179,10 @@ public class PolyDemo {
 			}
 		}
 		
-		public void drawTriangle(int x0, int y0, int x1, int y1, int x2, int y2) {
+		public void drawTriangle(float x0, float y0, float x1, float y1, float x2, float y2) {
 			// Sort verteces
 			
-			int t;
+			float t;
 			
 			if( y0 <= y1 && y0 <= y2 ) {
 			} else if( y1 <= y0 && y1 <= y2 ) {
@@ -198,7 +198,9 @@ public class PolyDemo {
 				t = x2; x2 = x1; x1 = t;
 			}
 			
-			int x4 = x0+(x2-x0)*(y1-y0)/(y2-y0);
+			if( y2 == y0 ) return;
+			
+			float x4 = x0+(x2-x0)*(y1-y0)/(y2-y0);
 			if( x1 > x4 ) {
 				t = x1; x1 = x4; x4 = t;
 			}
@@ -219,6 +221,67 @@ public class PolyDemo {
 		) {
 			drawTriangle( x0, y0, z0, x1, y1, z1, x2, y2, z2 );
 			drawTriangle( x2, y2, z2, x3, y3, z3, x0, y0, z0 );
+		}
+		
+		protected void shade( short r, short g, short b, int shade ) {
+			setColor((short)(r*shade/255), (short)(g*shade/255), (short)(b*shade/255));
+		}
+		
+		public void drawCuboid( float x0, float y0, float z0, float x1, float y1, float z1 ) {
+			short r = drawR, g = drawG, b = drawB;
+			
+			// Back
+			shade(r,g,b, 128);
+			drawQuad(
+				x1, y0, z1,
+				x0, y0, z1,
+				x0, y1, z1,
+				x1, y1, z1
+			);
+			// Left
+			shade(r,g,b, 192);
+			drawQuad(
+				x0, y0, z1,
+				x0, y0, z0,
+				x0, y1, z0,
+				x0, y1, z1
+			);
+			// Right
+			shade(r,g,b, 160);
+			drawQuad(
+				x1, y0, z0,
+				x1, y0, z1,
+				x1, y1, z1,
+				x1, y1, z0
+			);
+			// Top
+			shade(r,g,b, 255);
+			drawQuad(
+				x0, y0, z1,
+				x1, y0, z1,
+				x1, y0, z0,
+				x0, y0, z0
+			);
+			// Bottom
+			shade(r,g,b, 96);
+			drawQuad(
+				x0, y1, z0,
+				x1, y1, z0,
+				x1, y1, z1,
+				x0, y1, z1
+			);
+			// Front
+			shade(r,g,b, 224);
+			drawQuad(
+				x0, y0, z0,
+				x1, y0, z0,
+				x1, y1, z0,
+				x0, y1, z0
+			);
+		}
+		
+		public void drawCube( float x, float y, float z, float rad ) {
+			drawCuboid( x-rad, y-rad, z-rad, x+rad, y+rad, z+rad );
 		}
 	}
 	
@@ -265,19 +328,19 @@ public class PolyDemo {
 		final Compositor compositor = new Compositor(w, h);
 		final Thread renderThread = new Thread() {
 			final ArrayList<BouncingSquare> objects = new ArrayList<BouncingSquare>();
-			final Eye[] eyes = new Eye[1];
+			final Eye[] eyes = new Eye[2];
 			final int d = w, dist = w * 2;
 			
 			@Override public void run() {
-				/*
+				
 				eyes[0] = new Eye();
 				eyes[0].dx = -20;
-				eyes[0].setFilter((short)2,(short)0,(short)0, 1);
+				eyes[0].setFilter((short)1,(short)0,(short)0, 1);
 				eyes[1] = new Eye();
 				eyes[1].dx = +20;
-				eyes[1].setFilter((short)0,(short)2,(short)2, 1);
-				*/
-				eyes[0] = new Eye();
+				eyes[1].setFilter((short)0,(short)1,(short)1, 1);
+				
+				//eyes[0] = new Eye();
 				
 				for( int i=0; i<5; ++i ) {
 					BouncingSquare object = new BouncingSquare();
@@ -368,19 +431,9 @@ public class PolyDemo {
 							});
 							for( BouncingSquare s : objects ) {
 								renderer.project(s.x, s.y, s.z);
-								final float drawX = renderer.projectedX;
-								final float drawY = renderer.projectedY;
-								final float scale = renderer.projectedScale;
 								renderer.setColor(s.r, s.g, s.b);
-								renderer.drawAATrapezoid(
-									(int)(drawY-scale*s.rad), (int)(drawY+scale*s.rad),
-									(int)(drawX-scale*s.rad), (int)(drawX+scale*s.rad),
-									(int)(drawX-scale*s.rad), (int)(drawX+scale*s.rad));
-								renderer.setColor((short)64, (short)64, (short)0);
-								renderer.drawAATrapezoid(
-									(int)(drawY-scale*s.rad)+5, (int)(drawY+scale*s.rad)-5,
-									(int)(drawX-scale*s.rad)+5, (int)(drawX+scale*s.rad)-5,
-									(int)(drawX-scale*s.rad)+5, (int)(drawX+scale*s.rad)-5);
+								renderer.drawCube(s.x, s.y, s.z, s.rad);
+
 							}
 							compositor.add(renderer, e.r, e.g, e.b, e.div);
 						}
