@@ -409,17 +409,6 @@ public class PolyDemo {
 											  w  , h  , d  ,
 											  0  , h  , d  );
 							
-							/*
-							renderer.drawLine(0  , 0  , 0, 0  , 0  , d);
-							renderer.drawLine(w-1, 0  , 0, w-1, 0  , d);
-							renderer.drawLine(0  , h-1, 0, 0  , h-1, d);
-							renderer.drawLine(w-1, h-1, 0, w-1, h-1, d);
-							renderer.drawLine(0  , 0  , d, w-1, 0  , d);
-							renderer.drawLine(0  , h-1, d, w-1, h-1, d);
-							renderer.drawLine(0  , 0  , d, 0  , h-1, d);
-							renderer.drawLine(w-1, 0  , d, w-1, h-1, d);
-							*/
-							
 							// Draw floor dots
 							
 							Collections.sort(objects, new Comparator<BouncingSquare>() {
