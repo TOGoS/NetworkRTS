@@ -166,9 +166,9 @@ public class PolyDemo {
 		}
 		
 		public void drawAATrapezoid(float line0, float line1, float x0, float x1, float x2, float x3 ) {
-			for (int y = (int)line0 < 0 ? 0 : (int)line0; y < line1 && y < h; ++y) {
-				int lx0 = (int)(x0 + (y - line0) * (x2 - x0) / (line1 - line0));
-				int lx1 = (int)(x1 + (y - line0) * (x3 - x1) / (line1 - line0));
+			for (int y = line0 < 0 ? 0 : (int)Math.round(line0); y < (int)Math.round(line1) && y < h; ++y) {
+				int lx0 = (int)(x0 + (y + 0.5f - line0) * (x2 - x0) / (line1 - line0));
+				int lx1 = (int)(x1 + (y + 0.5f - line0) * (x3 - x1) / (line1 - line0));
 				if( lx0 <  0 ) lx0 = 0;
 				if( lx1 >= w ) lx1 = w;
 				for( int i = y * w + lx0, i1 = y * w + lx1; i < i1; ++i ) {
