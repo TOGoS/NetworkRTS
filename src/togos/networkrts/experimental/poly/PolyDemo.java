@@ -68,7 +68,8 @@ public class PolyDemo {
 
 	static class Renderer extends Surface {
 		protected float poX, poY, screenDist;
-		public float projectedX, projectedY, projectedScale; 
+		public float projectedX, projectedY, projectedScale;
+		protected short drawR, drawG, drawB;
 		
 		public Renderer(int w, int h) {
 			super(w, h);
@@ -90,7 +91,13 @@ public class PolyDemo {
 			this.screenDist = screenDist;
 		}
 		
-		protected void _drawLine( int x0, int y0, int x1, int y1, short r, short g, short b ) {
+		public void setColor( short r, short g, short b ) {
+			this.drawR = r;
+			this.drawG = g;
+			this.drawB = b;
+		}
+		
+		protected void _drawLine( int x0, int y0, int x1, int y1 ) {
 			if( x0 == x1 ) {
 				if( y1 < y0 ) {
 					int t = y1; y1 = y0; y0 = t;
@@ -98,9 +105,9 @@ public class PolyDemo {
 				if( y0 <  0 ) y0 = 0;
 				if( y1 >= h ) y1 = h; 
 				for( int y=y0, i=y0*w+x0; y<=y1; ++y, i += w ) {
-					this.r[i] = r;
-					this.g[i] = g;
-					this.b[i] = b;
+					this.r[i] = drawR;
+					this.g[i] = drawG;
+					this.b[i] = drawB;
 				}
 			} else if( y0 == y1 ) {
 				if( x1 < x0 ) {
@@ -109,9 +116,9 @@ public class PolyDemo {
 				if( x0 <  0 ) x0 = 0;
 				if( x1 >= w ) x1 = w; 
 				for( int x=x0, i=y0*w+x0; x<=x1; ++x, ++i ) {
-					this.r[i] = r;
-					this.g[i] = g;
-					this.b[i] = b;
+					this.r[i] = drawR;
+					this.g[i] = drawG;
+					this.b[i] = drawB;
 				}
 			} else if( Math.abs(x1 - x0) > Math.abs(y1 - y0) ) {
 				int startx = Math.min(x0,x1);
@@ -123,9 +130,9 @@ public class PolyDemo {
 					int y = y0 + (x-x0) * (y1+1-y0) / (x1+1-x0);
 					if( y < 0 || y >= h ) continue;
 					int i = y*w+x;
-					this.r[i] = r;
-					this.g[i] = g;
-					this.b[i] = b;
+					this.r[i] = drawR;
+					this.g[i] = drawG;
+					this.b[i] = drawB;
 				}
 			} else {
 				int starty = Math.min(y0,y1);
@@ -137,46 +144,88 @@ public class PolyDemo {
 					int x = x0 + (y-y0) * (x1+1-x0) / (y1+1-y0);
 					if( x < 0 || x >= w ) continue;
 					int i = y*w+x;
-					this.r[i] = r;
-					this.g[i] = g;
-					this.b[i] = b;
+					this.r[i] = drawR;
+					this.g[i] = drawG;
+					this.b[i] = drawB;
 				}
 			}
 		}
 		
-		public void drawLine( int x0, int y0, int x1, int y1, short r, short g, short b ) {
-			_drawLine(x0, y0, x1, y1, r, g, b);
+		public void drawLine( int x0, int y0, int x1, int y1 ) {
+			_drawLine(x0, y0, x1, y1);
 		}
 		
-		public void drawLine( float x0, float y0, float z0, float x1, float y1, float z1, short r, short g, short b) {
+		public void drawLine( float x0, float y0, float z0, float x1, float y1, float z1) {
 			project(x0, y0, z0);
 			int px0 = (int)projectedX;
 			int py0 = (int)projectedY;
 			project(x1, y1, z1);
 			int px1 = (int)projectedX;
 			int py1 = (int)projectedY;
-			drawLine( px0, py0, px1, py1, r, g, b );
+			drawLine( px0, py0, px1, py1 );
 		}
 		
-		public void drawAATrapezoid(int line0, int line1, int x0, int x1, int x2, int x3, short r, short g, short b) {
+		public void drawAATrapezoid(int line0, int line1, int x0, int x1, int x2, int x3 ) {
 			for (int y = line0 < 0 ? 0 : line0; y < line1 && y < h; ++y) {
 				int lx0 = x0 + (y - line0) * (x2 - x0) / (line1 - line0);
 				int lx1 = x1 + (y - line0) * (x3 - x1) / (line1 - line0);
 				if( lx0 <  0 ) lx0 = 0;
 				if( lx1 >= w ) lx1 = w;
 				for( int i = y * w + lx0, i1 = y * w + lx1; i < i1; ++i ) {
-					this.r[i] = r;
-					this.g[i] = g;
-					this.b[i] = b;
+					this.r[i] = drawR;
+					this.g[i] = drawG;
+					this.b[i] = drawB;
 				}
 			}
+		}
+		
+		public void drawTriangle(int x0, int y0, int x1, int y1, int x2, int y2) {
+			// Sort verteces
+			
+			int t;
+			
+			if( y0 <= y1 && y0 <= y2 ) {
+			} else if( y1 <= y0 && y1 <= y2 ) {
+				t = y1; y1 = y0; y0 = t;
+				t = x1; x1 = x0; x0 = t;
+			} else {
+				t = y2; y2 = y0; y0 = t;
+				t = x2; x2 = x0; x0 = t;
+			}
+			
+			if( y1 > y2 ) {
+				t = y2; y2 = y1; y1 = t;
+				t = x2; x2 = x1; x1 = t;
+			}
+			
+			int x4 = x0+(x2-x0)*(y1-y0)/(y2-y0);
+			if( x1 > x4 ) {
+				t = x1; x1 = x4; x4 = t;
+			}
+			drawAATrapezoid(y0, y1, x0, x0, x1, x4);
+			drawAATrapezoid(y1, y2, x1, x4, x2, x2);
+		}
+		
+		public void drawTriangle(float x0, float y0, float z0, float x1, float y1, float z1, float x2, float y2, float z2) {
+			project(x0, y0, z0); int px0 = (int)projectedX, py0 = (int)projectedY;
+			project(x1, y1, z1); int px1 = (int)projectedX, py1 = (int)projectedY;
+			project(x2, y2, z2); int px2 = (int)projectedX, py2 = (int)projectedY;
+			drawTriangle(px0, py0, px1, py1, px2, py2);
+		}
+		
+		public void drawQuad(
+			float x0, float y0, float z0, float x1, float y1, float z1,
+			float x2, float y2, float z2, float x3, float y3, float z3
+		) {
+			drawTriangle( x0, y0, z0, x1, y1, z1, x2, y2, z2 );
+			drawTriangle( x2, y2, z2, x3, y3, z3, x0, y0, z0 );
 		}
 	}
 	
 	static class Eye {
 		public float dx;
-		public short r, g, b;
-		public int div;
+		public short r=1, g=1, b=1;
+		public int div=1;
 		
 		public void setFilter( short r, short g, short b, int div ) {
 			this.r = r;
@@ -216,16 +265,19 @@ public class PolyDemo {
 		final Compositor compositor = new Compositor(w, h);
 		final Thread renderThread = new Thread() {
 			final ArrayList<BouncingSquare> objects = new ArrayList<BouncingSquare>();
-			final Eye[] eyes = new Eye[2];
+			final Eye[] eyes = new Eye[1];
 			final int d = w, dist = w * 2;
 			
 			@Override public void run() {
+				/*
 				eyes[0] = new Eye();
 				eyes[0].dx = -20;
 				eyes[0].setFilter((short)2,(short)0,(short)0, 1);
 				eyes[1] = new Eye();
 				eyes[1].dx = +20;
 				eyes[1].setFilter((short)0,(short)2,(short)2, 1);
+				*/
+				eyes[0] = new Eye();
 				
 				for( int i=0; i<5; ++i ) {
 					BouncingSquare object = new BouncingSquare();
@@ -267,14 +319,43 @@ public class PolyDemo {
 							
 							// Draw walls
 							renderer.setPerspectiveOrigin(w/2 + e.dx, h/2, dist);
-							renderer.drawLine(0  , 0  , 0, 0  , 0  , d, (short)255, (short)255, (short)255);
-							renderer.drawLine(w-1, 0  , 0, w-1, 0  , d, (short)255, (short)255, (short)255);
-							renderer.drawLine(0  , h-1, 0, 0  , h-1, d, (short)255, (short)255, (short)255);
-							renderer.drawLine(w-1, h-1, 0, w-1, h-1, d, (short)255, (short)255, (short)255);
-							renderer.drawLine(0  , 0  , d, w-1, 0  , d, (short)255, (short)255, (short)255);
-							renderer.drawLine(0  , h-1, d, w-1, h-1, d, (short)255, (short)255, (short)255);
-							renderer.drawLine(0  , 0  , d, 0  , h-1, d, (short)255, (short)255, (short)255);
-							renderer.drawLine(w-1, 0  , d, w-1, h-1, d, (short)255, (short)255, (short)255);
+							
+							renderer.setColor((short)128, (short)128, (short)128);
+							renderer.drawQuad(0  , 0  , 0  ,
+											  0  , 0  , d  ,
+											  0  , h  , d  ,
+											  0  , h  , 0  );
+							renderer.setColor((short)192, (short)192, (short)192);
+							renderer.drawQuad(w  , 0  , d  ,
+											  w  , 0  , 0  ,
+											  w  , h  , 0  ,
+											  w  , h  , d  );
+							renderer.setColor((short) 96, (short) 96, (short) 96);
+							renderer.drawQuad(0  , 0  , 0  ,
+											  w  , 0  , 0  ,
+											  w  , 0  , d  ,
+											  0  , 0  , d  );
+							renderer.setColor((short)224, (short)224, (short)224);
+							renderer.drawQuad(0  , h  , d  ,
+											  w  , h  , d  ,
+											  w  , h  , 0  ,
+											  0  , h  , 0  );
+							renderer.setColor((short)160, (short)160, (short)160);
+							renderer.drawQuad(0  , 0  , d  ,
+											  w  , 0  , d  ,
+											  w  , h  , d  ,
+											  0  , h  , d  );
+							
+							/*
+							renderer.drawLine(0  , 0  , 0, 0  , 0  , d);
+							renderer.drawLine(w-1, 0  , 0, w-1, 0  , d);
+							renderer.drawLine(0  , h-1, 0, 0  , h-1, d);
+							renderer.drawLine(w-1, h-1, 0, w-1, h-1, d);
+							renderer.drawLine(0  , 0  , d, w-1, 0  , d);
+							renderer.drawLine(0  , h-1, d, w-1, h-1, d);
+							renderer.drawLine(0  , 0  , d, 0  , h-1, d);
+							renderer.drawLine(w-1, 0  , d, w-1, h-1, d);
+							*/
 							
 							// Draw floor dots
 							
@@ -290,16 +371,16 @@ public class PolyDemo {
 								final float drawX = renderer.projectedX;
 								final float drawY = renderer.projectedY;
 								final float scale = renderer.projectedScale;
+								renderer.setColor(s.r, s.g, s.b);
 								renderer.drawAATrapezoid(
 									(int)(drawY-scale*s.rad), (int)(drawY+scale*s.rad),
 									(int)(drawX-scale*s.rad), (int)(drawX+scale*s.rad),
-									(int)(drawX-scale*s.rad), (int)(drawX+scale*s.rad),
-									s.r, s.g, s.b);
+									(int)(drawX-scale*s.rad), (int)(drawX+scale*s.rad));
+								renderer.setColor((short)64, (short)64, (short)0);
 								renderer.drawAATrapezoid(
 									(int)(drawY-scale*s.rad)+5, (int)(drawY+scale*s.rad)-5,
 									(int)(drawX-scale*s.rad)+5, (int)(drawX+scale*s.rad)-5,
-									(int)(drawX-scale*s.rad)+5, (int)(drawX+scale*s.rad)-5,
-									(short)64, (short)64, (short)0);
+									(int)(drawX-scale*s.rad)+5, (int)(drawX+scale*s.rad)-5);
 							}
 							compositor.add(renderer, e.r, e.g, e.b, e.div);
 						}
