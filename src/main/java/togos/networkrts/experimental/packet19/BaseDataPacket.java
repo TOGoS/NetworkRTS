@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import togos.blob.ByteBlob;
+import togos.blob.util.BlobUtil;
 
 /**
  * Base class for objects representing packets that can lazily convert
@@ -56,7 +57,7 @@ public abstract class BaseDataPacket implements DataPacket
 	}
 	
 	@Override public ByteBlob slice(long offset, long length) {
-		throw new UnsupportedOperationException();
+		return BlobUtil.slice(this, offset, length);
 	}
 	
 	@Override public String toAtomicString() {
