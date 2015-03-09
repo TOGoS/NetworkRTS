@@ -6,8 +6,8 @@ import java.net.DatagramSocket;
 import java.net.SocketAddress;
 
 import togos.blob.ByteChunk;
-import togos.blob.SimpleByteChunk;
 import togos.blob.util.BlobUtil;
+import togos.blob.util.SimpleByteChunk;
 import togos.networkrts.inet.PacketUtil;
 import togos.networkrts.util.ByteUtil;
 
@@ -46,7 +46,7 @@ public class ICMPResponder
 			} catch( IOException e ) {
 				throw new RuntimeException(e);
 			}
-			return new SimpleByteChunk(p.getData(), p.getOffset(), p.getLength());
+			return SimpleByteChunk.get(p.getData(), p.getOffset(), p.getLength());
 		}
 		
 		public void send(ByteChunk c) {

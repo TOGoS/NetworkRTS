@@ -1,6 +1,6 @@
 package togos.networkrts.experimental.packet19;
 
-import togos.blob.SimpleByteChunk;
+import togos.blob.util.SimpleByteChunk;
 
 public abstract class IPAddress extends SimpleByteChunk
 {

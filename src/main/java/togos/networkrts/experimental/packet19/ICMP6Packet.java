@@ -1,8 +1,8 @@
 package togos.networkrts.experimental.packet19;
 
 import togos.blob.ByteChunk;
-import togos.blob.SimpleByteChunk;
 import togos.blob.util.BlobUtil;
+import togos.blob.util.SimpleByteChunk;
 import togos.networkrts.inet.InternetChecksum;
 import togos.networkrts.util.ByteUtil;
 
@@ -52,7 +52,7 @@ public class ICMP6Packet extends BaseDataPacket
 	public ByteChunk getPayload() {
 		if( payload == null ) {
 			validate();
-			payload = dataSize == 4 ? SimpleByteChunk.EMPTY : new SimpleByteChunk(data, dataOffset+4, dataSize-4);
+			payload = dataSize == 4 ? SimpleByteChunk.EMPTY : SimpleByteChunk.get(data, dataOffset+4, dataSize-4);
 		}
 		return payload;
 	}

@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import togos.blob.ByteChunk;
-import togos.blob.SimpleByteChunk;
+import togos.blob.util.SimpleByteChunk;
 import togos.networkrts.experimental.gensim.EventLoop;
 import togos.networkrts.experimental.gensim.EventUpdatable;
 import togos.networkrts.experimental.gensim.TimedEventQueue;

@@ -5,7 +5,7 @@ import java.lang.ref.WeakReference;
 import java.util.WeakHashMap;
 
 import togos.blob.ByteChunk;
-import togos.blob.SimpleByteChunk;
+import togos.blob.util.SimpleByteChunk;
 import togos.networkrts.resource.IDs;
 
 public class Handle
@@ -46,7 +46,7 @@ public class Handle
 	}
 	
 	public static Handle getInstance( byte[] buf, int offset, int size ) {
-		return getInstance( new SimpleByteChunk(buf, offset, size) );
+		return getInstance( SimpleByteChunk.get(buf, offset, size) );
 	}
 	
 	public final ByteChunk id;

@@ -4,6 +4,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import togos.blob.ByteBlob;
+
 /**
  * Base class for objects representing packets that can lazily convert
  * between their serialized and interpreted forms.
@@ -51,6 +53,10 @@ public abstract class BaseDataPacket implements DataPacket
 	
 	@Override public InputStream openInputStream() throws IOException {
 		return new ByteArrayInputStream(data, dataOffset, dataSize);
+	}
+	
+	@Override public ByteBlob slice(long offset, long length) {
+		throw new UnsupportedOperationException();
 	}
 	
 	@Override public String toAtomicString() {

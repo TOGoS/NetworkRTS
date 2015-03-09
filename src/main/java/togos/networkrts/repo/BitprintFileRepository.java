@@ -8,8 +8,8 @@ import java.io.InputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import togos.blob.FileInputStreamable;
 import togos.blob.InputStreamable;
+import togos.blob.file.FileBlob;
 import togos.networkrts.util.Getter;
 import togos.networkrts.util.Repository;
 import togos.networkrts.util.ResourceNotFound;
@@ -184,7 +184,7 @@ public class BitprintFileRepository
 			public InputStreamable get(String uri) throws ResourceNotFound {
 				File f = BitprintFileRepository.this.get(uri);
 				if( f == null ) throw new ResourceNotFound(uri);
-				return new FileInputStreamable(f);
+				return new FileBlob(f);
 			}
 		};
 	}
