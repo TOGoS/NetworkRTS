@@ -2,6 +2,8 @@ package togos.networkrts.inet;
 
 import java.io.PrintStream;
 
+import togos.blob.ByteChunk;
+import togos.blob.util.BlobUtil;
 import togos.networkrts.util.ByteUtil;
 
 public class PacketUtil {
@@ -84,5 +86,9 @@ public class PacketUtil {
 		switch( (packet[offset+0] >> 4) & 0xF ) {
 		case( 6 ): dumpIp6Packet( packet, offset, length, ps ); 
 		}
+	}
+	
+	public static void dumpPacket( ByteChunk packet, PrintStream ps ) {
+		dumpPacket( packet.getBuffer(), packet.getOffset(), BlobUtil.toInt(packet.getSize()), ps );
 	}
 }

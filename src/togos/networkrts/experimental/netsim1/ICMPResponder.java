@@ -7,6 +7,7 @@ import java.net.SocketAddress;
 
 import togos.blob.ByteChunk;
 import togos.blob.SimpleByteChunk;
+import togos.blob.util.BlobUtil;
 import togos.networkrts.inet.PacketUtil;
 import togos.networkrts.util.ByteUtil;
 
@@ -52,7 +53,7 @@ public class ICMPResponder
 			// If we don't know where to send it, just drop it.
 			if( lastReceivedFrom == null ) return;
 			
-			DatagramPacket p = new DatagramPacket(c.getBuffer(), c.getOffset(), c.getSize());
+			DatagramPacket p = new DatagramPacket(c.getBuffer(), c.getOffset(), BlobUtil.toInt(c.getSize()));
 			p.setSocketAddress(lastReceivedFrom);
 			try {
 				sock.send(p);
@@ -74,7 +75,7 @@ public class ICMPResponder
 				ByteChunk c = pio.recv();
 				
 				System.err.print( "Received packet: " );
-				PacketUtil.dumpPacket(c.getBuffer(), c.getOffset(), c.getSize(), System.err);
+				PacketUtil.dumpPacket(c, System.err);
 				
 				if( c != null ) return c;
 			}
@@ -82,7 +83,7 @@ public class ICMPResponder
 		
 		public void send(ByteChunk c) {
 			System.err.print( "Sending packet: " );
-			PacketUtil.dumpPacket(c.getBuffer(), c.getOffset(), c.getSize(), System.err);
+			PacketUtil.dumpPacket(c, System.err);
 			pio.send(c);
 		}
 	}
@@ -138,6 +139,10 @@ public class ICMPResponder
 			case( 6 ): handleIp6( packet, offset, size ); break;
 			}
 		}
+		
+		public void handle( ByteChunk bc ) {
+			handle( bc.getBuffer(), bc.getOffset(), BlobUtil.toInt(bc.getSize()) );
+		}
 	}
 	
 	public static void main( String[] args ) throws Exception {
@@ -147,7 +152,7 @@ public class ICMPResponder
 		IPPacketHandler h = new IPPacketHandler(ipio);
 		ByteChunk packet;
 		while( (packet = ipio.recv()) != null ) {
-			h.handle(packet.getBuffer(), packet.getOffset(), packet.getSize());
+			h.handle(packet);
 		}
 	}
 }

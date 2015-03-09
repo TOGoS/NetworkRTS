@@ -1,5 +1,8 @@
 package togos.networkrts.experimental.packet19;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 public class CoAPMessage extends BaseDataPacket implements RESTMessage
 {
 	public static final PacketPayloadCodec<CoAPMessage> CODEC = new DataPacketPayloadCodec<CoAPMessage>() {

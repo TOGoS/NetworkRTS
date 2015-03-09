@@ -2,6 +2,7 @@ package togos.networkrts.experimental.game19.world.beh;
 
 import java.util.HashMap;
 
+import togos.blob.util.BlobUtil;
 import togos.networkrts.experimental.game19.sim.UpdateContext;
 import togos.networkrts.experimental.game19.world.Message;
 import togos.networkrts.experimental.game19.world.Message.MessageType;
@@ -108,9 +109,9 @@ public class BasePacketHandler
 			// See RFC 4443: http://tools.ietf.org/html/rfc4443#page-13
 			// Identifier and sequence are arbitrary, so for echo response
 			// purposes we'll just treat them as part of the data.
-			byte[] response = new byte[ethernetIp6HeaderSize+icmp6Packet.getSize()];
+			byte[] response = new byte[BlobUtil.toInt(ethernetIp6HeaderSize+icmp6Packet.getSize())];
 			int off = 0;
-			off = encodeIcmp6ResponseHeaders( pw, icmp6Packet.getSize(), response, off );
+			off = encodeIcmp6ResponseHeaders( pw, BlobUtil.toInt(icmp6Packet.getSize()), response, off );
 			off = ICMP6Packet.encodePong(ip6Address, sourceAddress, icmp6Packet, response, off);
 			outsendEthernet( response, 0, response.length, sourceBitAddress, "ICMPv6 echo response", ctx );
 			break;
@@ -141,7 +142,7 @@ public class BasePacketHandler
 		if( addy == ethernetAddress ) return true;
 		if( (addy & 0xFFFFFF000000L) == 0x3333ff000000L ) {
 			byte[] b = ipAddress.getBuffer();
-			int l = ipAddress.getOffset()+ipAddress.getSize()-3;
+			int l = BlobUtil.toInt(ipAddress.getOffset()+ipAddress.getSize())-3;
 			int lower24 = 0xFF000000 | ((b[l]&0xFF) << 16) | ((b[l+1]&0xFF) << 8) | (b[l+2]&0xFF);
 			if( lower24 == (int)addy ) return true;
 		}

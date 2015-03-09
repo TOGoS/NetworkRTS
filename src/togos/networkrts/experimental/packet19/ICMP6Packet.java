@@ -2,6 +2,7 @@ package togos.networkrts.experimental.packet19;
 
 import togos.blob.ByteChunk;
 import togos.blob.SimpleByteChunk;
+import togos.blob.util.BlobUtil;
 import togos.networkrts.inet.InternetChecksum;
 import togos.networkrts.util.ByteUtil;
 
@@ -24,7 +25,7 @@ public class ICMP6Packet extends BaseDataPacket
 	
 	public ICMP6Packet( IP6Packet wrappingPacket, byte type, byte code, ByteChunk payload ) {
 		this.ip6Packet = wrappingPacket;
-		dataSize = payload.getSize() + 4;
+		dataSize = BlobUtil.toInt(payload.getSize() + 4);
 		data = new byte[dataSize];
 		ByteUtil.copy(payload, data, 4);
 	}
@@ -130,12 +131,12 @@ public class ICMP6Packet extends BaseDataPacket
 		IP6Address sourceAddress, IP6Address destAddress, ICMP6Packet ping,
 		byte[] data, int offset
 	) {
-		int size = ping.getSize();
+		final int size = BlobUtil.toInt(ping.getSize());
 		data[offset  ] = PONG6;
 		data[offset+1] = 0;
 		data[offset+2] = 0; // Zeroed-out checksum
 		data[offset+3] = 0; // Zeroed-out checksum
-		ByteUtil.copy(ping.getBuffer(), ping.getOffset()+4, data, offset+4, ping.getSize()-4);
+		ByteUtil.copy(ping.getBuffer(), ping.getOffset()+4, data, offset+4, size-4);
 		
 		short crc = calcCrc(sourceAddress, destAddress, data, offset, size);
 		ByteUtil.encodeInt16(crc, data, offset+2);

@@ -25,6 +25,11 @@ public class BlobUtil
 		}
 	}
 	
+	public static int toInt(long l) {
+		if( l > Integer.MAX_VALUE || l < Integer.MIN_VALUE ) throw new NumberFormatException("Cannot convert long to int because it is TOO BIG: "+l);
+		return (int)l;
+	}
+	
 	public static final String string( byte[] arr, int offset, int len ) {
 		try {
 			return new String( arr, offset, len, "UTF-8" );
@@ -34,7 +39,7 @@ public class BlobUtil
 	}
 	
 	public static final String string( ByteChunk chunk ) {
-		return string( chunk.getBuffer(), chunk.getOffset(), chunk.getSize() );
+		return string( chunk.getBuffer(), chunk.getOffset(), toInt(chunk.getSize()) );
 	}
 
 	/**
@@ -62,7 +67,7 @@ public class BlobUtil
 	
 	public static final boolean equals( ByteChunk c1, ByteChunk c2 ) {
 		if( c1.getSize() != c2.getSize() ) return false;
-		return equals( c1.getBuffer(), c1.getOffset(), c2.getBuffer(), c2.getOffset(), c1.getSize() );
+		return equals( c1.getBuffer(), c1.getOffset(), c2.getBuffer(), c2.getOffset(), toInt(c1.getSize()) );
 	}
 	
 	public static final boolean equals( byte[] b1, byte[] b2 ) {

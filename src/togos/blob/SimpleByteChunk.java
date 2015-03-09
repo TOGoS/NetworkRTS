@@ -1,5 +1,9 @@
 package togos.blob;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 import togos.blob.util.BlobUtil;
 
 public class SimpleByteChunk implements ByteChunk
@@ -18,7 +22,7 @@ public class SimpleByteChunk implements ByteChunk
 	
 	/** @return a new SimpleByteChunk referencing a new buffer. */
 	public static SimpleByteChunk copyOf( ByteChunk c ) {
-		return copyOf( c.getBuffer(), c.getOffset(), c.getSize() );
+		return copyOf( c.getBuffer(), c.getOffset(), BlobUtil.toInt(c.getSize()) );
 	}
 	
 	public final byte[] buffer;
@@ -37,7 +41,7 @@ public class SimpleByteChunk implements ByteChunk
 	
 	public byte[] getBuffer() { return buffer; }
 	public int getOffset() { return offset; }
-	public int getSize() { return size; }
+	public long getSize() { return size; }
 	
 	public int hashCode() {
 		return BlobUtil.hashCode(buffer, offset, size);
@@ -48,6 +52,9 @@ public class SimpleByteChunk implements ByteChunk
 		return false;
 	}
 	
+	@Override public InputStream openInputStream() throws IOException {
+		return new ByteArrayInputStream(buffer, offset, size);
+	}
 	
 	public String toString() {
 		// TODO: when not valid UTF-8 text, do it different

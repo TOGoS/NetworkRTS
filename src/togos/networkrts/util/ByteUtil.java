@@ -1,6 +1,7 @@
 package togos.networkrts.util;
 
 import togos.blob.ByteChunk;
+import togos.blob.util.BlobUtil;
 
 public class ByteUtil {
 	public static void copy( byte[] source, int sourceOffset, byte[] dest, int destOffset, int length ) {
@@ -11,7 +12,7 @@ public class ByteUtil {
 	}
 	
 	public static void copy( ByteChunk source, byte[] dest, int destOffset ) {
-		copy( source.getBuffer(), source.getOffset(), dest, destOffset, source.getSize() );
+		copy( source.getBuffer(), source.getOffset(), dest, destOffset, BlobUtil.toInt(source.getSize()) );
 	}
 	
 	public static long decodeInt64( byte[] buffer, int offset ) {
@@ -96,6 +97,6 @@ public class ByteUtil {
 	}
 	
 	public static boolean equals( ByteChunk c, byte[] data, int i ) {
-		return equals(c.getBuffer(), c.getOffset(), data, i, c.getSize());
+		return equals(c.getBuffer(), c.getOffset(), data, i, BlobUtil.toInt(c.getSize()));
 	}
 }

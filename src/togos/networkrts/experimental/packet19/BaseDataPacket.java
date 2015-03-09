@@ -1,5 +1,9 @@
 package togos.networkrts.experimental.packet19;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 /**
  * Base class for objects representing packets that can lazily convert
  * between their serialized and interpreted forms.
@@ -40,9 +44,13 @@ public abstract class BaseDataPacket implements DataPacket
 		return dataOffset;
 	}
 	
-	@Override public int getSize() {
+	@Override public long getSize() {
 		ensureDataPopulated();
 		return dataSize;
+	}
+	
+	@Override public InputStream openInputStream() throws IOException {
+		return new ByteArrayInputStream(data, dataOffset, dataSize);
 	}
 	
 	@Override public String toAtomicString() {
