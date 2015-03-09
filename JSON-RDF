@@ -15,19 +15,19 @@ Optimizations:
 - class names may be given by only the last part of their URI
 - classes may be omitted entirely when the object's context implies a specific class
 
-Encode predicate -> URI reference mappings by appending 'Uri' to the predicate name.
+Encode predicate -> reference mappings by appending 'Ref' to the predicate name.
 e.g.
 
   <someProperty rdf:resource="http://foo/bar"/>
 
 would be encoded as:
 
-  "somePropertyUri": "http://foo/bar"
+  "somePropertyRef": "http://foo/bar"
 
-Encode object types via a classUri predicate, e.g.
+Encode object types via a classRef predicate, e.g.
 
   {
-    "classUri": "http://xmlns.com/foaf/0.1/Person",
+    "classRef": "http://xmlns.com/foaf/0.1/Person",
     "firstName": "Jim",
     "lastName": "Beam"
   }
