@@ -1,0 +1,21 @@
+Forth bots
+
+Robots in a simple tile-based world run Forth programs.
+
+Scope:
+- Simple tile based world - toroidal 256x256 grid with a single layer of tiles
+- Mutable objects to represent world
+- Simple Forth-like bytecode interpreter
+- Simple tile display system (colors and simple hardcoded patterns)
+- World loaded from a text file
+- Bot programs can listen for radio messages and act on them e.g. by replacing their program
+
+NOT in scope:
+- Large worlds
+- Complex worlds
+- Client-server networking
+- Visibility calculations
+- Fancy graphics
+
+Next phase:
+- Use IP networking to control bots
