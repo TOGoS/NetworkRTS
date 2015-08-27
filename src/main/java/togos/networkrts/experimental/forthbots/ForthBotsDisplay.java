@@ -8,6 +8,7 @@ import java.awt.Rectangle;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.util.Random;
 
 import togos.networkrts.experimental.forthbots.ForthBotsWorld.ForthVM;
 import togos.networkrts.experimental.forthbots.ForthBotsWorld.Tile;
@@ -87,6 +88,7 @@ public class ForthBotsDisplay {
 		Tile wall = new Tile();
 		wall.iconNumber = 1;
 		wall.flags |= Tile.FLAG_SOLID;
+		wall = wall.freeze();
 		
 		short[] roboProgram = new short[4096];
 		short pc = 0x400;
@@ -94,6 +96,10 @@ public class ForthBotsDisplay {
 		roboProgram[ForthVM.DS_REG] = 0x300;
 		roboProgram[ForthVM.PS_REG] = 0x400;
 		roboProgram[pc++] = 0x0001;
+		roboProgram[pc++] = ForthVM.MOVEMENT_REG;
+		roboProgram[pc++] = ForthVM.I_PUT;
+		roboProgram[pc++] = ForthVM.I_WAIT;
+		roboProgram[pc++] = 0x0002;
 		roboProgram[pc++] = ForthVM.MOVEMENT_REG;
 		roboProgram[pc++] = ForthVM.I_PUT;
 		roboProgram[pc++] = ForthVM.I_WAIT;
@@ -105,13 +111,19 @@ public class ForthBotsDisplay {
 		robo.iconNumber = 2;
 		robo.vm = roboVm;
 		robo.flags |= Tile.FLAG_SOLID;
+		robo = robo.freeze();
 		
+		Random rand = new Random();
+		for( int i=0; i<256; ++i ) {
+			world.tiles[rand.nextInt(world.tiles.length)] = wall;
+		}
 		world.tiles[0] = wall;
 		world.tiles[1] = wall;
 		world.tiles[2] = wall;
 		world.tiles[64] = wall;
 		world.tiles[128] = wall;
 		world.tiles[131] = wall;
+		world.tiles[256] = wall;
 		world.tiles[66] = robo;
 		
 		BufferedImage canv = new BufferedImage(512,384,BufferedImage.TYPE_INT_ARGB);

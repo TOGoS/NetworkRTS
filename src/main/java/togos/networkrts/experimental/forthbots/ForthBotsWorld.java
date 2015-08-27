@@ -2,8 +2,12 @@ package togos.networkrts.experimental.forthbots;
 
 import java.util.Arrays;
 
+import togos.networkrts.util.Freezable;
+import togos.networkrts.util.FrozenModificationException;
+import togos.networkrts.util.Thawable;
+
 public class ForthBotsWorld {
-	static class ForthVM {
+	static class ForthVM implements Freezable<ForthVM>, Thawable<ForthVM> {
 		/** When set, allows messages to be received at the memory location defined by MESSAGE_RECV_BUF_REG */
 		public static final short MESSAGE_RECEIVE  = 0x1;
 		/** When set, indicates that a message has been received */
@@ -46,6 +50,7 @@ public class ForthBotsWorld {
 		public static final short I_JNZ   = 0x4013; // (value, jump offset --)
 		public static final short I_JZ    = 0x4014; // (value, jump offset --)
 		
+		boolean frozen = false;
 		final short[] memory;
 		
 		public ForthVM( short[] image ) {
@@ -67,32 +72,22 @@ public class ForthBotsWorld {
 			short ds = (short)(mem(DS_REG) - 1);
 			mem(DS_REG, ds);
 			mem(ds, v);
-			//System.err.println(String.format("Pushed %04x to %04x", v, ds));
 		}
 		
 		protected short pop() {
 			// TODO: prevent underflow
 			short ds = mem(DS_REG);
 			short v = mem(ds);
-			//System.err.println(String.format("Popped %04x from %04x", v, ds));
 			mem(DS_REG, (short)(ds+1));
 			return v;
 		}
 		
 		public boolean step() {
+			if( frozen ) throw new FrozenModificationException();
 			short pc = mem(PC_REG);
 			if( pc < 0 || pc >= memory.length ) pc = PC_RESET_VALUE;
 			
 			short inst = mem(pc);
-			//System.err.println(String.format("PC = %04x; inst = %04x", pc, inst));
-			/*
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			*/
 			
 			if( pc >= memory.length ) return false;
 			
@@ -124,31 +119,61 @@ public class ForthBotsWorld {
 		}
 		
 		public void step(int steps) {
+			if( frozen ) throw new FrozenModificationException();
 			while( steps > 0 && step() ) --steps;
+		}
+		
+		@Override public ForthVM freeze() {
+			frozen = true;
+			return this;
+		}
+		@Override public ForthVM thaw() {
+			if( !frozen ) return this;
+			return new ForthVM(this.memory);
 		}
 	}
 	
-	static class Tile {
+	static class Tile implements Freezable<Tile>, Thawable<Tile> {
 		public static final short FLAG_SOLID = 0x0001;
 		public static final Tile EMPTY = new Tile();
 		
 		// Might be good to use a freeze/thaw system here...
 		
+		protected boolean frozen = false;
 		public int iconNumber;
 		public ForthVM vm;
 		public short flags;
+		public long nextAutoUpdateTime;
+		
+		public Tile freeze() {
+			this.frozen = true;
+			if(this.vm != null) this.vm = this.vm.freeze();
+			return this;
+		}
+		public Tile thaw() {
+			if( !this.frozen ) return this;
+			Tile newTile = new Tile();
+			newTile.iconNumber = iconNumber;
+			newTile.vm = vm.thaw();
+			newTile.flags = flags;
+			newTile.nextAutoUpdateTime = nextAutoUpdateTime;
+			return newTile;
+		}
 	}
 	
 	final int width, height;
 	final Tile[] tiles;
+	long stepNumber = 0;
+	
+	static int mod(int x, int by) {
+		// TODO: A better one, someday
+		while( x < 0 ) x += by;
+		while( x >= by ) x -= by;
+		return x;
+	}
 	
 	int cellIdx(int x, int y) {
-		// poor man's modulus
-		while( x < 0 ) x += width;
-		while( y < 0 ) y += height;
-		while( x > width ) x -= width;
-		while( y > height ) y -= height;
-		return x + y*width;
+		return mod(x,width) + mod(y,height)*width;
 	}
 	
 	public ForthBotsWorld(int width, int height) {
@@ -159,10 +184,13 @@ public class ForthBotsWorld {
 	}
 	
 	protected void update(int x, int y, Tile tile) {
+		if( tile.nextAutoUpdateTime > stepNumber ) return;
 		if( tile.vm == null ) return;
 		
+		final int srcIdx = cellIdx(x,y);
+		tile = tiles[srcIdx] = tile.thaw();
+		
 		short moveFlags = tile.vm.mem(ForthVM.MOVEMENT_REG);
-		System.err.println("Move flags = "+moveFlags);
 		int moveX = x, moveY = y;
 		if( (moveFlags & 0x0001) != 0 ) ++moveX;
 		if( (moveFlags & 0x0002) != 0 ) ++moveY;
@@ -171,8 +199,7 @@ public class ForthBotsWorld {
 		tile.vm.mem(ForthVM.MOVEMENT_REG, (short)0);
 		
 		if( moveX != x || moveY != y ) {
-			int srcIdx = cellIdx(x,y);
-			int destIdx = cellIdx(moveX,moveY);
+			final int destIdx = cellIdx(moveX,moveY);
 			Tile destTile = tiles[destIdx];
 			if( (destTile.flags & Tile.FLAG_SOLID) == 0 ) {
 				// We can swap them!
@@ -181,14 +208,16 @@ public class ForthBotsWorld {
 			}
 		}
 		
+		tile.nextAutoUpdateTime = stepNumber+1;
 		tile.vm.step(16);
 	}
 	
 	public void step() {
 		for( int idx=0, row=0; row<height; ++row ) {
 			for( int col=0; col<width; ++col, ++idx ) {
-				update(row, col, tiles[idx]);
+				update(col, row, tiles[idx]);
 			}
 		}
+		++stepNumber;
 	}
 }
