@@ -7,7 +7,7 @@ import togos.networkrts.util.FrozenModificationException;
 import togos.networkrts.util.Thawable;
 
 public class ForthBotsWorld {
-	static class ForthVM implements Freezable<ForthVM>, Thawable<ForthVM> {
+	public static class ForthVM implements Freezable<ForthVM>, Thawable<ForthVM> {
 		/** When set, allows messages to be received at the memory location defined by MESSAGE_RECV_BUF_REG */
 		public static final short MESSAGE_RECEIVE  = 0x1;
 		/** When set, indicates that a message has been received */
@@ -15,21 +15,25 @@ public class ForthBotsWorld {
 		/** When set, signals to the hardware that the message in the send buffer should be sent */
 		public static final short MESSAGE_SEND     = 0x4;
 		
-		public static final short PC_REG   = 0;
-		public static final short MODE_REG = 1;
-		public static final short DS_START_REG = 2;
-		public static final short DS_END_REG   = 3;
-		public static final short PS_START_REG = 4;
-		public static final short PS_END_REG   = 5;
-		public static final short DS_REG       = 6;
-		public static final short PS_REG       = 7;
-		public static final short WALL_SENSORS_REG = 8; // clockwise from east, northeast being 15
-		public static final short MOVEMENT_REG = 16;
+		public static final short PC_REG         = 0;
+		public static final short PC_RESET_REG   = 1;
+		public static final short DS_START_REG   = 2;
+		public static final short DS_END_REG     = 3;
+		public static final short PS_START_REG   = 4;
+		public static final short PS_END_REG     = 5;
+		public static final short DS_REG         = 6;
+		public static final short PS_REG         = 7;
+		public static final short MOVEMENT_REG     = 16;
+		public static final short WALL_SENSORS_REG = 17; // clockwise from east, northeast being 15
 		public static final short MESSAGE_STATUS_REG = 17;
 		public static final short MESSAGE_RECV_BUF_REG = 18;
 		public static final short MESSAGE_RECV_SIZE_REG = 19;
 		public static final short MESSAGE_SEND_BUF_REG = 20;
 		public static final short MESSAGE_SEND_SIZE_REG = 21;
+		public static final short DS_START_DEFAULT =  512;
+		public static final short DS_END_DEFAULT   =  768;
+		public static final short PS_START_DEFAULT =  768;
+		public static final short PS_END_DEFAULT   = 1024;
 		// Normal data stack area is 512-768
 		// Normal program stack is 768-1024
 		public static final short PC_RESET_VALUE = 1024;
@@ -57,69 +61,93 @@ public class ForthBotsWorld {
 			this.memory = Arrays.copyOf(image, image.length);
 		}
 		
-		public short mem(short index) {
+		public short fetch(int index) {
 			if( index < 0 || index >= memory.length ) return 0;
 			return memory[index];
 		}
+		public short fetch(short index) {
+			return fetch(index&0xFFFF);
+		}
+		public int fetchUint(short index) {
+			return fetch(index)&0xFFFF;
+		}
 		
-		public void mem(short index, short value) {
+		// This should be the only function that modifies memory!
+		// And it will throw a FrozenModificationException if the VM is frozen
+		public void put(int index, short value) {
+			if( frozen ) throw new FrozenModificationException();
 			if( index < 0 || index >= memory.length ) return;
 			memory[index] = value;
 		}
-		
-		protected void push(short v) {
-			// TODO: prevent overflow
-			short ds = (short)(mem(DS_REG) - 1);
-			mem(DS_REG, ds);
-			mem(ds, v);
+		public void put(short index, short value) {
+			put(index&0xFFFF, value);
 		}
 		
-		protected short pop() {
+		public void push(short v) {
+			// TODO: prevent overflow
+			short ds = (short)(fetch(DS_REG) - 1);
+			put(DS_REG, ds);
+			put(ds, v);
+		}
+		public short pop() {
 			// TODO: prevent underflow
-			short ds = mem(DS_REG);
-			short v = mem(ds);
-			mem(DS_REG, (short)(ds+1));
+			short ds = fetch(DS_REG);
+			short v = fetch(ds);
+			put(DS_REG, (short)(ds+1));
+			return v;
+		}
+		
+		public void pushPs(short v) {
+			// TODO: prevent overflow
+			short ps = (short)(fetch(PS_REG) - 1);
+			put(PS_REG, ps);
+			put(ps, v);
+		}
+		public short popPs() {
+			// TODO: prevent underflow
+			short ps = fetch(PS_REG);
+			short v = fetch(ps);
+			put(PS_REG, (short)(ps+1));
 			return v;
 		}
 		
 		public boolean step() {
-			if( frozen ) throw new FrozenModificationException();
-			short pc = mem(PC_REG);
+			short pc = fetch(PC_REG);
+			if( pc < 0 || pc >= memory.length ) pc = fetch(PC_RESET_REG);
 			if( pc < 0 || pc >= memory.length ) pc = PC_RESET_VALUE;
 			
-			short inst = mem(pc);
+			short inst = fetch(pc);
 			
 			if( pc >= memory.length ) return false;
 			
 			switch( inst ) {
 			case I_WAIT:
-				mem(PC_REG, (short)(pc+1));
+				put(PC_REG, (short)(pc+1));
 				return false;
 			case I_FETCH:
-				push(mem(pop()));
-				mem(PC_REG, (short)(pc+1));
+				push(fetch(pop()));
+				put(PC_REG, (short)(pc+1));
 				return true;
 			case I_PUT: {
 				short l = pop();
 				short v = pop();
-				mem(l, v);
-				mem(PC_REG, (short)(pc+1));
+				put(l, v);
+				put(PC_REG, (short)(pc+1));
 				return true;
 			}
 			case I_JUMP:
-				mem(PC_REG, pop());
+				put(PC_REG, pop());
 				return true;
 			default:
 				if( (inst & 0xC000) == 0 || (inst & 0xC000) == 0xC000 ) {
 					push(inst);
-					mem(PC_REG, (short)(pc+1));
+					put(PC_REG, (short)(pc+1));
 				}
 				return true;
 			}
 		}
 		
 		public void step(int steps) {
-			if( frozen ) throw new FrozenModificationException();
 			while( steps > 0 && step() ) --steps;
 		}
 		
@@ -190,13 +218,13 @@ public class ForthBotsWorld {
 		final int srcIdx = cellIdx(x,y);
 		tile = tiles[srcIdx] = tile.thaw();
 		
-		short moveFlags = tile.vm.mem(ForthVM.MOVEMENT_REG);
+		short moveFlags = tile.vm.fetch(ForthVM.MOVEMENT_REG);
 		int moveX = x, moveY = y;
 		if( (moveFlags & 0x0001) != 0 ) ++moveX;
 		if( (moveFlags & 0x0002) != 0 ) ++moveY;
 		if( (moveFlags & 0x0004) != 0 ) --moveX;
 		if( (moveFlags & 0x0008) != 0 ) --moveY;
-		tile.vm.mem(ForthVM.MOVEMENT_REG, (short)0);
+		tile.vm.put(ForthVM.MOVEMENT_REG, (short)0);
 		
 		if( moveX != x || moveY != y ) {
 			final int destIdx = cellIdx(moveX,moveY);
