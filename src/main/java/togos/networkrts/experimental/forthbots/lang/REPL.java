@@ -30,11 +30,11 @@ public class REPL implements Handler<Token,ScriptError>
 			this.instruction = instruction;
 		}
 		@Override public void invoke(ForthVM vm) {
-			//vm.doInstruction(instruction);
+			vm.doInstruction(instruction);
 		}
 	}
 	
-	protected final HashMap<String,Word> words = new HashMap<>();
+	protected final HashMap<String,Word> words = new HashMap<String,Word>();
 	protected final ForthVM vm;
 	protected boolean quitting = false;
 	
@@ -66,6 +66,20 @@ public class REPL implements Handler<Token,ScriptError>
 				System.out.println();
 			}
 		});
+		words.put("&", new InstructionWord(ForthVM.I_AND));
+		words.put("|", new InstructionWord(ForthVM.I_OR));
+		words.put("^", new InstructionWord(ForthVM.I_XOR));
+		words.put("+", new InstructionWord(ForthVM.I_ADD));
+		words.put("*", new InstructionWord(ForthVM.I_MUL));
+		words.put("/", new InstructionWord(ForthVM.I_DIV));
+		words.put("-", new InstructionWord(ForthVM.I_SUB));
+		words.put("!", new InstructionWord(ForthVM.I_STORE));
+		words.put("@", new InstructionWord(ForthVM.I_FETCH));
+		words.put("dup", new InstructionWord(ForthVM.I_DUP));
+		words.put("drop", new InstructionWord(ForthVM.I_DROP));
+		words.put("swap", new InstructionWord(ForthVM.I_SWAP));
+		words.put("ds-reg", new InstructionWord(ForthVM.DS_REG));
+		words.put("ps-reg", new InstructionWord(ForthVM.PS_REG));
 		Word quit = new Word() {
 			@Override public void invoke(ForthVM vm) {
 				System.err.println("Goodbye.");

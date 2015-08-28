@@ -97,11 +97,11 @@ public class ForthBotsDisplay {
 		roboProgram[ForthVM.PS_REG] = 0x400;
 		roboProgram[pc++] = 0x0001;
 		roboProgram[pc++] = ForthVM.MOVEMENT_REG;
-		roboProgram[pc++] = ForthVM.I_PUT;
+		roboProgram[pc++] = ForthVM.I_STORE;
 		roboProgram[pc++] = ForthVM.I_WAIT;
 		roboProgram[pc++] = 0x0002;
 		roboProgram[pc++] = ForthVM.MOVEMENT_REG;
-		roboProgram[pc++] = ForthVM.I_PUT;
+		roboProgram[pc++] = ForthVM.I_STORE;
 		roboProgram[pc++] = ForthVM.I_WAIT;
 		roboProgram[pc++] = 0x400;
 		roboProgram[pc++] = ForthVM.I_JUMP;

@@ -42,17 +42,30 @@ public class ForthBotsWorld {
 		 * Instructions 0x0000-0x3FFF and 0xC000-0xFFFF push their own value onto the stack
 		 * Other instructions are as follows.
 		 */
-		public static final short I_FETCH = 0x4001; // (memory location -- value at that memory location)
-		public static final short I_PUT   = 0x4002; // (new value, memory location --)
-		public static final short I_AND   = 0x4005; // (value 1, value 2 -- bitwise-ANDed value)
-		public static final short I_OR    = 0x4006; // (value 1, value 2 -- bitwise-ORed value)
-		public static final short I_XOR   = 0x4007; // (value 1, value 2 -- bitwise-XORed value)
 		
-		public static final short I_CALL  = 0x4010; // Call function at location popped from top of stack
-		public static final short I_JUMP  = 0x4011; // Jump the the location popped from top of stack
-		public static final short I_WAIT  = 0x4012; // Wait for next simulation step
-		public static final short I_JNZ   = 0x4013; // (value, jump offset --)
-		public static final short I_JZ    = 0x4014; // (value, jump offset --)
+		// Memory and stack ops
+		public static final short I_FETCH = 0x4001; // (memory location -- value at that memory location)
+		public static final short I_STORE = 0x4002; // (new value, memory location --)
+		public static final short I_DUP   = 0x4003; // (a -- a, a)
+		public static final short I_SWAP  = 0x4004; // (a, b -- b, a)
+		public static final short I_DROP  = 0x4005; // (a --)
+		public static final short I_PICK  = 0x4006; // (n -- thing from n down the stack (not counting n itself))
+		
+		// Arithmetic
+		public static final short I_AND   = 0x4010; // (value 1, value 2 -- bitwise-ANDed value)
+		public static final short I_OR    = 0x4011; // (value 1, value 2 -- bitwise-ORed value)
+		public static final short I_XOR   = 0x4012; // (value 1, value 2 -- bitwise-XORed value)
+		public static final short I_ADD   = 0x4013; // (value 1, value 2 -- value 1 + value 2)
+		public static final short I_SUB   = 0x4014; // (value 1, value 2 -- value 1 - value 2)
+		public static final short I_MUL   = 0x4015; // (value 1, value 2 -- value 1 * value 2)
+		public static final short I_DIV   = 0x4016; // (value 1, value 2 -- value 1 / value 2)
+		
+		// Program flow
+		public static final short I_CALL  = 0x4020; // Call function at location popped from top of stack
+		public static final short I_JUMP  = 0x4021; // Jump the the location popped from top of stack
+		public static final short I_WAIT  = 0x4022; // Wait for next simulation step
+		public static final short I_JNZ   = 0x4023; // (value, jump offset --)
+		public static final short I_JZ    = 0x4024; // (value, jump offset --)
 		
 		boolean frozen = false;
 		final short[] memory;
@@ -89,6 +102,11 @@ public class ForthBotsWorld {
 			put(DS_REG, ds);
 			put(ds, v);
 		}
+		public short peek(int n) {
+			// TODO: prevent underflow
+			short ds = fetch(DS_REG);
+			return fetch(ds+n);
+		}
 		public short pop() {
 			// TODO: prevent underflow
 			short ds = fetch(DS_REG);
@@ -111,6 +129,98 @@ public class ForthBotsWorld {
 			return v;
 		}
 		
+		static class InvalidInstructionException extends Exception {
+			private static final long serialVersionUID = 1L;
+		}
+		
+		protected void doNormalInstruction(short inst) throws InvalidInstructionException {
+			switch( inst ) {
+			case I_FETCH:
+				push(fetch(pop()));
+				return;
+			case I_STORE: {
+				short l = pop();
+				short v = pop();
+				put(l, v);
+				return;
+			}
+			case I_DUP:
+				push(peek(0));
+				return;
+			case I_DROP:
+				pop();
+				return;
+			case I_SWAP:
+				short a = pop();
+				short b = pop();
+				push(a);
+				push(b);
+				return;
+			case I_PICK:
+				short n = pop();
+				push(peek(n));
+				return;
+			case I_AND:
+				push((short)(pop() & pop()));
+				return;
+			case I_OR:
+				push((short)(pop() | pop()));
+				return;
+			case I_XOR:
+				push((short)(pop() ^ pop()));
+				return;
+			case I_ADD:
+				push((short)(pop() + pop()));
+				return;
+			case I_SUB: {
+				short subtrahend = pop();
+				short minuend = pop();
+				push((short)(minuend - subtrahend));
+				return;
+			}
+			case I_MUL:
+				push((short)(pop() * pop()));
+				return;
+			case I_DIV: {
+				short divisor = pop();
+				short dividend = pop();
+				push((short)(dividend / divisor));
+				return;
+			}
+			default:
+				if( (inst & 0xC000) == 0 || (inst & 0xC000) == 0xC000 ) {
+					push(inst);
+				} else {
+					throw new InvalidInstructionException();
+				}
+			}
+		}
+		
+		protected boolean doInstruction(short inst, short pc) {
+			switch( inst ) {
+			case I_WAIT:
+				put(PC_REG, (short)(pc+1));
+				return false;
+			case I_JUMP:
+				put(PC_REG, pop());
+				return true;
+			default:
+				try {
+					doNormalInstruction(inst);
+					put(PC_REG, (short)(pc + 1));
+					return true;
+				} catch( InvalidInstructionException e ) {
+					put(PC_REG, fetch(PC_RESET_REG));
+					return false;
+				}
+			}
+		}
+		
+		public boolean doInstruction(short inst) {
+			short pc = fetch(PC_REG);
+			return doInstruction(inst, pc);
+		}
+		
 		public boolean step() {
 			short pc = fetch(PC_REG);
 			if( pc < 0 || pc >= memory.length ) pc = fetch(PC_RESET_REG);
@@ -120,31 +230,7 @@ public class ForthBotsWorld {
 			
 			if( pc >= memory.length ) return false;
 			
-			switch( inst ) {
-			case I_WAIT:
-				put(PC_REG, (short)(pc+1));
-				return false;
-			case I_FETCH:
-				push(fetch(pop()));
-				put(PC_REG, (short)(pc+1));
-				return true;
-			case I_PUT: {
-				short l = pop();
-				short v = pop();
-				put(l, v);
-				put(PC_REG, (short)(pc+1));
-				return true;
-			}
-			case I_JUMP:
-				put(PC_REG, pop());
-				return true;
-			default:
-				if( (inst & 0xC000) == 0 || (inst & 0xC000) == 0xC000 ) {
-					push(inst);
-					put(PC_REG, (short)(pc+1));
-				}
-				return true;
-			}
+			return doInstruction(inst);
 		}
 		
 		public void step(int steps) {
