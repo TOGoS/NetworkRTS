@@ -24,10 +24,25 @@ would be encoded as:
 
   "somePropertyRef": "http://foo/bar"
 
+BIG FAT UPDATE (2016-01-08):
+There's an RFC on an alternate way to do this,
+which is used by Swagger:
+https://tools.ietf.org/html/draft-pbryan-zyp-json-ref-03
+
+The Swagger spec seems somewhat reasonable, so those guys might not be completely dumb.
+
 Encode object types via a classRef predicate, e.g.
 
   {
     "classRef": "http://xmlns.com/foaf/0.1/Person",
+    "firstName": "Jim",
+    "lastName": "Beam"
+  }
+
+Or, using "$ref"...
+
+  {
+    "class": { "$ref": "http://xmlns.com/foaf/0.1/Person" },
     "firstName": "Jim",
     "lastName": "Beam"
   }
