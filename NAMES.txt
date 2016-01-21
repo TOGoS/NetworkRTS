@@ -1,0 +1,14 @@
+D1 - sort of clone of the original Dungeon
+D4 - Multiplayer room-based game with pipes and switches written in Ruby
+D5 - Infinite procedural terrain
+
+Game17
+Game18
+Game19 - Fly space man around
+       - pseudo line-of-sight
+       - continuous bouncy physics
+Game21 - Game21.git
+       - Small tile-based
+       - Arbitrarily connected rooms
+       - JSON for storage
+       - Focus on content creation
